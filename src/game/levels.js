@@ -6,7 +6,7 @@ import { SPIKE_W } from './geom';
 // "crossings" (how long the player takes to flip across the corridor), so the
 // spacing stays fair as the run speed grows level by level.
 
-function emit(d, x, out, ctx) {
+export function emit(d, x, out, ctx) {
   const { step, gap } = ctx;
   const f = d.f == null ? gap : d.f;
   switch (d.t) {
@@ -141,7 +141,7 @@ function emit(d, x, out, ctx) {
   }
 }
 
-function buildLevel(spec, index) {
+export function buildLevel(spec, index) {
   const speed = BASE_SPEED * spec.speed;
   const step = speed * CROSS_TIME;
   const items = [];

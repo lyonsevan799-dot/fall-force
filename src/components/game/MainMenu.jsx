@@ -1,16 +1,34 @@
 import React from 'react';
-import { Play, Grid3x3, Settings2 } from 'lucide-react';
-import { GameButton } from './ui';
+import { Trophy, Infinity as InfinityIcon, Swords, Settings2 } from 'lucide-react';
 import { LEVELS } from '@/game/levels';
 import { totalStars, completedCount } from '@/game/progress';
 
-export default function MainMenu({ save, onPlay, onLevels, onSettings, sound }) {
+const MODES = [
+  { key: 'career', label: 'Career', desc: 'Master the levels and conquer Gravity Switch.', icon: Trophy, accent: 'cyan' },
+  { key: 'endless', label: 'Endless', desc: 'How long can you survive?', icon: InfinityIcon, accent: 'amber' },
+  { key: 'race', label: 'Race', desc: 'Race your opponent to the finish!', icon: Swords, accent: 'pink' },
+];
+
+const ACCENT = {
+  cyan: 'border-cyan-300/40 bg-cyan-400/10 text-cyan-200',
+  amber: 'border-amber-300/40 bg-amber-400/10 text-amber-200',
+  pink: 'border-pink-300/40 bg-pink-400/10 text-pink-200',
+};
+
+export default function MainMenu({ save, sound, onCareer, onEndless, onRace, onSettings }) {
   const stars = totalStars(save);
   const done = completedCount(save);
-  const next = Math.min(save.unlocked || 0, LEVELS.length - 1);
+  const best = save.endlessBest || 0;
+
+  const go = (key) => {
+    sound.sfx('click');
+    if (key === 'career') onCareer();
+    else if (key === 'endless') onEndless();
+    else onRace();
+  };
 
   return (
-    <div className="relative z-10 flex min-h-full flex-col items-center justify-center gap-10 px-6 py-14">
+    <div className="relative z-10 flex min-h-full flex-col items-center justify-center gap-8 px-6 py-12">
       <div className="flex flex-col items-center gap-3 text-center">
         <div className="font-heading text-[10px] uppercase tracking-[0.6em] text-cyan-200/60">Arcade Gravity Runner</div>
         <h1 className="gs-title font-heading text-4xl uppercase leading-none tracking-[0.14em] sm:text-6xl">
@@ -18,30 +36,37 @@ export default function MainMenu({ save, onPlay, onLevels, onSettings, sound }) 
           <span className="block bg-gradient-to-r from-cyan-200 via-white to-fuchsia-300 bg-clip-text text-transparent">Switch</span>
         </h1>
         <div className="h-[2px] w-40 bg-gradient-to-r from-transparent via-cyan-300/80 to-transparent" />
-        <p className="max-w-sm text-xs leading-relaxed text-white/45">
-          Flip gravity to run the floor and the ceiling. Survive 15 levels of blades, lasers, crushers and portals.
-        </p>
       </div>
 
-      <div className="flex flex-col items-stretch gap-3 sm:w-80">
-        <GameButton variant="primary" size="lg" sound={sound} onClick={() => onPlay(next)}>
-          <Play size={16} /> {done > 0 ? `Play Level ${next + 1}` : 'Play'}
-        </GameButton>
-        <GameButton variant="accent" sound={sound} onClick={onLevels}>
-          <Grid3x3 size={15} /> Levels
-        </GameButton>
-        <GameButton variant="ghost" sound={sound} onClick={onSettings}>
-          <Settings2 size={15} /> Settings
-        </GameButton>
+      <div className="grid w-full max-w-3xl gap-3 sm:grid-cols-3">
+        {MODES.map((m) => {
+          const Icon = m.icon;
+          return (
+            <button key={m.key} type="button" onClick={() => go(m.key)}
+              className="group relative flex flex-col items-center gap-3 overflow-hidden rounded-3xl border border-white/12 bg-white/[0.04] px-5 py-7 text-center transition-all duration-200 hover:-translate-y-1.5 hover:border-white/30 hover:bg-white/[0.08] hover:shadow-[0_0_50px_-15px_rgba(56,232,255,0.5)] active:scale-[0.97]">
+              <span className={`flex h-14 w-14 items-center justify-center rounded-2xl border ${ACCENT[m.accent]} transition-transform duration-200 group-hover:scale-110`}>
+                <Icon size={26} strokeWidth={2} />
+              </span>
+              <span className="font-heading text-base uppercase tracking-[0.22em] text-white">{m.label}</span>
+              <span className="text-[11px] leading-relaxed text-white/45">{m.desc}</span>
+            </button>
+          );
+        })}
       </div>
 
-      <div className="flex items-center gap-8 font-heading text-[10px] uppercase tracking-[0.24em] text-white/40">
+      <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-1 font-heading text-[10px] uppercase tracking-[0.24em] text-white/40">
         <span>{done} / {LEVELS.length} cleared</span>
         <span className="text-amber-200/70">{stars} / {LEVELS.length * 3} stars</span>
+        <span className="text-cyan-200/70">Best {best}</span>
       </div>
 
+      <button type="button" onClick={() => { sound.sfx('click'); onSettings(); }}
+        className="flex items-center gap-2 font-heading text-[10px] uppercase tracking-[0.24em] text-white/45 transition-colors hover:text-white">
+        <Settings2 size={14} /> Settings
+      </button>
+
       <div className="font-heading text-[9px] uppercase tracking-[0.3em] text-white/25">
-        Space · Click · Tap to switch gravity
+        Flip gravity · dodge · survive
       </div>
     </div>
   );

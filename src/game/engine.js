@@ -20,6 +20,7 @@ export class Engine {
     this.state = 'intro';
     this.paused = false;
     this.levelIndex = 0;
+    this.mode = 'career';
     this.px = 0; this.py = FLOOR_Y - PLAYER_SIZE; this.vy = 0;
     this.dir = 1; this.grounded = true; this.groundPlat = null;
     this.sx = 1; this.sy = 1; this.rot = 0; this.rotV = 0;

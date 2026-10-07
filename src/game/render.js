@@ -39,10 +39,11 @@ const bgCache = {};
 function getBg(index, length, seed) {
   if (bgCache[index]) return bgCache[index];
   const rng = mulberry32(1000 + index * 977);
+  const range = index < 0 ? 100000 : length + 900;
   const stars = [];
   for (let i = 0; i < 90; i++) {
     stars.push({
-      x: -200 + rng() * (length + 900),
+      x: -200 + rng() * range,
       y: rng() * WORLD_H,
       r: 0.8 + rng() * 2.1,
       p: rng() * 6.28,
@@ -52,7 +53,7 @@ function getBg(index, length, seed) {
   const shapes = [];
   for (let i = 0; i < 16; i++) {
     shapes.push({
-      x: -200 + rng() * (length + 600),
+      x: -200 + rng() * range,
       y: 60 + rng() * (WORLD_H - 120),
       s: 40 + rng() * 120,
       rot: rng() * 6.28,
@@ -579,13 +580,109 @@ export function render(ctx, eng, w, h, dpr = 1) {
   ctx.save();
   ctx.setTransform(s * dpr, 0, 0, s * dpr, tx * dpr, ty * dpr);
   drawTerrain(ctx, eng, camLeft, viewW);
-  drawFinish(ctx, eng);
+  if (!eng.level.noFinish) drawFinish(ctx, eng);
   drawHazards(ctx, eng);
   drawParticles(ctx, eng);
   if (eng.state !== 'dying' && eng.state !== 'dead') {
     drawTrail(ctx, eng);
     drawPlayer(ctx, eng);
   }
+  ctx.restore();
+
+  drawScreenFx(ctx, eng, w, h, dpr);
+}
+
+// ---- race mode (two players, shared world) ----
+const RACE_P1 = '#7ff4ff', RACE_P1_ACCENT = '#3ae8ff';
+const RACE_P2 = '#ff9ec4', RACE_P2_ACCENT = '#ff3ea5';
+
+function drawRaceTrail(ctx, p, color) {
+  for (let i = 0; i < p.trail.length; i++) {
+    const tr = p.trail[i];
+    const k = tr.life / tr.max;
+    ctx.fillStyle = hexA(color, 0.13 * k);
+    rr(ctx, tr.x + 4, tr.y + 4, PLAYER_SIZE - 8, PLAYER_SIZE - 8, 6);
+    ctx.fill();
+  }
+}
+
+function drawRacePlayer(ctx, p, color, accent, label) {
+  const size = PLAYER_SIZE;
+  const cx = p.px + size / 2, cy = p.py + size / 2;
+  const blink = p.invuln > 0 ? (0.4 + 0.6 * Math.abs(Math.sin(p.invuln * 24))) : 1;
+  ctx.save();
+  ctx.globalAlpha = blink;
+  ctx.translate(cx, cy);
+  ctx.rotate(p.rot);
+  ctx.scale(p.sx, p.sy);
+  ctx.fillStyle = hexA(accent, 0.22);
+  rr(ctx, -size / 2 - 5, -size / 2 - 5, size + 10, size + 10, 12);
+  ctx.fill();
+  const grad = ctx.createLinearGradient(0, -size / 2, 0, size / 2);
+  grad.addColorStop(0, '#ffffff');
+  grad.addColorStop(0.45, color);
+  grad.addColorStop(1, accent);
+  ctx.fillStyle = grad;
+  rr(ctx, -size / 2, -size / 2, size, size, 9);
+  ctx.fill();
+  ctx.fillStyle = hexA('#040510', 0.72);
+  rr(ctx, -6, -2, 12, 8, 4);
+  ctx.fill();
+  ctx.fillStyle = '#ffffff';
+  ctx.globalAlpha = 0.9 * blink;
+  rr(ctx, -size / 2 + 5, -size / 2 + 4, size - 10, 4, 2);
+  ctx.fill();
+  ctx.globalAlpha = 1;
+  ctx.restore();
+  ctx.save();
+  ctx.translate(cx, cy - size / 2 - 14);
+  ctx.fillStyle = accent;
+  ctx.beginPath(); ctx.arc(0, 0, 9, 0, 6.2832); ctx.fill();
+  ctx.fillStyle = '#04050c';
+  ctx.font = 'bold 11px Orbitron, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(label, 0, 1);
+  ctx.restore();
+}
+
+export function renderRace(ctx, eng, w, h, dpr = 1) {
+  const theme = eng.theme;
+  const p1 = eng.players[0], p2 = eng.players[1];
+  const cx1 = p1.px + PLAYER_SIZE / 2, cx2 = p2.px + PLAYER_SIZE / 2;
+  const midX = (cx1 + cx2) / 2;
+  const span = Math.abs(cx1 - cx2);
+  const targetW = Math.max(VIEW_W, span + 560);
+  const baseFit = Math.min(w / VIEW_W, h / VIEW_H);
+  let s = Math.min(w / targetW, h / VIEW_H) * eng.zoom;
+  s = Math.min(s, baseFit);
+  s = Math.max(s, 0.0001);
+  const tx = w * 0.5 - midX * s + eng.shakeX;
+  const ty = h * 0.5 - MID_Y * s + eng.shakeY;
+  const camLeft = -tx / s;
+  const camTop = -ty / s;
+  const viewW = w / s;
+
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const grad = ctx.createLinearGradient(0, 0, 0, h);
+  grad.addColorStop(0, theme.bg[0]);
+  grad.addColorStop(0.55, theme.bg[1]);
+  grad.addColorStop(1, theme.bg[2]);
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, w, h);
+
+  drawParallax(ctx, eng, s, tx, ty, w, h, camLeft, camTop, viewW);
+
+  ctx.save();
+  ctx.setTransform(s * dpr, 0, 0, s * dpr, tx * dpr, ty * dpr);
+  drawTerrain(ctx, eng, camLeft, viewW);
+  if (!eng.level.noFinish) drawFinish(ctx, eng);
+  drawHazards(ctx, eng);
+  drawParticles(ctx, eng);
+  drawRaceTrail(ctx, p1, RACE_P1);
+  drawRaceTrail(ctx, p2, RACE_P2);
+  if (p1.alive) drawRacePlayer(ctx, p1, RACE_P1, RACE_P1_ACCENT, '1');
+  if (p2.alive) drawRacePlayer(ctx, p2, RACE_P2, RACE_P2_ACCENT, '2');
   ctx.restore();
 
   drawScreenFx(ctx, eng, w, h, dpr);
