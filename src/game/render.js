@@ -204,6 +204,36 @@ function drawHazards(ctx, eng) {
         ctx.globalAlpha = 0.14;
         ctx.fill();
         ctx.globalAlpha = 1;
+        // Beginner hint: a soft pulsing chevron on the safe side, shown only
+        // on the first few obstacles of tutorial levels. Fades out as the
+        // player closes in so it never clutters the moment of action.
+        if (it.hint) {
+          const dist = (it.x + it.w / 2) - eng.px;
+          if (dist > 20 && dist < 1200) {
+            const closeFade = clamp((dist - eng.level.step * 0.6) / (eng.level.step * 0.9), 0, 1);
+            const pulse = 0.5 + 0.5 * Math.sin(eng.t * 4 + it.x * 0.02);
+            const alpha = closeFade * (0.22 + 0.28 * pulse);
+            if (alpha > 0.01) {
+              const ax = it.x + it.w / 2;
+              const ay = up ? FLOOR_Y - 92 : CEIL_Y + 92;
+              ctx.save();
+              ctx.translate(ax, ay);
+              if (!up) ctx.scale(1, -1);
+              ctx.strokeStyle = hexA(theme.accent, alpha);
+              ctx.lineWidth = 3;
+              ctx.lineCap = 'round';
+              ctx.lineJoin = 'round';
+              const s = 13 + 3 * pulse;
+              ctx.beginPath();
+              ctx.moveTo(-s, s * 0.5); ctx.lineTo(0, -s * 0.6); ctx.lineTo(s, s * 0.5);
+              ctx.stroke();
+              ctx.beginPath();
+              ctx.moveTo(-s, s * 1.4); ctx.lineTo(0, s * 0.3); ctx.lineTo(s, s * 1.4);
+              ctx.stroke();
+              ctx.restore();
+            }
+          }
+        }
         break;
       }
       case 'saw': {
@@ -507,7 +537,15 @@ function drawPlayer(ctx, eng) {
   ctx.save();
   ctx.translate(cx, cy);
   ctx.rotate(eng.rot);
-  ctx.scale(eng.sx, eng.sy);
+  let spawnK = 1;
+  let spawnAlpha = 1;
+  if (eng.spawnT > 0) {
+    const p = 1 - eng.spawnT / 0.42;
+    spawnK = 0.25 + 0.75 * (p * p * (3 - 2 * p));
+    spawnAlpha = 0.3 + 0.7 * p;
+  }
+  ctx.scale(eng.sx * spawnK, eng.sy * spawnK);
+  ctx.globalAlpha = spawnAlpha;
   ctx.fillStyle = hexA(theme.accent, 0.22);
   rr(ctx, -size / 2 - 5, -size / 2 - 5, size + 10, size + 10, 12);
   ctx.fill();
@@ -522,7 +560,7 @@ function drawPlayer(ctx, eng) {
   rr(ctx, -6, -2, 12, 8, 4);
   ctx.fill();
   ctx.fillStyle = '#ffffff';
-  ctx.globalAlpha = 0.9;
+  ctx.globalAlpha = 0.9 * spawnAlpha;
   rr(ctx, -size / 2 + 5, -size / 2 + 4, size - 10, 4, 2);
   ctx.fill();
   ctx.globalAlpha = 1;

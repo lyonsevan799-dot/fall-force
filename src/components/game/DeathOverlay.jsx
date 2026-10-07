@@ -8,14 +8,14 @@ export default function DeathOverlay({ deaths, levelIndex, onRetry, onExit, soun
       onPointerDown={onRetry}
     >
       <div className="gs-pop flex flex-col items-center gap-3">
-        <div className="font-heading text-3xl uppercase tracking-[0.4em] text-white/95 sm:text-5xl">
-          Retry
+        <div className="font-heading text-2xl uppercase tracking-[0.4em] text-white/90 sm:text-4xl">
+          Get Ready
         </div>
         <div className="font-heading text-[10px] uppercase tracking-[0.3em] text-white/50">
           Deaths: {deaths}
         </div>
         <div className="font-heading text-[10px] uppercase tracking-[0.3em] text-cyan-200/80">
-          Tap · Click · Space
+          Tap to retry now
         </div>
       </div>
       <div className="gs-pop flex gap-3" onPointerDown={(e) => e.stopPropagation()}>

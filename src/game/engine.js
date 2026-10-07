@@ -26,7 +26,7 @@ export class Engine {
     this.sx = 1; this.sy = 1; this.rot = 0; this.rotV = 0;
     this.shakeMag = 0; this.shakeDur = 1; this.shakeT = 0; this.shakeX = 0; this.shakeY = 0;
     this.flash = 0; this.zoom = 1; this.zoomTarget = 1; this.timeScale = 1;
-    this.hitstop = 0; this.dieT = 0; this.completeT = 0; this.introT = 0;
+    this.hitstop = 0;     this.dieT = 0; this.completeT = 0; this.introT = 0; this.spawnT = 0;
     this.t = 0; this.attemptTime = 0; this.deaths = 0; this.cpIndex = -1;
     this.speedMult = 1; this.gateIndex = 0;
     this.finishReached = false;
@@ -88,6 +88,22 @@ export class Engine {
     this.particles.clear();
     this.portals.forEach((p) => { p.used = false; });
     this.solids.forEach((s) => { s._ly = undefined; });
+    this.spawnT = 0;
+    if (!full) {
+      // Quick respawn-in: the player materialises at the checkpoint with a
+      // short scale-up animation so retry feels instant, not jarring.
+      this.spawnT = 0.42;
+      const cx = this.px + PLAYER_SIZE / 2;
+      const cy = this.py + PLAYER_SIZE / 2;
+      const theme = this.theme;
+      this.particles.ring(cx, cy, { r: 5, rv: 460, life: 0.42, color: theme.accent, w: 4 });
+      if (!this.settings.reduced) {
+        this.particles.burst(cx, cy, 14, { color: [theme.accent, '#ffffff'], speed: 210, size: 3.6, life: 0.5, drag: 2.6, shape: 'spark' });
+      }
+      this.flash = 0.3;
+      this.zoomTarget = 1.04;
+      this.sound.sfx('spawn');
+    }
     this.state = this.state === 'intro' ? 'intro' : 'playing';
     this.syncUi();
   }
@@ -465,6 +481,7 @@ export class Engine {
 
   updateFx(dt) {
     this.particles.update(dt);
+    if (this.spawnT > 0) this.spawnT = Math.max(0, this.spawnT - dt);
     for (let i = this.trail.length - 1; i >= 0; i--) {
       this.trail[i].life -= dt;
       if (this.trail[i].life <= 0) this.trail.splice(i, 1);

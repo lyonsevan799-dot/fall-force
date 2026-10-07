@@ -13,6 +13,11 @@ export default function LevelIntro({ levelIndex }) {
           {level.name}
         </div>
         <div className="mt-1 h-[2px] w-24 bg-gradient-to-r from-transparent via-cyan-300 to-transparent" />
+        {level.tip ? (
+          <div className="mt-2 max-w-md font-body text-sm tracking-wide text-cyan-100/80 sm:text-base">
+            {level.tip}
+          </div>
+        ) : null}
       </div>
     </div>
   );

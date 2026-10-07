@@ -74,6 +74,7 @@ export default function GameCanvas({ levelIndex, totalLevels, settings, displayS
     let lastSync = 0;
     let lastState = eng.ui.state;
     let lastCp = eng.ui.checkpoint;
+    let deadAt = null;
 
     const push = () => setUi({
       state: eng.state, deaths: eng.deaths, time: eng.attemptTime,
@@ -92,6 +93,15 @@ export default function GameCanvas({ levelIndex, totalLevels, settings, displayS
         if (cbRef.current.onComplete) {
           cbRef.current.onComplete(levelIndex, { deaths: eng.deaths, time: eng.attemptTime, stars: eng.stars });
         }
+      }
+      // Auto-respawn shortly after death so the player is back in the action
+      // almost immediately — no need to wait for a tap. Tapping still skips
+      // the pause for impatient players.
+      if (eng.state === 'dead') {
+        if (deadAt == null) deadAt = now;
+        if (now - deadAt > 550) { deadAt = null; eng.respawn(); }
+      } else if (eng.state !== 'dying') {
+        deadAt = null;
       }
       if (eng.state !== lastState) {
         lastState = eng.state;
@@ -239,7 +249,7 @@ export default function GameCanvas({ levelIndex, totalLevels, settings, displayS
           deaths={ui.deaths}
           levelIndex={levelIndex}
           sound={sound}
-          onRetry={() => { completedRef.current = false; const e = engineRef.current; if (e) e.respawn(); }}
+          onRetry={() => { completedRef.current = false; const e = engineRef.current; if (e && (e.state === 'dead' || e.state === 'dying')) e.respawn(); }}
           onExit={onExit}
         />
       ) : null}

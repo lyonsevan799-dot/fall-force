@@ -137,6 +137,10 @@ export class Sound {
       case 'unlock':
         this.tone({ type: 'triangle', freq: 440, to: 880, dur: 0.35, gain: 0.1 });
         break;
+      case 'spawn':
+        this.tone({ type: 'triangle', freq: 220, to: 660, dur: 0.18, gain: 0.08 });
+        this.tone({ type: 'sine', freq: 440, to: 880, dur: 0.12, gain: 0.05, delay: 0.06 });
+        break;
       default: break;
     }
   }

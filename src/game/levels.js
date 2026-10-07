@@ -148,8 +148,9 @@ export function buildLevel(spec, index) {
   const checkpoints = [];
   const ctx = { step, gap: spec.gap };
   // Guarantee a safe runway before the first hazard (the player is frozen
-  // during the level intro, so this is the full reaction window).
-  let x = START_X + step * 3;
+  // during the level intro, so this is the full reaction window). The earliest
+  // levels get a longer runway so beginners have more time to react.
+  let x = START_X + step * (spec.startRun || 3);
 
   for (const d of spec.sections) {
     if (d.t === 'checkpoint') {
@@ -163,6 +164,14 @@ export function buildLevel(spec, index) {
   }
 
   const length = x + step * 2.2;
+  // Tag the first few spike hazards as "hint" obstacles in tutorial levels so
+  // the renderer can show a subtle switch-gravity arrow over them.
+  if (spec.hints) {
+    let h = spec.hints;
+    for (const it of items) {
+      if (it.type === 'spike' && h > 0) { it.hint = true; h--; }
+    }
+  }
   return {
     index,
     name: spec.name,
@@ -173,13 +182,16 @@ export function buildLevel(spec, index) {
     checkpoints,
     length,
     startX: START_X,
+    hints: spec.hints || 0,
+    tip: spec.tip || null,
   };
 }
 
 const SPECS = [
   // ---------- 1-3 : tutorial / easy ----------
   {
-    name: 'First Flip', theme: 'neon', speed: 0.60, gap: 3.0,
+    name: 'First Flip', theme: 'neon', speed: 0.60, gap: 3.0, startRun: 4.5, hints: 5,
+    tip: 'Tap or press Space to flip gravity',
     sections: [
       { t: 'run', n: 2 },
       { t: 'spike', side: 'floor', n: 2, f: 3.2 },
@@ -188,16 +200,19 @@ const SPECS = [
       { t: 'run', n: 0.8 },
       { t: 'alt', n: 3, c: 2, f: 3.0 },
       { t: 'run', n: 1 },
+      { t: 'checkpoint' },
       { t: 'spike', side: 'floor', n: 3, f: 2.9 },
       { t: 'run', n: 1 },
       { t: 'spike', side: 'ceil', n: 3, f: 2.9 },
       { t: 'run', n: 1 },
+      { t: 'checkpoint' },
       { t: 'alt', n: 4, c: 2, f: 2.9 },
       { t: 'run', n: 1.5 },
     ],
   },
   {
-    name: 'Higher Ground', theme: 'neon', speed: 0.65, gap: 2.8,
+    name: 'Higher Ground', theme: 'neon', speed: 0.65, gap: 2.8, startRun: 3.5, hints: 3,
+    tip: 'Switch to the opposite wall to dodge spikes',
     sections: [
       { t: 'run', n: 2 },
       { t: 'spike', side: 'floor', n: 4, f: 3.0 },
@@ -206,12 +221,14 @@ const SPECS = [
       { t: 'run', n: 0.8 },
       { t: 'alt', n: 4, c: 3, f: 2.85 },
       { t: 'run', n: 1 },
+      { t: 'checkpoint' },
       { t: 'spike', side: 'floor', n: 6, f: 2.7 },
       { t: 'run', n: 0.7 },
       { t: 'spike', side: 'ceil', n: 2, f: 2.7 },
       { t: 'run', n: 0.7 },
       { t: 'alt', n: 5, c: 2, f: 2.8 },
       { t: 'run', n: 0.8 },
+      { t: 'checkpoint' },
       { t: 'spike', side: 'floor', n: 3, f: 2.7 },
       { t: 'spike', side: 'ceil', n: 3, f: 2.7 },
       { t: 'alt', n: 4, c: 1, f: 2.8 },
@@ -219,7 +236,8 @@ const SPECS = [
     ],
   },
   {
-    name: 'Rhythm', theme: 'neon', speed: 0.70, gap: 2.55,
+    name: 'Rhythm', theme: 'neon', speed: 0.70, gap: 2.55, hints: 1,
+    tip: 'Find the rhythm — flip with the spikes',
     sections: [
       { t: 'run', n: 2 },
       { t: 'alt', n: 6, c: 1, f: 2.6 },
@@ -228,6 +246,7 @@ const SPECS = [
       { t: 'run', n: 0.7 },
       { t: 'spike', side: 'ceil', n: 4, f: 2.5 },
       { t: 'run', n: 0.7 },
+      { t: 'checkpoint' },
       { t: 'alt', n: 6, c: 2, f: 2.45 },
       { t: 'run', n: 0.9 },
       { t: 'spike', side: 'floor', n: 2, f: 2.5 },
@@ -241,6 +260,7 @@ const SPECS = [
   // ---------- 4-6 : medium ----------
   {
     name: 'Sawmill', theme: 'industrial', speed: 0.77, gap: 2.3,
+    tip: 'Saws spin — time your passage',
     sections: [
       { t: 'run', n: 1.2 },
       { t: 'saw', at: 'floor', r: 26, n: 2, f: 2.5 },
@@ -248,6 +268,7 @@ const SPECS = [
       { t: 'saw', at: 'ceil', r: 26, n: 2, f: 2.5 },
       { t: 'run', n: 0.9 },
       { t: 'alt', n: 3, c: 2, f: 2.45 },
+      { t: 'checkpoint' },
       { t: 'saw', at: 'floor', r: 30, n: 1, f: 2.3 },
       { t: 'spike', side: 'ceil', n: 2, f: 2.3 },
       { t: 'saw', at: 'ceil', r: 30, n: 1, f: 2.3 },
@@ -259,12 +280,14 @@ const SPECS = [
   },
   {
     name: 'Moving Parts', theme: 'industrial', speed: 0.83, gap: 2.15,
+    tip: 'Watch the moving blades — find the gap',
     sections: [
       { t: 'run', n: 1.2 },
       { t: 'saw', move: 'v', r: 26, period: 3.0, f: 3.0 },
       { t: 'run', n: 0.9 },
       { t: 'blade', arm: 110, spin: 0.8, f: 2.5 },
       { t: 'run', n: 0.9 },
+      { t: 'checkpoint' },
       { t: 'saw', at: 'floor', r: 26, n: 2, f: 2.3 },
       { t: 'saw', at: 'ceil', r: 26, n: 2, f: 2.3 },
       { t: 'saw', move: 'v', r: 28, period: 2.8, f: 2.9 },
@@ -277,12 +300,14 @@ const SPECS = [
   },
   {
     name: 'Gatekeeper', theme: 'industrial', speed: 0.88, gap: 2.0,
+    tip: 'Crushers slam — wait for the gap',
     sections: [
       { t: 'run', n: 1.4 },
       { t: 'crusher', period: 2.9, f: 3.0 },
       { t: 'run', n: 1 },
       { t: 'blade', arm: 115, spin: 0.85, f: 2.2 },
       { t: 'saw', at: 'floor', r: 26, n: 2, f: 2.2 },
+      { t: 'checkpoint' },
       { t: 'crusher', period: 2.7, f: 2.9 },
       { t: 'alt', n: 4, c: 2, f: 2.15 },
       { t: 'saw', at: 'ceil', r: 28, n: 2, f: 2.15 },
@@ -296,6 +321,7 @@ const SPECS = [
   // ---------- 7-9 : hard ----------
   {
     name: 'Shifting Ground', theme: 'space', speed: 0.93, gap: 1.95,
+    tip: 'Lasers pulse — dash through the gaps',
     sections: [
       { t: 'run', n: 1.2 },
       { t: 'laser', host: 'floor', h: 320, on: 1.6, off: 1.3, f: 2.5 },
@@ -318,6 +344,7 @@ const SPECS = [
   },
   {
     name: 'Blackout', theme: 'space', speed: 0.98, gap: 1.9,
+    tip: 'Vanish platforms fade — keep moving',
     sections: [
       { t: 'run', n: 1.2 },
       { t: 'vanish', y: 360, w: 160, on: 1.8, off: 1.2, f: 2.3 },
@@ -339,6 +366,7 @@ const SPECS = [
   },
   {
     name: 'Crush Depth', theme: 'space', speed: 1.02, gap: 1.85,
+    tip: 'Gravity zones flip you — ride the current',
     sections: [
       { t: 'run', n: 1.4 },
       { t: 'zone', dir: -1, len: 2.2 },
