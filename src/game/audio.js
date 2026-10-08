@@ -141,6 +141,10 @@ export class Sound {
         this.tone({ type: 'triangle', freq: 220, to: 660, dur: 0.18, gain: 0.08 });
         this.tone({ type: 'sine', freq: 440, to: 880, dur: 0.12, gain: 0.05, delay: 0.06 });
         break;
+      case 'gem':
+        this.tone({ type: 'triangle', freq: 880, to: 1320, dur: 0.12, gain: 0.07 });
+        this.tone({ type: 'sine', freq: 1320, to: 1760, dur: 0.08, gain: 0.04, delay: 0.03 });
+        break;
       default: break;
     }
   }

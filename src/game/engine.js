@@ -46,6 +46,7 @@ export class Engine {
     this.portals = L.items.filter((i) => i.type === 'portal');
     this.gates = L.items.filter((i) => i.type === 'speed');
     this.checkpointItems = L.items.filter((i) => i.type === 'checkpoint');
+    this.collectibles = L.items.filter((i) => i.type === 'gem');
     L.checkpoints.forEach((c) => { c.done = false; });
     this.deaths = 0;
     this.cpIndex = -1;
@@ -233,6 +234,11 @@ export class Engine {
     this.syncUi();
   }
 
+  collectGem(gem) {
+    gem.collected = true;
+    this.sound.sfx('gem');
+  }
+
   land(plat) {
     const impact = Math.abs(this.vy);
     const wasAir = !this.grounded;
@@ -341,6 +347,16 @@ export class Engine {
     for (let i = 0; i < this.level.checkpoints.length; i++) {
       const cp = this.level.checkpoints[i];
       if (!cp.done && this.px + size > cp.x) this.triggerCheckpoint(i);
+    }
+    for (let i = 0; i < this.collectibles.length; i++) {
+      const gem = this.collectibles[i];
+      if (gem.collected) continue;
+      const cx = this.px + size / 2;
+      const cy = this.py + size / 2;
+      const dx = cx - gem.x;
+      const dy = cy - gem.y;
+      const rr = (gem.r || 13) + size * 0.4;
+      if (dx * dx + dy * dy < rr * rr) this.collectGem(gem);
     }
   }
 

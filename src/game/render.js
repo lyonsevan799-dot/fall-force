@@ -459,6 +459,31 @@ function drawHazards(ctx, eng) {
         }
         break;
       }
+      case 'gem': {
+        if (it.collected) break;
+        const pulse = 1 + 0.15 * Math.sin(t * 4 + it.x * 0.01);
+        const r = (it.r || 13) * pulse;
+        ctx.save();
+        ctx.translate(it.x, it.y);
+        const glow = ctx.createRadialGradient(0, 0, 0, 0, 0, r * 2.5);
+        glow.addColorStop(0, hexA(theme.accent, 0.35));
+        glow.addColorStop(1, hexA(theme.accent, 0));
+        ctx.fillStyle = glow;
+        ctx.beginPath(); ctx.arc(0, 0, r * 2.5, 0, 6.2832); ctx.fill();
+        ctx.rotate(t * 1.5);
+        ctx.fillStyle = theme.accent;
+        ctx.beginPath();
+        ctx.moveTo(0, -r); ctx.lineTo(r * 0.7, 0); ctx.lineTo(0, r); ctx.lineTo(-r * 0.7, 0);
+        ctx.closePath(); ctx.fill();
+        ctx.fillStyle = '#ffffff';
+        ctx.globalAlpha = 0.75;
+        ctx.beginPath();
+        ctx.moveTo(0, -r * 0.5); ctx.lineTo(r * 0.35, 0); ctx.lineTo(0, r * 0.2); ctx.lineTo(-r * 0.35, 0);
+        ctx.closePath(); ctx.fill();
+        ctx.globalAlpha = 1;
+        ctx.restore();
+        break;
+      }
       default: break;
     }
   }

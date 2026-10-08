@@ -130,6 +130,15 @@ export function emit(d, x, out, ctx) {
       return x;
     }
 
+    case 'gem': {
+      const n = d.n || 1;
+      const spacing = d.spacing || 0.5;
+      for (let i = 0; i < n; i++) {
+        out.push({ type: 'gem', x: x + i * step * spacing, y: d.y || MID_Y, r: 13 });
+      }
+      return x + n * step * spacing;
+    }
+
     case 'over': {
       const xa = emit({ ...d.a, f: d.a.f == null ? f : d.a.f }, x, out, ctx);
       const xb = emit({ ...d.b, f: d.b.f == null ? f : d.b.f }, x, out, ctx);
