@@ -145,6 +145,18 @@ export class Sound {
         this.tone({ type: 'triangle', freq: 880, to: 1320, dur: 0.12, gain: 0.07 });
         this.tone({ type: 'sine', freq: 1320, to: 1760, dur: 0.08, gain: 0.04, delay: 0.03 });
         break;
+      case 'beep':
+        this.tone({ type: 'square', freq: 740, dur: 0.09, gain: 0.07, filter: 3200 });
+        break;
+      case 'go':
+        this.tone({ type: 'triangle', freq: 523, to: 1046, dur: 0.28, gain: 0.13 });
+        this.tone({ type: 'sine', freq: 1046, dur: 0.22, gain: 0.09, delay: 0.04 });
+        this.noise({ freq: 1200, to: 3600, dur: 0.18, gain: 0.04, filterType: 'highpass' });
+        break;
+      case 'victory':
+        [523, 659, 784, 1046, 1318, 1568].forEach((f, i) => this.tone({ type: 'triangle', freq: f, dur: 0.4, gain: 0.1, delay: i * 0.07 }));
+        this.tone({ type: 'sine', freq: 261, dur: 1.0, gain: 0.08 });
+        break;
       default: break;
     }
   }

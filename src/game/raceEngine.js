@@ -7,11 +7,13 @@ import {
 import { RACE_LEVELS } from './raceLevels';
 
 const SUB = 1 / 120;
+const GRACE = 2.6; // seconds the loser keeps moving after the winner finishes
 
 // RaceEngine: two independent players share one world and one clock so the
 // hazards stay perfectly synchronised and fair. Each player has their own
 // physics state, gravity-switch input, death/respawn, and finish detection.
-// The first player to cross the finish line wins.
+// The first player to cross the finish line wins; the loser gets a short
+// grace period to keep racing before the result screen appears.
 export class RaceEngine {
   constructor({ sound, settings, levelIndex = 0 }) {
     this.sound = sound;
@@ -24,8 +26,10 @@ export class RaceEngine {
     this.state = 'ready';
     this.paused = false;
     this.countdown = 3;
+    this._lastBeep = 3;
     this.raceTime = 0;
     this.winner = -1;
+    this.finishT = 0;
     this.players = [];
     this.levelIndex = 0;
     this.load(levelIndex);
@@ -46,8 +50,10 @@ export class RaceEngine {
     this.particles.clear();
     this.state = 'ready';
     this.countdown = 3;
+    this._lastBeep = 3;
     this.raceTime = 0;
     this.winner = -1;
+    this.finishT = 0;
     this.t = 0;
     this.timeScale = 1;
     this.zoom = 1; this.zoomTarget = 1;
@@ -64,13 +70,13 @@ export class RaceEngine {
       sx: 1, sy: 1, rot: 0, rotV: 0,
       speedMult: 1, gateIndex: 0,
       alive: true, deadT: 0, invuln: 0,
-      finished: false, finishTime: null,
+      finished: false, finishTime: null, finalProgress: 0,
       portalsUsed: this.portals.map(() => false),
       trail: [],
     };
   }
 
-  start() { if (this.state === 'ready') { this.state = 'countdown'; this.countdown = 3; } }
+  start() { if (this.state === 'ready') { this.state = 'countdown'; this.countdown = 3; this._lastBeep = 3; this.sound.sfx('beep'); } }
 
   addShake(mag, dur) {
     if (this.settings.shake === false) return;
@@ -79,7 +85,7 @@ export class RaceEngine {
   }
 
   switchPlayer(p) {
-    if (this.state !== 'racing' || !p.alive || p.finished) return;
+    if (!this._isActive() || !p.alive || p.finished) return;
     p.dir = -p.dir;
     p.vy = p.dir * LAUNCH_V;
     p.grounded = false; p.groundPlat = null;
@@ -93,6 +99,8 @@ export class RaceEngine {
     this.addShake(3, 0.14);
     this.sound.sfx('switch');
   }
+
+  _isActive() { return this.state === 'racing' || this.state === 'finished'; }
 
   stepPlayer(p, h) {
     const L = this.level;
@@ -110,7 +118,7 @@ export class RaceEngine {
       else { p.grounded = false; p.groundPlat = null; p.vy = 0; }
       it._ly = g.y;
     }
-    if (this.state === 'racing') p.px += L.speed * p.speedMult * h;
+    if (this._isActive()) p.px += L.speed * p.speedMult * h;
     const prevY = p.py;
     if (!p.grounded) {
       p.vy += GRAVITY * p.dir * h;
@@ -203,7 +211,7 @@ export class RaceEngine {
   }
 
   diePlayer(p) {
-    if (this.state !== 'racing' || !p.alive || p.finished) return;
+    if (!this._isActive() || !p.alive || p.finished) return;
     p.alive = false; p.deadT = 0;
     this.hitstop = 0.06; this.flash = 0.8;
     this.addShake(13, 0.45);
@@ -237,15 +245,17 @@ export class RaceEngine {
     if (this.winner < 0) {
       this.winner = p.index;
       this.state = 'finished';
-      this.flash = 0.6; this.addShake(10, 0.4);
-      this.sound.sfx('complete');
+      this.finishT = 0;
+      this.flash = 0.7; this.addShake(12, 0.5);
+      this.sound.sfx('victory');
       const cx = p.px + PLAYER_SIZE / 2, cy = p.py + PLAYER_SIZE / 2;
       const theme = this.theme;
-      for (let i = 0; i < (this.settings.reduced ? 20 : 50); i++) {
-        const a = rand(-Math.PI, 0); const sp = rand(180, 600);
-        this.particles.spawn({ x: cx, y: cy - 20, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, life: rand(0.8, 1.6), size: rand(4, 9), color: [theme.accent, theme.accent2, '#ffffff'][i % 3], shape: i % 3 ? 'spark' : 'frag', rot: Math.random() * 6.28, vr: rand(-10, 10), grav: 500, drag: 0.5, add: i % 3 !== 0 });
+      for (let i = 0; i < (this.settings.reduced ? 24 : 60); i++) {
+        const a = rand(-Math.PI, 0); const sp = rand(180, 680);
+        this.particles.spawn({ x: cx, y: cy - 20, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, life: rand(0.8, 1.8), size: rand(4, 10), color: [theme.accent, theme.accent2, '#ffffff'][i % 3], shape: i % 3 ? 'spark' : 'frag', rot: Math.random() * 6.28, vr: rand(-10, 10), grav: 500, drag: 0.5, add: i % 3 !== 0 });
       }
-      this.particles.ring(cx, cy, { r: 12, rv: 600, life: 0.6, color: '#ffffff', w: 6 });
+      this.particles.ring(cx, cy, { r: 12, rv: 640, life: 0.6, color: '#ffffff', w: 6 });
+      this.particles.ring(cx, cy, { r: 8, rv: 380, life: 0.9, color: theme.accent, w: 3 });
     }
   }
 
@@ -254,13 +264,18 @@ export class RaceEngine {
     const dt = Math.min(0.05, dtRaw);
     this.dt = dt;
     if (this.hitstop > 0) { this.hitstop -= dt; this.updateFx(dt); return; }
+
     if (this.state === 'countdown') {
+      const prevCeil = Math.ceil(this.countdown);
       this.countdown -= dt;
-      if (this.countdown <= 0) { this.state = 'racing'; this.raceTime = 0; }
+      const newCeil = Math.ceil(this.countdown);
+      if (newCeil < prevCeil && newCeil > 0) this.sound.sfx('beep');
+      if (this.countdown <= 0) { this.state = 'racing'; this.raceTime = 0; this.sound.sfx('go'); }
     }
-    if (this.state === 'racing') {
+
+    if (this.state === 'racing' || this.state === 'finished') {
       this.t += dt * this.timeScale;
-      this.raceTime += dt * this.timeScale;
+      if (this.state === 'racing') this.raceTime += dt * this.timeScale;
       let rem = dt * this.timeScale; let guard = 0;
       while (rem > 0.0005 && guard++ < 16) {
         const h = Math.min(rem, SUB);
@@ -270,16 +285,25 @@ export class RaceEngine {
       for (const p of this.players) {
         if (!p.alive && !p.finished) { p.deadT += dt; if (p.deadT > 0.6) this.respawnPlayer(p); }
       }
-    } else if (this.state === 'finished' || this.state === 'countdown') {
-      this.t += dt * this.timeScale;
     }
+
+    if (this.state === 'finished') {
+      this.finishT += dt;
+      if (this.finishT >= GRACE) {
+        for (const p of this.players) {
+          if (!p.finished) p.finalProgress = this.getProgress(p);
+        }
+        this.state = 'raceover';
+      }
+    }
+
     for (const p of this.players) {
       const k = Math.min(1, dt * 13);
       p.sx += (1 - p.sx) * k; p.sy += (1 - p.sy) * k;
       p.rotV *= Math.max(0, 1 - dt * 6);
       const targetRot = clamp(p.vy / 2600, -0.32, 0.32) * p.dir;
       p.rot += (targetRot - p.rot) * Math.min(1, dt * 10) + p.rotV * dt;
-      if (this.state === 'racing' && p.alive) {
+      if (this._isActive() && p.alive) {
         if (!p.trail.length || p.trail[p.trail.length - 1].x < p.px - 9) {
           p.trail.push({ x: p.px, y: p.py, life: 0.24, max: 0.24, dir: p.dir });
           if (p.trail.length > 12) p.trail.shift();

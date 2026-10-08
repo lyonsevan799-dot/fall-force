@@ -166,3 +166,37 @@ body {
 .gs-milestone-pop {
   animation: gs-milestone-kf 1.6s ease-out forwards;
 }
+
+@keyframes gs-countdown-kf {
+  0% { opacity: 0; transform: scale(2.4); filter: blur(10px); }
+  20% { opacity: 1; transform: scale(1); filter: blur(0); }
+  80% { opacity: 1; transform: scale(1.06); }
+  100% { opacity: 0; transform: scale(0.4); filter: blur(6px); }
+}
+
+.gs-countdown {
+  animation: gs-countdown-kf 1s ease-out forwards;
+}
+
+@keyframes gs-go-kf {
+  0% { opacity: 0; transform: scale(0.3) rotate(-6deg); }
+  25% { opacity: 1; transform: scale(1.35) rotate(3deg); }
+  55% { transform: scale(1) rotate(0); }
+  100% { opacity: 0; transform: scale(1.6) rotate(0); }
+}
+
+.gs-go {
+  animation: gs-go-kf 0.8s ease-out forwards;
+}
+
+@keyframes gs-winner-banner-kf {
+  0% { opacity: 0; transform: translateY(50px) scale(0.6); }
+  30% { opacity: 1; transform: translateY(0) scale(1.12); }
+  50% { transform: scale(1); }
+  82% { opacity: 1; transform: scale(1.02); }
+  100% { opacity: 0; transform: translateY(-24px) scale(0.96); }
+}
+
+.gs-winner-banner {
+  animation: gs-winner-banner-kf 2.6s ease-out forwards;
+}

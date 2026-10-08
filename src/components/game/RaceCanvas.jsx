@@ -13,7 +13,7 @@ export default function RaceCanvas({ levelIndex, settings, displaySettings, soun
   const canvasRef = useRef(null);
   const engineRef = useRef(null);
   const cbRef = useRef({});
-  const [ui, setUi] = useState({ state: 'ready', countdown: 3, raceTime: 0, winner: -1, p1: 0, p2: 0 });
+  const [ui, setUi] = useState({ state: 'ready', countdown: 3, raceTime: 0, winner: -1, p1: 0, p2: 0, p1Finished: false, p2Finished: false, p1Time: null, p2Time: null, p1Final: 0, p2Final: 0 });
   const [paused, setPaused] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [isTouch, setIsTouch] = useState(false);
@@ -45,10 +45,13 @@ export default function RaceCanvas({ levelIndex, settings, displaySettings, soun
     };
     resize();
 
-    let raf = 0, last = performance.now(), lastSync = 0, lastState = eng.state;
+    let raf = 0, last = performance.now(), lastSync = 0, lastState = '';
     const push = () => setUi({
       state: eng.state, countdown: eng.countdown, raceTime: eng.raceTime, winner: eng.winner,
       p1: eng.getProgress(eng.players[0]), p2: eng.getProgress(eng.players[1]),
+      p1Finished: eng.players[0].finished, p2Finished: eng.players[1].finished,
+      p1Time: eng.players[0].finishTime, p2Time: eng.players[1].finishTime,
+      p1Final: eng.players[0].finalProgress, p2Final: eng.players[1].finalProgress,
     });
 
     const loop = (now) => {
@@ -61,6 +64,7 @@ export default function RaceCanvas({ levelIndex, settings, displaySettings, soun
       else if (now - lastSync > 100) { lastSync = now; push(); }
     };
     raf = requestAnimationFrame(loop);
+    push();
 
     window.addEventListener('resize', resize);
     let ro = null;
@@ -73,7 +77,7 @@ export default function RaceCanvas({ levelIndex, settings, displaySettings, soun
   const p2Switch = () => { const eng = engineRef.current; if (!eng) return; sound.init(); sound.resume(); eng.switchPlayer(eng.players[1]); };
 
   const restart = () => { const eng = engineRef.current; if (!eng) return; eng.paused = false; eng.load(levelIndex); setPaused(false); setShowSettings(false); };
-  const togglePause = () => { const eng = engineRef.current; if (!eng || eng.state === 'finished') return; const next = !eng.paused; eng.paused = next; setPaused(next); setShowSettings(false); };
+  const togglePause = () => { const eng = engineRef.current; if (!eng || eng.state === 'finished' || eng.state === 'raceover') return; const next = !eng.paused; eng.paused = next; setPaused(next); setShowSettings(false); };
 
   useEffect(() => {
     const onKey = (e) => {
@@ -84,18 +88,20 @@ export default function RaceCanvas({ levelIndex, settings, displaySettings, soun
       if (e.code === 'KeyW' || e.code === 'Space') {
         e.preventDefault();
         if (eng.state === 'ready') startRace();
-        else if (eng.state === 'racing') p1Switch();
+        else if (eng.state === 'racing' || eng.state === 'finished') p1Switch();
       } else if (e.code === 'ArrowUp' || e.code === 'Enter') {
         e.preventDefault();
         if (eng.state === 'ready') startRace();
-        else if (eng.state === 'racing') p2Switch();
+        else if (eng.state === 'racing' || eng.state === 'finished') p2Switch();
       } else if (e.code === 'KeyR') {
         e.preventDefault(); restart();
       } else if (e.code === 'Escape' || e.code === 'KeyP') {
-        e.preventDefault(); togglePause();
+        e.preventDefault();
+        if (eng.state === 'raceover') cbRef.current.onExit();
+        else togglePause();
       }
     };
-    const onVis = () => { const eng = engineRef.current; if (document.hidden && eng && !eng.paused && eng.state === 'racing') { eng.paused = true; setPaused(true); } };
+    const onVis = () => { const eng = engineRef.current; if (document.hidden && eng && !eng.paused && (eng.state === 'racing' || eng.state === 'finished')) { eng.paused = true; setPaused(true); } };
     window.addEventListener('keydown', onKey);
     document.addEventListener('visibilitychange', onVis);
     return () => { window.removeEventListener('keydown', onKey); document.removeEventListener('visibilitychange', onVis); };
@@ -115,7 +121,10 @@ export default function RaceCanvas({ levelIndex, settings, displaySettings, soun
   }, []);
 
   const showRotate = needsRotate && !rotateDismissed;
-  const showGo = ui.state === 'racing' && ui.raceTime < 0.6;
+  const showGo = ui.state === 'racing' && ui.raceTime < 0.7;
+  const countdownNum = Math.ceil(ui.countdown);
+  const winnerColor = ui.winner === 0 ? '#7ff4ff' : '#ff9ec4';
+  const winnerGlow = ui.winner === 0 ? '0 0 50px rgba(56,232,255,0.8)' : '0 0 50px rgba(255,62,165,0.8)';
 
   return (
     <div ref={wrapRef} className="fixed inset-0 touch-none select-none overflow-hidden bg-[#04050c]">
@@ -131,25 +140,34 @@ export default function RaceCanvas({ levelIndex, settings, displaySettings, soun
 
       {ui.state === 'countdown' ? (
         <div className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center">
-          <div key={Math.ceil(ui.countdown)} className="gs-pop font-heading text-7xl uppercase tracking-[0.2em] text-white sm:text-8xl"
-            style={{ textShadow: '0 0 40px rgba(56,232,255,0.6)' }}>
-            {Math.ceil(ui.countdown)}
+          <div key={countdownNum} className="gs-countdown font-heading text-8xl uppercase text-white sm:text-9xl"
+            style={{ textShadow: '0 0 50px rgba(56,232,255,0.6), 0 0 100px rgba(255,62,165,0.3)' }}>
+            {countdownNum}
           </div>
         </div>
       ) : null}
 
       {showGo ? (
         <div className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center">
-          <div className="gs-pop font-heading text-6xl uppercase tracking-[0.3em] text-cyan-200 sm:text-7xl"
-            style={{ textShadow: '0 0 50px rgba(56,232,255,0.8)' }}>GO!</div>
+          <div className="gs-go font-heading text-7xl uppercase tracking-[0.3em] text-cyan-200 sm:text-8xl"
+            style={{ textShadow: '0 0 60px rgba(56,232,255,0.9), 0 0 120px rgba(56,232,255,0.4)' }}>GO!</div>
         </div>
       ) : null}
 
       {ui.state === 'finished' ? (
+        <div className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center">
+          <div className="gs-winner-banner font-heading text-5xl uppercase tracking-[0.15em] sm:text-6xl"
+               style={{ color: winnerColor, textShadow: winnerGlow }}>
+            Player {ui.winner + 1} Wins!
+          </div>
+        </div>
+      ) : null}
+
+      {ui.state === 'raceover' ? (
         <RaceResult ui={ui} sound={sound} onRestart={restart} onExit={() => cbRef.current.onExit()} />
       ) : null}
 
-      {isTouch && ui.state === 'racing' ? (
+      {isTouch && (ui.state === 'racing' || ui.state === 'finished') ? (
         <>
           <button type="button" aria-label="Player 1 switch gravity"
             className="pointer-events-auto absolute bottom-6 left-5 z-20 flex h-24 w-24 items-center justify-center rounded-full border border-cyan-200/35 bg-cyan-400/10 font-heading text-sm uppercase tracking-[0.16em] text-cyan-100 shadow-[0_0_50px_-12px_rgba(56,232,255,0.85)] backdrop-blur-md transition-transform duration-100 active:scale-90"

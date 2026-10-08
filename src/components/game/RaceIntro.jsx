@@ -12,19 +12,56 @@ export default function RaceIntro({ sound, onStart, isTouch }) {
         <div className="mt-6 grid grid-cols-2 gap-4 text-left">
           <div className="rounded-2xl border border-cyan-300/30 bg-cyan-400/10 p-4">
             <div className="flex items-center gap-2">
-              <span className="h-3 w-3 rounded-full bg-cyan-300" />
+              <span className="h-3 w-3 rounded-full bg-cyan-300 shadow-[0_0_10px_rgba(56,232,255,0.8)]" />
               <span className="font-heading text-xs uppercase tracking-[0.2em] text-cyan-100">Player 1</span>
             </div>
-            <div className="mt-3 font-mono text-sm text-white/80">{isTouch ? 'Left button' : 'W · Space'}</div>
+            <div className="mt-3 space-y-1.5">
+              {isTouch ? (
+                <div className="flex items-center gap-2">
+                  <kbd className="rounded-md border border-cyan-300/30 bg-cyan-400/15 px-3 py-1 font-mono text-xs text-cyan-100">Left Button</kbd>
+                </div>
+              ) : (
+                <>
+                  <div className="flex items-center gap-2">
+                    <kbd className="rounded-md border border-cyan-300/30 bg-cyan-400/15 px-3 py-1 font-mono text-xs text-cyan-100">W</kbd>
+                    <span className="text-[11px] text-white/40">or</span>
+                    <kbd className="rounded-md border border-cyan-300/30 bg-cyan-400/15 px-3 py-1 font-mono text-xs text-cyan-100">Space</kbd>
+                  </div>
+                  <div className="text-[10px] text-white/30">Switch gravity</div>
+                </>
+              )}
+            </div>
           </div>
           <div className="rounded-2xl border border-pink-300/30 bg-pink-400/10 p-4">
             <div className="flex items-center gap-2">
-              <span className="h-3 w-3 rounded-full bg-pink-300" />
+              <span className="h-3 w-3 rounded-full bg-pink-300 shadow-[0_0_10px_rgba(255,62,165,0.8)]" />
               <span className="font-heading text-xs uppercase tracking-[0.2em] text-pink-100">Player 2</span>
             </div>
-            <div className="mt-3 font-mono text-sm text-white/80">{isTouch ? 'Right button' : '↑ · Enter'}</div>
+            <div className="mt-3 space-y-1.5">
+              {isTouch ? (
+                <div className="flex items-center gap-2">
+                  <kbd className="rounded-md border border-pink-300/30 bg-pink-400/15 px-3 py-1 font-mono text-xs text-pink-100">Right Button</kbd>
+                </div>
+              ) : (
+                <>
+                  <div className="flex items-center gap-2">
+                    <kbd className="rounded-md border border-pink-300/30 bg-pink-400/15 px-3 py-1 font-mono text-xs text-pink-100">↑</kbd>
+                    <span className="text-[11px] text-white/40">or</span>
+                    <kbd className="rounded-md border border-pink-300/30 bg-pink-400/15 px-3 py-1 font-mono text-xs text-pink-100">Enter</kbd>
+                  </div>
+                  <div className="text-[10px] text-white/30">Switch gravity</div>
+                </>
+              )}
+            </div>
           </div>
         </div>
+
+        {!isTouch ? (
+          <div className="mt-4 flex items-center justify-center gap-4 text-[10px] text-white/30">
+            <span><kbd className="rounded border border-white/15 bg-white/5 px-1.5 py-0.5 font-mono">Esc</kbd> Pause</span>
+            <span><kbd className="rounded border border-white/15 bg-white/5 px-1.5 py-0.5 font-mono">R</kbd> Restart</span>
+          </div>
+        ) : null}
 
         <div className="mt-6">
           <GameButton variant="primary" size="lg" sound={sound} onClick={onStart}>Start Race</GameButton>
