@@ -3,6 +3,7 @@ import { EndlessEngine } from '@/game/endlessEngine';
 import { render } from '@/game/render';
 import EndlessHud from './EndlessHud';
 import EndlessGameOver from './EndlessGameOver';
+import MilestoneToast from './MilestoneToast';
 import PauseMenu from './PauseMenu';
 import SettingsPanel from './SettingsPanel';
 import GravityButton from './GravityButton';
@@ -17,7 +18,8 @@ export default function EndlessCanvas({ settings, displaySettings, sound, best, 
   const bestRef = useRef(best || 0);
   const runStartBestRef = useRef(best || 0);
 
-  const [ui, setUi] = useState({ state: 'intro', score: 0, distance: 0 });
+  const [ui, setUi] = useState({ state: 'intro', score: 0, distance: 0, gems: 0, streak: 1, sectionName: 'Training', speed: 0.62 });
+  const [milestone, setMilestone] = useState(null);
   const [paused, setPaused] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [isTouch, setIsTouch] = useState(false);
@@ -54,7 +56,17 @@ export default function EndlessCanvas({ settings, displaySettings, sound, best, 
     resize();
 
     let raf = 0, last = performance.now(), lastSync = 0, lastState = eng.state;
-    const push = () => setUi({ state: eng.state, score: eng.score, distance: Math.floor(eng.px) });
+    const push = () => setUi({
+      state: eng.state,
+      score: Math.floor(eng.score),
+      distance: Math.floor(eng.px / 10),
+      best: eng.best,
+      gems: eng.gems,
+      streak: eng.streak,
+      maxStreak: eng.maxStreak,
+      sectionName: eng.sectionName,
+      speed: eng._gen ? eng._gen.speed : 0.62,
+    });
 
     const loop = (now) => {
       raf = requestAnimationFrame(loop);
@@ -62,9 +74,13 @@ export default function EndlessCanvas({ settings, displaySettings, sound, best, 
       last = now;
       if (!eng.paused) eng.update(dt);
       render(ctx, eng, cssW, cssH, dpr);
+      if (eng.milestoneEvent) {
+        setMilestone(eng.milestoneEvent);
+        eng.milestoneEvent = null;
+      }
       if (eng.state === 'dead' && !reportedRef.current) {
         reportedRef.current = true;
-        if (cbRef.current.onResult) cbRef.current.onResult(eng.score);
+        if (cbRef.current.onResult) cbRef.current.onResult(Math.floor(eng.score));
       }
       if (eng.state !== lastState) { lastState = eng.state; push(); lastSync = now; }
       else if (now - lastSync > 100) { lastSync = now; push(); }
@@ -94,7 +110,7 @@ export default function EndlessCanvas({ settings, displaySettings, sound, best, 
     if (!eng) return;
     reportedRef.current = false;
     eng.paused = false;
-    eng.loadEndless(bestRef.current);
+    eng.loadEndless(bestRef.current, true);
     runStartBestRef.current = bestRef.current;
     setPaused(false);
     setShowSettings(false);
@@ -116,7 +132,9 @@ export default function EndlessCanvas({ settings, displaySettings, sound, best, 
       if (!eng) return;
       sound.init(); sound.resume();
       if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'ArrowDown' || e.code === 'Enter') {
-        e.preventDefault(); primary();
+        e.preventDefault();
+        if (eng.state === 'dead') { restart(); }
+        else { primary(); }
       } else if (e.code === 'KeyR') { e.preventDefault(); restart(); }
       else if (e.code === 'Escape' || e.code === 'KeyP') { e.preventDefault(); togglePause(); }
     };
@@ -150,10 +168,17 @@ export default function EndlessCanvas({ settings, displaySettings, sound, best, 
   return (
     <div ref={wrapRef} className="fixed inset-0 touch-none select-none overflow-hidden bg-[#04050c]">
       <canvas ref={canvasRef} className="absolute inset-0 block h-full w-full touch-none"
-        onPointerDown={(e) => { e.preventDefault(); primary(); }}
+        onPointerDown={(e) => {
+          e.preventDefault();
+          const eng = engineRef.current;
+          if (eng && eng.state === 'dead') { restart(); return; }
+          primary();
+        }}
         onContextMenu={(e) => e.preventDefault()} />
 
       <EndlessHud ui={ui} best={finalBest} onPause={togglePause} sound={sound} />
+
+      <MilestoneToast event={milestone} />
 
       {isTouch && ui.state === 'playing' ? <GravityButton onPress={primary} sound={sound} /> : null}
 
@@ -168,7 +193,17 @@ export default function EndlessCanvas({ settings, displaySettings, sound, best, 
       ) : null}
 
       {ui.state === 'dead' ? (
-        <EndlessGameOver score={ui.score} best={finalBest} isNewBest={isNewBest} sound={sound} onRestart={restart} onExit={() => cbRef.current.onExit()} />
+        <EndlessGameOver
+          score={ui.score}
+          best={finalBest}
+          distance={ui.distance}
+          gems={ui.gems}
+          maxStreak={ui.maxStreak}
+          isNewBest={isNewBest}
+          sound={sound}
+          onRestart={restart}
+          onExit={() => cbRef.current.onExit()}
+        />
       ) : null}
 
       {paused && !showSettings ? (
