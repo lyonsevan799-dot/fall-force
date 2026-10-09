@@ -222,7 +222,7 @@ export default function GameCanvas({ levelIndex, totalLevels, settings, displayS
   const showRotate = needsRotate && !rotateDismissed;
 
   return (
-    <div ref={wrapRef} className="fixed inset-0 touch-none select-none overflow-hidden bg-[#04050c]">
+    <div ref={wrapRef} className="gs-screen-in fixed inset-0 touch-none select-none overflow-hidden bg-[#04050c]">
       <canvas
         ref={canvasRef}
         className="absolute inset-0 block h-full w-full touch-none"

@@ -8,7 +8,7 @@ import PauseMenu from './PauseMenu';
 import SettingsPanel from './SettingsPanel';
 import RotateOverlay from './RotateOverlay';
 
-export default function RaceCanvas({ levelIndex, settings, displaySettings, sound, onExit, onUpdateSettings, onResetProgress }) {
+export default function RaceCanvas({ levelIndex, settings, displaySettings, sound, onRaceWin, onExit, onUpdateSettings, onResetProgress }) {
   const wrapRef = useRef(null);
   const canvasRef = useRef(null);
   const engineRef = useRef(null);
@@ -19,8 +19,9 @@ export default function RaceCanvas({ levelIndex, settings, displaySettings, soun
   const [isTouch, setIsTouch] = useState(false);
   const [needsRotate, setNeedsRotate] = useState(false);
   const [rotateDismissed, setRotateDismissed] = useState(false);
+  const reportedWinRef = useRef(false);
 
-  cbRef.current = { onExit };
+  cbRef.current = { onExit, onRaceWin };
 
   useEffect(() => {
     const wrap = wrapRef.current;
@@ -30,6 +31,7 @@ export default function RaceCanvas({ levelIndex, settings, displaySettings, soun
     engineRef.current = eng;
     setPaused(false);
     setShowSettings(false);
+    reportedWinRef.current = false;
 
     let dpr = Math.min(2, window.devicePixelRatio || 1);
     let cssW = 800, cssH = 600;
@@ -60,8 +62,13 @@ export default function RaceCanvas({ levelIndex, settings, displaySettings, soun
       last = now;
       if (!eng.paused) eng.update(dt);
       renderRace(ctx, eng, cssW, cssH, dpr);
-      if (eng.state !== lastState) { lastState = eng.state; push(); lastSync = now; }
-      else if (now - lastSync > 100) { lastSync = now; push(); }
+      if (eng.state !== lastState) {
+        lastState = eng.state; push(); lastSync = now;
+        if (eng.state === 'raceover' && !reportedWinRef.current) {
+          reportedWinRef.current = true;
+          if (cbRef.current.onRaceWin) cbRef.current.onRaceWin(eng.winner);
+        }
+      } else if (now - lastSync > 100) { lastSync = now; push(); }
     };
     raf = requestAnimationFrame(loop);
     push();
@@ -127,7 +134,7 @@ export default function RaceCanvas({ levelIndex, settings, displaySettings, soun
   const winnerGlow = ui.winner === 0 ? '0 0 50px rgba(56,232,255,0.8)' : '0 0 50px rgba(255,62,165,0.8)';
 
   return (
-    <div ref={wrapRef} className="fixed inset-0 touch-none select-none overflow-hidden bg-[#04050c]">
+    <div ref={wrapRef} className="gs-screen-in fixed inset-0 touch-none select-none overflow-hidden bg-[#04050c]">
       <canvas ref={canvasRef} className="absolute inset-0 block h-full w-full touch-none" onContextMenu={(e) => e.preventDefault()} />
 
       {ui.state === 'racing' || ui.state === 'countdown' || ui.state === 'finished' ? (

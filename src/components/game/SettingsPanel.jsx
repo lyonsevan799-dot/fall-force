@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { GameButton, Panel, ToggleRow } from './ui';
+import { GameButton, Panel, ToggleRow, SliderRow } from './ui';
 
 export default function SettingsPanel({ settings, onChange, onReset, onClose, sound }) {
   const [confirming, setConfirming] = useState(false);
@@ -7,7 +7,7 @@ export default function SettingsPanel({ settings, onChange, onReset, onClose, so
 
   return (
     <div className="absolute inset-0 z-40 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
-      <Panel className="gs-pop w-full max-w-md">
+      <Panel className="gs-pop w-full max-w-md max-h-[88vh] overflow-y-auto">
         <div className="mb-5 flex items-center justify-between">
           <div className="font-heading text-sm uppercase tracking-[0.3em] text-white">Settings</div>
           <button
@@ -21,7 +21,9 @@ export default function SettingsPanel({ settings, onChange, onReset, onClose, so
 
         <div className="flex flex-col gap-2">
           <ToggleRow label="Music" hint="Background soundtrack" value={settings.music} onChange={(v) => set({ music: v })} sound={sound} />
+          {settings.music ? <SliderRow label="Music Volume" value={settings.musicVolume ?? 0.5} onChange={(v) => set({ musicVolume: v })} sound={sound} /> : null}
           <ToggleRow label="Sound Effects" hint="Switch, landing, impacts" value={settings.sfx} onChange={(v) => set({ sfx: v })} sound={sound} />
+          {settings.sfx ? <SliderRow label="SFX Volume" value={settings.sfxVolume ?? 0.7} onChange={(v) => set({ sfxVolume: v })} sound={sound} /> : null}
           <ToggleRow label="Screen Shake" hint="Camera kick on impacts" value={settings.shake} onChange={(v) => set({ shake: v })} sound={sound} />
           <ToggleRow label="Reduced Effects" hint="Lighter particles for low-end devices" value={settings.reduced} onChange={(v) => set({ reduced: v })} sound={sound} />
         </div>

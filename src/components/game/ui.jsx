@@ -79,3 +79,27 @@ export function ToggleRow({ label, hint, value, onChange, sound }) {
     </button>
   );
 }
+
+export function SliderRow({ label, value, onChange, sound }) {
+  return (
+    <div className="flex w-full items-center justify-between rounded-2xl border border-white/8 bg-white/[0.03] px-5 py-4">
+      <span className="font-heading text-xs uppercase tracking-[0.18em] text-white/90">{label}</span>
+      <div className="flex items-center gap-3">
+        <span className="w-9 text-right font-mono text-xs text-white/50">{Math.round(value * 100)}%</span>
+        <input
+          type="range"
+          min="0"
+          max="1"
+          step="0.05"
+          value={value}
+          onChange={(e) => {
+            const v = parseFloat(e.target.value);
+            if (sound) sound.sfx('click');
+            onChange(v);
+          }}
+          className="gs-slider h-1.5 w-24 cursor-pointer rounded-full sm:w-32"
+        />
+      </div>
+    </div>
+  );
+}

@@ -200,3 +200,47 @@ body {
 .gs-winner-banner {
   animation: gs-winner-banner-kf 2.6s ease-out forwards;
 }
+
+@keyframes gs-screen-in-kf {
+  0% { opacity: 0; transform: translateY(8px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+.gs-screen-in {
+  animation: gs-screen-in-kf 0.3s ease-out both;
+}
+
+.gs-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 9999px;
+  outline: none;
+  cursor: pointer;
+}
+
+.gs-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #3ae8ff;
+  cursor: pointer;
+  box-shadow: 0 0 10px rgba(56, 232, 255, 0.6);
+  transition: transform 0.1s;
+}
+
+.gs-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+}
+
+.gs-slider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #3ae8ff;
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 0 10px rgba(56, 232, 255, 0.6);
+}

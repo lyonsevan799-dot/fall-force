@@ -166,7 +166,7 @@ export default function EndlessCanvas({ settings, displaySettings, sound, best, 
   const isNewBest = ui.state === 'dead' && ui.score > prevBest && ui.score > 0;
 
   return (
-    <div ref={wrapRef} className="fixed inset-0 touch-none select-none overflow-hidden bg-[#04050c]">
+    <div ref={wrapRef} className="gs-screen-in fixed inset-0 touch-none select-none overflow-hidden bg-[#04050c]">
       <canvas ref={canvasRef} className="absolute inset-0 block h-full w-full touch-none"
         onPointerDown={(e) => {
           e.preventDefault();

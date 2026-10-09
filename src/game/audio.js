@@ -32,7 +32,7 @@ export class Sound {
     this.master.gain.value = 0.9;
     this.master.connect(ctx.destination);
     this.sfxGain = ctx.createGain();
-    this.sfxGain.gain.value = 1;
+    this.sfxGain.gain.value = (this.s.sfx === false) ? 0 : (this.s.sfxVolume == null ? 0.7 : this.s.sfxVolume);
     this.sfxGain.connect(this.master);
     this.musicGain = ctx.createGain();
     this.musicGain.gain.value = 0;
@@ -51,6 +51,17 @@ export class Sound {
 
   resume() {
     if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume();
+  }
+
+  applySettings() {
+    if (!this.ready) return;
+    const s = this.s || {};
+    const sfxVol = s.sfx === false ? 0 : (s.sfxVolume == null ? 0.7 : s.sfxVolume);
+    this.sfxGain.gain.setTargetAtTime(sfxVol, this.ctx.currentTime, 0.05);
+    if (this.musicPlaying) {
+      const musicVol = s.music === false ? 0 : (s.musicVolume == null ? 0.5 : s.musicVolume);
+      this.musicGain.gain.setTargetAtTime(musicVol, this.ctx.currentTime, 0.05);
+    }
   }
 
   tone(o) {
@@ -167,8 +178,9 @@ export class Sound {
     this.step = 0;
     this.nextTime = this.ctx.currentTime + 0.08;
     this.musicGain.gain.cancelScheduledValues(this.ctx.currentTime);
+    const musicVol = this.s.music === false ? 0 : (this.s.musicVolume == null ? 0.5 : this.s.musicVolume);
     this.musicGain.gain.setValueAtTime(0.0001, this.ctx.currentTime);
-    this.musicGain.gain.linearRampToValueAtTime(0.5, this.ctx.currentTime + 0.8);
+    this.musicGain.gain.linearRampToValueAtTime(musicVol, this.ctx.currentTime + 0.8);
     this.timer = setInterval(() => this.schedule(), 30);
   }
 

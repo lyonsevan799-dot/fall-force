@@ -26,6 +26,7 @@ export default function Home() {
   useEffect(() => {
     settingsRef.current = save.settings;
     sound.s = save.settings;
+    sound.applySettings?.();
     saveProgress(save);
     if (save.settings.music) { sound.init(); sound.resume(); sound.startMusic(); } else { sound.stopMusic(); }
   }, [save, sound]);
@@ -50,6 +51,10 @@ export default function Home() {
 
   const handleEndlessResult = (score) => {
     setSave((p) => ({ ...p, endlessBest: Math.max(p.endlessBest || 0, score) }));
+  };
+
+  const handleRaceWin = () => {
+    setSave((p) => ({ ...p, raceWins: (p.raceWins || 0) + 1 }));
   };
 
   const handleUpdateSettings = (patch) => {
@@ -107,6 +112,7 @@ export default function Home() {
           settings={settingsRef.current}
           displaySettings={save.settings}
           sound={sound}
+          onRaceWin={handleRaceWin}
           onExit={() => setScreen('race-levels')}
           onUpdateSettings={handleUpdateSettings}
           onResetProgress={handleReset}
@@ -114,7 +120,7 @@ export default function Home() {
       ) : null}
 
       {!inGame ? (
-        <div className="relative z-10 min-h-screen">
+        <div key={screen} className="gs-screen-in relative z-10 min-h-screen">
           {screen === 'menu' ? (
             <div className="flex min-h-screen flex-col justify-center">
               <MainMenu

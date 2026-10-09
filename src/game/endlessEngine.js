@@ -196,6 +196,7 @@ export class EndlessEngine extends Engine {
     if (!this._newBestFired && this.best > 0 && this.score > this.best) {
       this._newBestFired = true;
       this._fireMilestone('NEW BEST!', 'best');
+      this.sound.sfx('unlock');
     }
   }
 

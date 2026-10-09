@@ -4,7 +4,8 @@ export const FALLBACK = {
   levels: {},          // { [index]: { stars, time, completed } }
   unlocked: 0,         // highest playable level index (0-based)
   endlessBest: 0,      // highest endless score
-  settings: { music: true, sfx: true, shake: true, reduced: false },
+  raceWins: 0,         // total race victories
+  settings: { music: true, sfx: true, shake: true, reduced: false, musicVolume: 0.5, sfxVolume: 0.7 },
 };
 
 const clone = (o) => JSON.parse(JSON.stringify(o));
@@ -18,6 +19,7 @@ export function loadProgress() {
       levels: p.levels && typeof p.levels === 'object' ? p.levels : {},
       unlocked: typeof p.unlocked === 'number' ? p.unlocked : 1,
       endlessBest: typeof p.endlessBest === 'number' ? p.endlessBest : 0,
+      raceWins: typeof p.raceWins === 'number' ? p.raceWins : 0,
       settings: { ...FALLBACK.settings, ...(p.settings || {}) },
     };
   } catch (e) {
