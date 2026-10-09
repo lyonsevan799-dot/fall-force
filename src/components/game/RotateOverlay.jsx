@@ -8,7 +8,7 @@ export default function RotateOverlay({ onDismiss }) {
       <RotateCcw size={44} className="gs-float text-cyan-200" />
       <div className="font-heading text-sm uppercase tracking-[0.3em] text-white">Rotate your device</div>
       <p className="max-w-xs text-xs leading-relaxed text-white/50">
-        Gravity Switch plays best in landscape. Turn your phone sideways for the full view.
+        Fall Force plays best in landscape. Turn your phone sideways for the full view.
       </p>
       <GameButton variant="ghost" size="sm" onClick={onDismiss}>Play anyway</GameButton>
     </div>

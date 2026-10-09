@@ -5,6 +5,8 @@ export const FALLBACK = {
   unlocked: 0,         // highest playable level index (0-based)
   endlessBest: 0,      // highest endless score
   raceWins: 0,         // total race victories
+  totalCoins: 0,       // persistent coins across all modes
+  levelCoins: {},     // { [levelIndex]: bestCoinsCollected }
   settings: { music: true, sfx: true, shake: true, reduced: false, musicVolume: 0.5, sfxVolume: 0.7 },
 };
 
@@ -20,6 +22,8 @@ export function loadProgress() {
       unlocked: typeof p.unlocked === 'number' ? p.unlocked : 1,
       endlessBest: typeof p.endlessBest === 'number' ? p.endlessBest : 0,
       raceWins: typeof p.raceWins === 'number' ? p.raceWins : 0,
+      totalCoins: typeof p.totalCoins === 'number' ? p.totalCoins : 0,
+      levelCoins: p.levelCoins && typeof p.levelCoins === 'object' ? p.levelCoins : {},
       settings: { ...FALLBACK.settings, ...(p.settings || {}) },
     };
   } catch (e) {
@@ -44,6 +48,22 @@ export function recordResult(progress, levelIndex, { stars, time }, totalLevels)
     completed: true,
   };
   next.unlocked = Math.min(totalLevels - 1, Math.max(next.unlocked, levelIndex + 1));
+  return next;
+}
+
+export function commitLevelCoins(progress, levelIndex, coins) {
+  const next = clone(progress);
+  const prevBest = next.levelCoins[levelIndex] || 0;
+  if (coins > prevBest) {
+    next.totalCoins += coins - prevBest;
+    next.levelCoins[levelIndex] = coins;
+  }
+  return next;
+}
+
+export function commitEndlessCoins(progress, coins) {
+  const next = clone(progress);
+  next.totalCoins += coins;
   return next;
 }
 

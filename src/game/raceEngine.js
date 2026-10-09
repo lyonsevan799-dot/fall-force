@@ -12,6 +12,7 @@ const GRACE = 2.6; // seconds the loser keeps moving after the winner finishes
 // RaceEngine: two independent players share one world and one clock so the
 // hazards stay perfectly synchronised and fair. Each player has their own
 // physics state, gravity-switch input, death/respawn, and finish detection.
+// (Internal term "gravity switch" refers to the mechanic, not the game name.)
 // The first player to cross the finish line wins; the loser gets a short
 // grace period to keep racing before the result screen appears.
 export class RaceEngine {

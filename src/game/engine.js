@@ -31,7 +31,8 @@ export class Engine {
     this.speedMult = 1; this.gateIndex = 0;
     this.finishReached = false;
     this.stars = 3;
-    this.ui = { state: 'intro', deaths: 0, time: 0, progress: 0, checkpoint: 0, level: 0 };
+    this.coins = 0;
+    this.ui = { state: 'intro', deaths: 0, time: 0, progress: 0, checkpoint: 0, level: 0, coins: 0 };
   }
 
   get level() { return LEVELS[this.levelIndex]; }
@@ -60,7 +61,7 @@ export class Engine {
 
   restart(full = true) {
     if (full || this.cpIndex < 0) {
-      if (full) { this.deaths = 0; this.cpIndex = -1; }
+      if (full) { this.deaths = 0; this.cpIndex = -1; this.coins = 0; }
       this.px = this.level.startX;
       this.dir = 1;
     } else {
@@ -118,6 +119,7 @@ export class Engine {
     this.ui.progress = clamp(this.px / this.level.length, 0, 1);
     this.ui.checkpoint = this.cpIndex + 1;
     this.ui.level = this.levelIndex;
+    this.ui.coins = this.coins;
   }
 
   addShake(mag, dur) {
@@ -236,7 +238,15 @@ export class Engine {
 
   collectGem(gem) {
     gem.collected = true;
+    this.coins++;
     this.sound.sfx('gem');
+    const theme = this.theme;
+    this.particles.burst(gem.x, gem.y, 10, {
+      color: [theme.accent, '#ffffff', theme.accent2],
+      speed: 180, size: 3.5, life: 0.5, drag: 2.5, shape: 'spark',
+    });
+    this.particles.ring(gem.x, gem.y, { r: 5, rv: 280, life: 0.35, color: theme.accent, w: 3 });
+    this.flash = Math.min(1, this.flash + 0.1);
   }
 
   land(plat) {

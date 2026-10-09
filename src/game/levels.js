@@ -160,6 +160,7 @@ export function buildLevel(spec, index) {
   // during the level intro, so this is the full reaction window). The earliest
   // levels get a longer runway so beginners have more time to react.
   let x = START_X + step * (spec.startRun || 3);
+  const x0 = x;
 
   for (const d of spec.sections) {
     if (d.t === 'checkpoint') {
@@ -181,6 +182,25 @@ export function buildLevel(spec, index) {
       if (it.type === 'spike' && h > 0) { it.hint = true; h--; }
     }
   }
+  // Auto-place coins in safe corridors — gives every level collectibles
+  // without cluttering the hand-authored obstacle layout.
+  const coinSpacing = step * 2.5;
+  for (let cx = x0 + step * 2; cx < length - step * 2; cx += coinSpacing) {
+    let safe = true;
+    for (const it of items) {
+      if (it.type === 'spike') {
+        if (cx > it.x - step * 0.5 && cx < it.x + it.w + step * 0.5) { safe = false; break; }
+      } else if (it.type === 'saw' || it.type === 'blade' || it.type === 'crusher' || it.type === 'laser') {
+        if (Math.abs(cx - it.x) < step * 1.0) { safe = false; break; }
+      }
+    }
+    if (safe) {
+      const phase = Math.floor((cx - x0) / coinSpacing);
+      const y = phase % 3 === 0 ? 300 : phase % 3 === 1 ? 460 : MID_Y;
+      items.push({ type: 'gem', x: cx, y, r: 13 });
+    }
+  }
+
   return {
     index,
     name: spec.name,
@@ -519,34 +539,44 @@ const SPECS = [
     ],
   },
   {
-    name: "Gravity's End", theme: 'void', speed: 1.34, gap: 1.65,
+    name: "Gravity's End", theme: 'void', speed: 1.25, gap: 1.78,
     sections: [
-      { t: 'run', n: 1.6 },
-      { t: 'alt', n: 4, c: 2, f: 2.4 },
-      { t: 'speed', mult: 1.08 },
-      { t: 'over', a: { t: 'spike', side: 'floor', n: 4 }, b: { t: 'saw', move: 'v', r: 28, period: 2.6 }, f: 2.8 },
-      { t: 'laser', host: 'floor', h: 400, on: 0.95, off: 0.8, f: 2.2 },
-      { t: 'over', a: { t: 'crusher', period: 2.4 }, b: { t: 'spike', side: 'ceil', n: 3 }, f: 2.9 },
-      { t: 'blade', arm: 130, spin: 1.15, f: 2.0 },
-      { t: 'over', a: { t: 'laser', host: 'ceil', h: 380, on: 0.9, off: 0.8 }, b: { t: 'saw', at: 'ceil', r: 30 }, f: 2.3 },
-      { t: 'run', n: 1.4 },
+      { t: 'run', n: 2 },
+      { t: 'alt', n: 4, c: 2, f: 2.6 },
+      { t: 'run', n: 1.2 },
+      { t: 'saw', at: 'floor', r: 28, n: 2, f: 2.4 },
+      { t: 'run', n: 1 },
+      { t: 'saw', at: 'ceil', r: 28, n: 2, f: 2.4 },
+      { t: 'run', n: 1.2 },
       { t: 'checkpoint' },
-      { t: 'run', n: 1.4 },
-      { t: 'portal', dir: -1, boost: 0.12, y: 360, f: 2.6 },
-      { t: 'saw', move: 'v', r: 30, period: 2.4, f: 2.8 },
-      { t: 'over', a: { t: 'crusher', period: 2.3 }, b: { t: 'laser', host: 'floor', h: 400, on: 0.9, off: 0.75 }, f: 3.0 },
-      { t: 'alt', n: 8, c: 2, f: 1.75 },
-      { t: 'over', a: { t: 'blade', arm: 145, spin: 1.25 }, b: { t: 'vanish', y: 380, w: 140, on: 1.5, off: 1.0 }, f: 2.2 },
-      { t: 'saw', at: 'floor', r: 28, n: 3, f: 1.8 },
-      { t: 'run', n: 1.4 },
+      { t: 'run', n: 1.2 },
+      { t: 'laser', host: 'floor', h: 360, on: 1.1, off: 1.0, f: 2.4 },
+      { t: 'run', n: 0.9 },
+      { t: 'laser', host: 'ceil', h: 360, on: 1.1, off: 1.0, f: 2.4 },
+      { t: 'run', n: 1 },
+      { t: 'crusher', period: 2.8, f: 2.8 },
+      { t: 'run', n: 1 },
+      { t: 'blade', arm: 120, spin: 1.0, f: 2.2 },
+      { t: 'run', n: 1.2 },
       { t: 'checkpoint' },
-      { t: 'run', n: 1.4 },
-      { t: 'over', a: { t: 'laser', host: 'floor', h: 400, on: 0.9, off: 0.75 }, b: { t: 'spike', side: 'ceil', n: 4 }, f: 2.2 },
-      { t: 'over', a: { t: 'crusher', period: 2.2 }, b: { t: 'saw', move: 'v', r: 30, period: 2.3 }, f: 2.9 },
-      { t: 'alt', n: 8, c: 2, f: 1.7 },
-      { t: 'over', a: { t: 'blade', arm: 150, spin: 1.3 }, b: { t: 'spike', side: 'floor', n: 4 }, f: 2.0 },
-      { t: 'portal', dir: 1, boost: 0.1, y: 360, f: 2.6 },
-      { t: 'alt', n: 6, c: 2, f: 1.68 },
+      { t: 'run', n: 1.2 },
+      { t: 'over', a: { t: 'spike', side: 'floor', n: 3 }, b: { t: 'saw', at: 'ceil', r: 28 }, f: 2.6 },
+      { t: 'run', n: 1 },
+      { t: 'alt', n: 5, c: 2, f: 2.1 },
+      { t: 'run', n: 1 },
+      { t: 'over', a: { t: 'crusher', period: 2.6 }, b: { t: 'spike', side: 'ceil', n: 2 }, f: 2.8 },
+      { t: 'run', n: 1 },
+      { t: 'vanish', y: 360, w: 150, on: 1.8, off: 1.2, f: 2.4 },
+      { t: 'run', n: 1.2 },
+      { t: 'checkpoint' },
+      { t: 'run', n: 1.2 },
+      { t: 'saw', move: 'v', r: 28, period: 2.8, f: 2.8 },
+      { t: 'run', n: 0.9 },
+      { t: 'blade', arm: 130, spin: 1.1, f: 2.1 },
+      { t: 'run', n: 0.9 },
+      { t: 'over', a: { t: 'laser', host: 'floor', h: 360, on: 1.0, off: 0.9 }, b: { t: 'spike', side: 'ceil', n: 3 }, f: 2.4 },
+      { t: 'run', n: 1 },
+      { t: 'alt', n: 6, c: 2, f: 1.95 },
       { t: 'run', n: 1.4 },
     ],
   },

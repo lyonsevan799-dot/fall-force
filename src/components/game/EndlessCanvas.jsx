@@ -9,7 +9,7 @@ import SettingsPanel from './SettingsPanel';
 import GravityButton from './GravityButton';
 import RotateOverlay from './RotateOverlay';
 
-export default function EndlessCanvas({ settings, displaySettings, sound, best, onResult, onExit, onUpdateSettings, onResetProgress }) {
+export default function EndlessCanvas({ settings, displaySettings, sound, best, totalCoins, onResult, onExit, onUpdateSettings, onResetProgress }) {
   const wrapRef = useRef(null);
   const canvasRef = useRef(null);
   const engineRef = useRef(null);
@@ -80,7 +80,7 @@ export default function EndlessCanvas({ settings, displaySettings, sound, best, 
       }
       if (eng.state === 'dead' && !reportedRef.current) {
         reportedRef.current = true;
-        if (cbRef.current.onResult) cbRef.current.onResult(Math.floor(eng.score));
+        if (cbRef.current.onResult) cbRef.current.onResult(Math.floor(eng.score), eng.coins);
       }
       if (eng.state !== lastState) { lastState = eng.state; push(); lastSync = now; }
       else if (now - lastSync > 100) { lastSync = now; push(); }
@@ -176,7 +176,7 @@ export default function EndlessCanvas({ settings, displaySettings, sound, best, 
         }}
         onContextMenu={(e) => e.preventDefault()} />
 
-      <EndlessHud ui={ui} best={finalBest} onPause={togglePause} sound={sound} />
+      <EndlessHud ui={ui} best={finalBest} totalCoins={totalCoins} onPause={togglePause} sound={sound} />
 
       <MilestoneToast event={milestone} />
 
@@ -198,6 +198,7 @@ export default function EndlessCanvas({ settings, displaySettings, sound, best, 
           best={finalBest}
           distance={ui.distance}
           gems={ui.gems}
+          coins={ui.coins}
           maxStreak={ui.maxStreak}
           isNewBest={isNewBest}
           sound={sound}

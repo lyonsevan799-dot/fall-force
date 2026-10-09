@@ -1,4 +1,4 @@
-// Core tuning constants for Gravity Switch.
+// Core tuning constants for Fall Force.
 export const BASE_SPEED = 340;      // world units / second at speed multiplier 1
 export const CROSS_TIME = 0.44;     // seconds to cross the corridor (used for fair spacing)
 export const GRAVITY = 2500;

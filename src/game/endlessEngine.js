@@ -24,6 +24,7 @@ export class EndlessEngine extends Engine {
     this.score = 0;
     this.best = 0;
     this.gems = 0;
+    this.coins = 0;
     this.streakTime = 0;
     this.streak = 1;
     this.maxStreak = 1;
@@ -42,6 +43,7 @@ export class EndlessEngine extends Engine {
     this.best = best || 0;
     this.score = 0;
     this.gems = 0;
+    this.coins = 0;
     this.streakTime = 0;
     this.streak = 1;
     this.maxStreak = 1;
@@ -120,9 +122,30 @@ export class EndlessEngine extends Engine {
 
     let x = g.x;
     for (const d of chunk.sections) x = emit(d, x, g.items, ctx);
+    this._scatterCoins(g.x, x, g.items, step);
     g.x = x;
     g.chunkCount++;
     this._level.length = g.x + step * 4;
+    this._rebuild();
+  }
+
+  _scatterCoins(x0, x1, items, step) {
+    const spacing = step * 2.2;
+    for (let cx = x0 + step; cx < x1 - step; cx += spacing) {
+      let safe = true;
+      for (const it of items) {
+        if (it.x == null) continue;
+        if (it.type === 'spike') {
+          if (cx > it.x - step * 0.5 && cx < it.x + it.w + step * 0.5) { safe = false; break; }
+        } else if (it.type === 'saw' || it.type === 'blade' || it.type === 'crusher' || it.type === 'laser') {
+          if (Math.abs(cx - it.x) < step * 1.0) { safe = false; break; }
+        }
+      }
+      if (safe && Math.random() < 0.35) {
+        const y = Math.random() < 0.5 ? 300 : 460;
+        items.push({ type: 'gem', x: cx, y, r: 13 });
+      }
+    }
   }
 
   _rebuild() {
@@ -137,7 +160,7 @@ export class EndlessEngine extends Engine {
 
   _cull() {
     const items = this._gen.items;
-    if (items.length < 240) return;
+    if (items.length < 160) return;
     const cutX = this.px - 900;
     let changed = false;
     for (let i = 0; i < items.length; i++) {
@@ -207,6 +230,7 @@ export class EndlessEngine extends Engine {
   collectGem(gem) {
     gem.collected = true;
     this.gems++;
+    this.coins++;
     const value = 100 * (1 + (this._gen ? this._gen.difficulty : 0));
     this.score += value;
     this.sound.sfx('gem');
@@ -225,6 +249,7 @@ export class EndlessEngine extends Engine {
     this.ui.distance = Math.floor(this.px / PX_PER_METER);
     this.ui.best = this.best;
     this.ui.gems = this.gems;
+    this.ui.coins = this.coins;
     this.ui.streak = this.streak;
     this.ui.maxStreak = this.maxStreak;
     this.ui.sectionName = this.sectionName;

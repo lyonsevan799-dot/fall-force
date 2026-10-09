@@ -2,8 +2,9 @@ import React from 'react';
 import { Pause } from 'lucide-react';
 import { LEVELS } from '@/game/levels';
 import { IconButton } from './ui';
+import CoinCounter from './CoinCounter';
 
-export default function Hud({ levelIndex, ui, onPause, sound }) {
+export default function Hud({ levelIndex, ui, totalCoins, onPause, sound }) {
   const level = LEVELS[levelIndex];
   const cps = level.checkpoints;
   return (
@@ -22,7 +23,12 @@ export default function Hud({ levelIndex, ui, onPause, sound }) {
             </div>
             <div className="font-mono text-xs text-white/70">{ui.time.toFixed(1)}s</div>
           </div>
-          <IconButton label="Pause" onClick={onPause} sound={sound}><Pause size={16} /></IconButton>
+          <div className="flex items-center gap-2">
+            <div className="rounded-2xl border border-amber-300/20 bg-black/40 px-3 py-2 backdrop-blur">
+              <CoinCounter count={ui.coins || 0} total={totalCoins || 0} size="md" />
+            </div>
+            <IconButton label="Pause" onClick={onPause} sound={sound}><Pause size={16} /></IconButton>
+          </div>
         </div>
       </div>
 

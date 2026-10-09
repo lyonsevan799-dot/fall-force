@@ -4,7 +4,7 @@ import { LEVELS } from '@/game/levels';
 import { totalStars, completedCount } from '@/game/progress';
 
 const MODES = [
-  { key: 'career', label: 'Career', desc: 'Master the levels and conquer Gravity Switch.', icon: Trophy, accent: 'cyan' },
+  { key: 'career', label: 'Career', desc: 'Master the levels and conquer Fall Force.', icon: Trophy, accent: 'cyan' },
   { key: 'endless', label: 'Endless', desc: 'How long can you survive?', icon: InfinityIcon, accent: 'amber' },
   { key: 'race', label: 'Race', desc: 'Race your opponent to the finish!', icon: Swords, accent: 'pink' },
 ];
@@ -32,8 +32,8 @@ export default function MainMenu({ save, sound, onCareer, onEndless, onRace, onS
       <div className="flex flex-col items-center gap-3 text-center">
         <div className="font-heading text-[10px] uppercase tracking-[0.6em] text-cyan-200/60">Arcade Gravity Runner</div>
         <h1 className="gs-title font-heading text-4xl uppercase leading-none tracking-[0.14em] sm:text-6xl">
-          Gravity
-          <span className="block bg-gradient-to-r from-cyan-200 via-white to-fuchsia-300 bg-clip-text text-transparent">Switch</span>
+          Fall
+          <span className="block bg-gradient-to-r from-cyan-200 via-white to-fuchsia-300 bg-clip-text text-transparent">Force</span>
         </h1>
         <div className="h-[2px] w-40 bg-gradient-to-r from-transparent via-cyan-300/80 to-transparent" />
       </div>
@@ -58,6 +58,7 @@ export default function MainMenu({ save, sound, onCareer, onEndless, onRace, onS
         <span>{done} / {LEVELS.length} cleared</span>
         <span className="text-amber-200/70">{stars} / {LEVELS.length * 3} stars</span>
         <span className="text-cyan-200/70">Best {best}</span>
+        <span className="text-amber-200/70">{save.totalCoins || 0} coins</span>
         <span className="text-pink-200/70">{save.raceWins || 0} wins</span>
       </div>
 

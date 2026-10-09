@@ -1,8 +1,9 @@
 import React from 'react';
-import { Pause, Gem, Flame, Gauge } from 'lucide-react';
+import { Pause, Flame, Gauge } from 'lucide-react';
 import { IconButton } from './ui';
+import CoinCounter from './CoinCounter';
 
-export default function EndlessHud({ ui, best, onPause, sound }) {
+export default function EndlessHud({ ui, best, totalCoins, onPause, sound }) {
   const speedPct = Math.round((ui.speed || 0.62) * 100);
 
   return (
@@ -19,7 +20,10 @@ export default function EndlessHud({ ui, best, onPause, sound }) {
         </div>
 
         <div className="flex items-center gap-2">
-          <div className="rounded-2xl border border-white/10 bg-black/40 px-3 py-2 text-right backdrop-blur">
+          <div className="rounded-2xl border border-amber-300/20 bg-black/40 px-3 py-2 backdrop-blur">
+            <CoinCounter count={ui.coins || 0} total={totalCoins || 0} size="md" />
+          </div>
+          <div className="hidden rounded-2xl border border-white/10 bg-black/40 px-3 py-2 text-right backdrop-blur sm:block">
             <div className="font-heading text-[9px] uppercase tracking-[0.22em] text-white/45">Best</div>
             <div className="font-mono text-xs leading-none text-white/70">{(best || 0).toLocaleString()}</div>
           </div>
@@ -31,7 +35,7 @@ export default function EndlessHud({ ui, best, onPause, sound }) {
         <span className="font-heading text-[9px] uppercase tracking-[0.2em] text-cyan-200/70">{ui.sectionName || 'Training'}</span>
         <span className="hidden text-white/20 sm:inline">·</span>
         <span className="hidden items-center gap-1 font-mono text-[11px] text-white/70 sm:flex">
-          <Gem size={11} className="text-cyan-300" /> {ui.gems || 0}
+          <Flame size={11} className="text-amber-300/70" /> {ui.gems || 0} gems
         </span>
         {ui.streak > 1.05 ? (
           <>
