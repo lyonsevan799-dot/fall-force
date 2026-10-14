@@ -48,6 +48,7 @@ export class Engine {
     this.gates = L.items.filter((i) => i.type === 'speed');
     this.checkpointItems = L.items.filter((i) => i.type === 'checkpoint');
     this.collectibles = L.items.filter((i) => i.type === 'gem');
+    this.collectibles.forEach((g) => { g.collected = false; });
     L.checkpoints.forEach((c) => { c.done = false; });
     this.deaths = 0;
     this.cpIndex = -1;
@@ -68,6 +69,8 @@ export class Engine {
       const cp = this.level.checkpoints[this.cpIndex];
       this.px = cp.x - 34;
       this.dir = cp.dir || 1;
+      this.gems = cp.gems || 0;
+      this.collectibles.forEach((g) => { if (g.x >= cp.x) g.collected = false; });
     }
     if (this.cpIndex < 0) this.deaths = full ? 0 : this.deaths;
     this.py = this.dir === 1 ? FLOOR_Y - PLAYER_SIZE : CEIL_Y;
@@ -90,6 +93,7 @@ export class Engine {
     this.particles.clear();
     this.portals.forEach((p) => { p.used = false; });
     this.solids.forEach((s) => { s._ly = undefined; });
+    if (full) this.collectibles.forEach((g) => { g.collected = false; });
     this.spawnT = 0;
     if (!full) {
       // Quick respawn-in: the player materialises at the checkpoint with a
@@ -224,6 +228,7 @@ export class Engine {
     const cp = this.level.checkpoints[i];
     cp.done = true;
     cp.dir = this.dir;
+    cp.gems = this.gems;
     this.cpIndex = i;
     this.sound.sfx('checkpoint');
     this.flash = Math.min(1, this.flash + 0.25);
