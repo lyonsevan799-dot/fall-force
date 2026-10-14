@@ -6,6 +6,7 @@ import { LEVELS } from './levels';
 import { Particles } from './particles';
 import {
   sawGeom, bladeGeom, crusherGeom, laserGeom, platGeom, vanishGeom, spikeGeom,
+  mspikeGeom, dropGeom, wallGeom, bounceGeom, trapGeom,
   rectHit, circleHit, segmentHit,
 } from './geom';
 
@@ -41,7 +42,7 @@ export class Engine {
   load(index) {
     this.levelIndex = index;
     const L = this.level;
-    this.hazards = L.items.filter((i) => i.type === 'spike' || i.type === 'saw' || i.type === 'blade' || i.type === 'crusher' || i.type === 'laser');
+    this.hazards = L.items.filter((i) => i.type === 'spike' || i.type === 'saw' || i.type === 'blade' || i.type === 'crusher' || i.type === 'laser' || i.type === 'mspike' || i.type === 'drop' || i.type === 'wall' || i.type === 'bounce' || i.type === 'trap');
     this.solids = L.items.filter((i) => i.type === 'plat' || i.type === 'vanish');
     this.zones = L.items.filter((i) => i.type === 'zone');
     this.portals = L.items.filter((i) => i.type === 'portal');
@@ -93,6 +94,9 @@ export class Engine {
     this.particles.clear();
     this.portals.forEach((p) => { p.used = false; });
     this.solids.forEach((s) => { s._ly = undefined; });
+    this.hazards.forEach((h) => {
+      if (h.type === 'drop' || h.type === 'trap') { h._triggered = false; h._phase = 'idle'; h._triggerT = 0; }
+    });
     if (full) this.collectibles.forEach((g) => { g.collected = false; });
     this.spawnT = 0;
     if (!full) {
@@ -438,6 +442,43 @@ export class Engine {
         case 'laser': {
           const g = laserGeom(it, t);
           if (g.active && rectHit(bx, by, bw, bh, g.x + 3, g.y, g.w - 6, g.h)) return this.die();
+          break;
+        }
+        case 'mspike': {
+          const g = mspikeGeom(it, t);
+          if (g.active && rectHit(bx, by, bw, bh, g.x, g.y, g.w, g.h)) return this.die();
+          break;
+        }
+        case 'drop': {
+          const prev = it._phase;
+          const g = dropGeom(it, t, this.px);
+          if (prev !== 'landed' && g.phase === 'landed') {
+            this.addShake(8, 0.3);
+            this.sound.sfx('land');
+            const cx = g.x + g.w / 2;
+            const cy = g.fromCeil ? FLOOR_Y : CEIL_Y;
+            if (!this.settings.reduced) {
+              this.particles.burst(cx, cy, 12, { color: [this.theme.accent, this.theme.groundTop, '#ffffff'], speed: 200, size: 4, life: 0.5, drag: 2.4, angle: g.fromCeil ? -Math.PI / 2 : Math.PI / 2, spread: 2.2 });
+              this.particles.ring(cx, cy, { r: 6, rv: 320, life: 0.4, color: this.theme.accent, w: 3 });
+            }
+          }
+          if (g.active && rectHit(bx, by, bw, bh, g.x + 3, g.y + 3, g.w - 6, g.h - 6)) return this.die();
+          break;
+        }
+        case 'wall': {
+          const g = wallGeom(it, t);
+          if (g.topH > 4 && rectHit(bx, by, bw, bh, g.x, CEIL_Y, g.w, g.topH)) return this.die();
+          if (g.botH > 4 && rectHit(bx, by, bw, bh, g.x, FLOOR_Y - g.botH, g.w, g.botH)) return this.die();
+          break;
+        }
+        case 'bounce': {
+          const g = bounceGeom(it, t);
+          if (circleHit(g.x, g.y, g.r - 3, bx, by, bw, bh)) return this.die();
+          break;
+        }
+        case 'trap': {
+          const g = trapGeom(it, t, this.px);
+          if (g.active && rectHit(bx, by, bw, bh, g.x, g.y, g.w, g.h)) return this.die();
           break;
         }
         default: break;

@@ -1,6 +1,7 @@
 import { CEIL_Y, FLOOR_Y, MID_Y, WORLD_H, VIEW_W, VIEW_H, PLAYER_SIZE, clamp } from './config';
 import {
   spikeGeom, sawGeom, bladeGeom, crusherGeom, laserGeom, platGeom, vanishGeom,
+  mspikeGeom, dropGeom, wallGeom, bounceGeom, trapGeom,
   SPIKE_W, SPIKE_H, LASER_W, PLAT_H,
 } from './geom';
 
@@ -192,15 +193,16 @@ function drawHazards(ctx, eng) {
       case 'spike': {
         const up = it.side === 'floor';
         const baseY = up ? FLOOR_Y : CEIL_Y;
-        const grad = ctx.createLinearGradient(0, up ? baseY : baseY + SPIKE_H, 0, up ? baseY - SPIKE_H : baseY);
+        const sh = it.h || SPIKE_H;
+        const grad = ctx.createLinearGradient(0, up ? baseY : baseY + sh, 0, up ? baseY - sh : baseY);
         grad.addColorStop(0, theme.hazard);
         grad.addColorStop(1, hexA(theme.hazard, 0.45));
         ctx.fillStyle = grad;
-        spikePath(ctx, it.x, baseY, it.w, SPIKE_H, up);
+        spikePath(ctx, it.x, baseY, it.w, sh, up);
         ctx.fill();
         ctx.fillStyle = '#ffffff';
         ctx.globalAlpha = 0.55;
-        spikePath(ctx, it.x + 2, baseY, it.w - 4, SPIKE_H - 4, up);
+        spikePath(ctx, it.x + 2, baseY, it.w - 4, sh - 4, up);
         ctx.globalAlpha = 0.14;
         ctx.fill();
         ctx.globalAlpha = 1;
@@ -355,6 +357,140 @@ function drawHazards(ctx, eng) {
         ctx.strokeStyle = hexA(theme.accent, 0.4);
         ctx.lineWidth = 1.5;
         ctx.beginPath(); ctx.arc(it.x, padY, 12, 0, 6.2832); ctx.stroke();
+        break;
+      }
+      case 'mspike': {
+        const g = mspikeGeom(it, t);
+        const up = g.floor;
+        const baseY = up ? FLOOR_Y : CEIL_Y;
+        ctx.fillStyle = hexA(theme.ground, 0.7);
+        ctx.fillRect(it.x - 2, up ? FLOOR_Y - 6 : CEIL_Y, it.w + 4, 6);
+        if (g.ext > 0.02) {
+          const sh = g.drawH;
+          const grad = ctx.createLinearGradient(0, up ? baseY : baseY + sh, 0, up ? baseY - sh : baseY);
+          grad.addColorStop(0, theme.hazard);
+          grad.addColorStop(1, hexA(theme.hazard, 0.45));
+          ctx.fillStyle = grad;
+          spikePath(ctx, it.x, baseY, it.w, sh, up);
+          ctx.fill();
+          ctx.fillStyle = '#ffffff';
+          ctx.globalAlpha = 0.55;
+          spikePath(ctx, it.x + 2, baseY, it.w - 4, Math.max(2, sh - 4), up);
+          ctx.globalAlpha = 0.14;
+          ctx.fill();
+          ctx.globalAlpha = 1;
+        }
+        break;
+      }
+      case 'drop': {
+        const g = dropGeom(it, t, eng.px);
+        if (g.phase === 'idle') break;
+        if (g.phase === 'shake' || g.phase === 'fall') {
+          const landY = g.fromCeil ? FLOOR_Y : CEIL_Y;
+          ctx.fillStyle = hexA(theme.hazard, 0.15);
+          rr(ctx, it.x, g.fromCeil ? landY - 4 : landY, it.w, 4, 2);
+          ctx.fill();
+        }
+        ctx.fillStyle = theme.ground;
+        rr(ctx, g.x, g.y, g.w, g.h, 5);
+        ctx.fill();
+        const glow = g.phase === 'shake' ? 0.4 + 0.3 * Math.sin(t * 30) : g.phase === 'landed' ? 0.7 : 0.25;
+        ctx.fillStyle = hexA(theme.hazard, glow);
+        rr(ctx, g.x + 3, g.y + 3, g.w - 6, g.h - 6, 3);
+        ctx.fill();
+        ctx.fillStyle = hexA('#ffffff', 0.2 + glow * 0.3);
+        ctx.fillRect(g.x + 5, g.y + 5, g.w - 10, 4);
+        break;
+      }
+      case 'wall': {
+        const g = wallGeom(it, t);
+        if (g.phase === 'warn') {
+          ctx.strokeStyle = hexA(theme.hazard, 0.3 + 0.5 * g.warn);
+          ctx.lineWidth = 2;
+          ctx.setLineDash([8, 8]);
+          ctx.beginPath();
+          ctx.moveTo(g.x, CEIL_Y); ctx.lineTo(g.x, FLOOR_Y);
+          ctx.stroke();
+          ctx.setLineDash([]);
+        }
+        if (g.topH > 1) {
+          ctx.fillStyle = theme.ground;
+          rr(ctx, g.x, CEIL_Y, g.w, g.topH, 4); ctx.fill();
+          ctx.fillStyle = hexA(theme.hazard, 0.4);
+          rr(ctx, g.x + 3, CEIL_Y + 3, g.w - 6, Math.max(0, g.topH - 6), 3); ctx.fill();
+          ctx.fillStyle = hexA('#ffffff', 0.2);
+          ctx.fillRect(g.x + 5, CEIL_Y + 5, g.w - 10, 4);
+        }
+        if (g.botH > 1) {
+          const by = FLOOR_Y - g.botH;
+          ctx.fillStyle = theme.ground;
+          rr(ctx, g.x, by, g.w, g.botH, 4); ctx.fill();
+          ctx.fillStyle = hexA(theme.hazard, 0.4);
+          rr(ctx, g.x + 3, by + 3, g.w - 6, Math.max(0, g.botH - 6), 3); ctx.fill();
+          ctx.fillStyle = hexA('#ffffff', 0.2);
+          ctx.fillRect(g.x + 5, by + 5, g.w - 10, 4);
+        }
+        break;
+      }
+      case 'bounce': {
+        const g = bounceGeom(it, t);
+        const pulse = 1 + 0.12 * Math.sin(t * 8 + it.x * 0.02);
+        const r = g.r * pulse;
+        const y0c = it.y0 != null ? it.y0 : CEIL_Y + 50;
+        const y1c = it.y1 != null ? it.y1 : FLOOR_Y - 50;
+        ctx.strokeStyle = hexA(theme.hazard, 0.12);
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([4, 8]);
+        ctx.beginPath();
+        ctx.moveTo(it.x, y0c); ctx.lineTo(it.x, y1c);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.save();
+        ctx.translate(g.x, g.y);
+        const glow = ctx.createRadialGradient(0, 0, 0, 0, 0, r * 2);
+        glow.addColorStop(0, hexA(theme.hazard, 0.4));
+        glow.addColorStop(1, hexA(theme.hazard, 0));
+        ctx.fillStyle = glow;
+        ctx.beginPath(); ctx.arc(0, 0, r * 2, 0, 6.2832); ctx.fill();
+        ctx.fillStyle = theme.hazard;
+        ctx.beginPath(); ctx.arc(0, 0, r, 0, 6.2832); ctx.fill();
+        ctx.fillStyle = hexA('#ffffff', 0.7);
+        ctx.beginPath(); ctx.arc(-r * 0.25, -r * 0.25, r * 0.4, 0, 6.2832); ctx.fill();
+        ctx.restore();
+        break;
+      }
+      case 'trap': {
+        const g = trapGeom(it, t, eng.px);
+        const up = g.floor;
+        const baseY = up ? FLOOR_Y : CEIL_Y;
+        ctx.fillStyle = hexA(theme.hazard, 0.15);
+        ctx.fillRect(it.x, up ? FLOOR_Y - 3 : CEIL_Y, it.w, 3);
+        if (g.phase === 'warn') {
+          const flash = 0.3 + 0.5 * Math.abs(Math.sin(t * 20));
+          ctx.strokeStyle = hexA(theme.hazard, flash);
+          ctx.lineWidth = 2;
+          ctx.setLineDash([6, 6]);
+          ctx.beginPath();
+          ctx.moveTo(it.x, up ? FLOOR_Y : CEIL_Y);
+          ctx.lineTo(it.x + it.w, up ? FLOOR_Y : CEIL_Y);
+          ctx.stroke();
+          ctx.setLineDash([]);
+        }
+        if (g.ext > 0.02) {
+          const sh = g.drawH;
+          const grad = ctx.createLinearGradient(0, up ? baseY : baseY + sh, 0, up ? baseY - sh : baseY);
+          grad.addColorStop(0, theme.hazard);
+          grad.addColorStop(1, hexA(theme.hazard, 0.45));
+          ctx.fillStyle = grad;
+          spikePath(ctx, it.x, baseY, it.w, sh, up);
+          ctx.fill();
+          ctx.fillStyle = '#ffffff';
+          ctx.globalAlpha = 0.55;
+          spikePath(ctx, it.x + 2, baseY, it.w - 4, Math.max(2, sh - 4), up);
+          ctx.globalAlpha = 0.14;
+          ctx.fill();
+          ctx.globalAlpha = 1;
+        }
         break;
       }
       case 'zone': {

@@ -15,7 +15,9 @@ export function emit(d, x, out, ctx) {
 
     case 'spike': {
       const n = d.n || 2;
-      out.push({ type: 'spike', side: d.side || 'floor', x, w: SPIKE_W * n });
+      const item = { type: 'spike', side: d.side || 'floor', x, w: SPIKE_W * n };
+      if (d.h) item.h = d.h;
+      out.push(item);
       return x + SPIKE_W * n + step * f;
     }
 
@@ -130,6 +132,48 @@ export function emit(d, x, out, ctx) {
       return x;
     }
 
+    case 'mspike': {
+      const n = d.n || 1;
+      const w = SPIKE_W * (d.c || 2);
+      for (let i = 0; i < n; i++) {
+        out.push({ type: 'mspike', side: d.side || 'floor', x, w, period: d.period || 2.4, on: d.on || 0.5, phase: (d.phase || 0) + i * 0.5 });
+        x += step * f;
+      }
+      return x;
+    }
+
+    case 'drop': {
+      for (let i = 0; i < (d.n || 1); i++) {
+        out.push({ type: 'drop', x, w: d.w || 60, h: d.h || 44, side: d.side || 'ceil', trigger: d.trigger || 280, shake: d.shake || 0.45 });
+        x += step * f;
+      }
+      return x;
+    }
+
+    case 'wall': {
+      for (let i = 0; i < (d.n || 1); i++) {
+        out.push({ type: 'wall', x, w: d.w || 50, gap: d.gap || 150, period: d.period || 3.2, phase: (d.phase || 0) + i * 0.6 });
+        x += step * f;
+      }
+      return x;
+    }
+
+    case 'bounce': {
+      for (let i = 0; i < (d.n || 1); i++) {
+        out.push({ type: 'bounce', x, r: d.r || 22, y0: d.y0, y1: d.y1, period: d.period || 2.4, phase: (d.phase || 0) + i * 0.5 });
+        x += step * f;
+      }
+      return x;
+    }
+
+    case 'trap': {
+      for (let i = 0; i < (d.n || 1); i++) {
+        out.push({ type: 'trap', x, w: d.w || 40, side: d.side || 'floor', trigger: d.trigger || 220, warn: d.warn || 0.32, up: d.up || 1.0 });
+        x += step * f;
+      }
+      return x;
+    }
+
     case 'gem': {
       const n = d.n || 1;
       const spacing = d.spacing || 0.5;
@@ -188,9 +232,9 @@ export function buildLevel(spec, index) {
   for (let cx = x0 + step * 2; cx < length - step * 2; cx += gemSpacing) {
     let safe = true;
     for (const it of items) {
-      if (it.type === 'spike') {
+      if (it.type === 'spike' || it.type === 'mspike' || it.type === 'trap') {
         if (cx > it.x - step * 0.5 && cx < it.x + it.w + step * 0.5) { safe = false; break; }
-      } else if (it.type === 'saw' || it.type === 'blade' || it.type === 'crusher' || it.type === 'laser') {
+      } else if (it.type === 'saw' || it.type === 'blade' || it.type === 'crusher' || it.type === 'laser' || it.type === 'drop' || it.type === 'wall' || it.type === 'bounce') {
         if (Math.abs(cx - it.x) < step * 1.0) { safe = false; break; }
       }
     }
@@ -282,6 +326,7 @@ const SPECS = [
       { t: 'spike', side: 'ceil', n: 2, f: 2.5 },
       { t: 'spike', side: 'floor', n: 2, f: 2.5 },
       { t: 'spike', side: 'ceil', n: 2, f: 2.5 },
+      { t: 'mspike', side: 'floor', c: 2, period: 2.6, on: 0.5, f: 2.8 },
       { t: 'run', n: 1.1 },
     ],
   },
@@ -304,6 +349,8 @@ const SPECS = [
       { t: 'spike', side: 'floor', n: 2, f: 2.3 },
       { t: 'alt', n: 3, c: 2, f: 2.4 },
       { t: 'saw', at: 'floor', r: 24, n: 2, f: 2.3 },
+      { t: 'bounce', r: 22, y0: 170, y1: 590, period: 2.6, f: 2.6 },
+      { t: 'drop', w: 60, h: 44, f: 2.8 },
       { t: 'run', n: 1 },
     ],
   },
@@ -324,6 +371,8 @@ const SPECS = [
       { t: 'alt', n: 3, c: 2, f: 2.3 },
       { t: 'saw', at: 'floor', r: 26, f: 2.2 },
       { t: 'spike', side: 'ceil', n: 3, f: 2.2 },
+      { t: 'wall', gap: 150, period: 3.0, f: 2.8 },
+      { t: 'mspike', side: 'floor', c: 2, period: 2.2, on: 0.55, f: 2.5 },
       { t: 'run', n: 1.1 },
     ],
   },
@@ -343,6 +392,8 @@ const SPECS = [
       { t: 'crusher', period: 2.6, f: 2.8 },
       { t: 'saw', at: 'floor', r: 26, f: 2.1 },
       { t: 'spike', side: 'ceil', n: 2, f: 2.15 },
+      { t: 'trap', side: 'floor', w: 40, f: 2.6 },
+      { t: 'bounce', r: 24, y0: 160, y1: 600, period: 2.4, f: 2.6 },
       { t: 'run', n: 1.2 },
     ],
   },
@@ -368,6 +419,8 @@ const SPECS = [
       { t: 'laser', host: 'floor', h: 340, on: 1.3, off: 1.1, f: 2.4 },
       { t: 'plat', y: 380, amp: 130, period: 3.0, w: 150, f: 2.6 },
       { t: 'spike', side: 'floor', n: 4, f: 2.0 },
+      { t: 'drop', w: 64, h: 46, f: 2.8 },
+      { t: 'mspike', side: 'ceil', c: 3, period: 2.0, on: 0.5, f: 2.4 },
       { t: 'run', n: 1.2 },
     ],
   },
@@ -390,6 +443,8 @@ const SPECS = [
       { t: 'over', a: { t: 'laser', host: 'floor', h: 360, on: 1.2, off: 0.9 }, b: { t: 'vanish', y: 360, w: 150, on: 1.8, off: 1.1 }, f: 2.4 },
       { t: 'spike', side: 'ceil', n: 3, f: 2.0 },
       { t: 'saw', move: 'v', r: 28, period: 2.8, f: 3.0 },
+      { t: 'wall', gap: 140, period: 2.8, f: 2.6 },
+      { t: 'trap', side: 'ceil', w: 40, f: 2.4 },
       { t: 'run', n: 1.2 },
     ],
   },
@@ -415,6 +470,8 @@ const SPECS = [
       { t: 'over', a: { t: 'laser', host: 'ceil', h: 380, on: 1.1, off: 0.9 }, b: { t: 'saw', at: 'ceil', r: 30 }, f: 2.5 },
       { t: 'crusher', period: 2.4, f: 2.9 },
       { t: 'alt', n: 4, c: 2, f: 1.9 },
+      { t: 'bounce', r: 24, y0: 150, y1: 610, period: 2.2, f: 2.5 },
+      { t: 'wall', gap: 140, period: 2.6, f: 2.8 },
       { t: 'run', n: 1.2 },
     ],
   },
@@ -439,6 +496,8 @@ const SPECS = [
       { t: 'over', a: { t: 'crusher', period: 2.5 }, b: { t: 'spike', side: 'floor', n: 3 }, f: 3.0 },
       { t: 'saw', at: 'floor', r: 28, n: 2, f: 2.0 },
       { t: 'alt', n: 5, c: 2, f: 1.85 },
+      { t: 'drop', w: 66, h: 46, f: 2.8 },
+      { t: 'trap', side: 'floor', w: 44, f: 2.4 },
       { t: 'run', n: 1.2 },
     ],
   },
@@ -460,6 +519,8 @@ const SPECS = [
       { t: 'run', n: 1.4 },
       { t: 'over', a: { t: 'crusher', period: 2.4 }, b: { t: 'laser', host: 'ceil', h: 360, on: 1.0, off: 0.8 }, f: 3.0 },
       { t: 'alt', n: 5, c: 2, f: 1.78 },
+      { t: 'mspike', side: 'floor', c: 3, period: 1.8, on: 0.55, f: 2.2 },
+      { t: 'bounce', r: 24, y0: 150, y1: 610, period: 2.0, f: 2.5 },
       { t: 'run', n: 1.2 },
     ],
   },
@@ -482,6 +543,8 @@ const SPECS = [
       { t: 'saw', at: 'floor', r: 28, n: 3, f: 1.9 },
       { t: 'over', a: { t: 'blade', arm: 120, spin: 1.25 }, b: { t: 'spike', side: 'floor', n: 3 }, f: 2.1 },
       { t: 'alt', n: 5, c: 2, f: 1.78 },
+      { t: 'wall', gap: 130, period: 2.4, f: 2.6 },
+      { t: 'drop', w: 66, h: 46, side: 'floor', f: 2.8 },
       { t: 'run', n: 1.2 },
     ],
   },
@@ -512,6 +575,8 @@ const SPECS = [
       { t: 'over', a: { t: 'laser', host: 'floor', h: 400, on: 0.9, off: 0.8 }, b: { t: 'spike', side: 'ceil', n: 3 }, f: 2.3 },
       { t: 'blade', arm: 140, spin: 1.15, f: 2.0 },
       { t: 'alt', n: 5, c: 2, f: 1.75 },
+      { t: 'trap', side: 'floor', w: 44, f: 2.3 },
+      { t: 'bounce', r: 24, y0: 150, y1: 610, period: 2.0, f: 2.4 },
       { t: 'run', n: 1.2 },
     ],
   },
@@ -535,6 +600,8 @@ const SPECS = [
       { t: 'blade', arm: 145, spin: 1.25, f: 2.1 },
       { t: 'saw', move: 'v', r: 30, period: 2.4, f: 2.9 },
       { t: 'alt', n: 6, c: 2, f: 1.75 },
+      { t: 'wall', gap: 130, period: 2.4, f: 2.6 },
+      { t: 'drop', w: 66, h: 46, f: 2.8 },
       { t: 'run', n: 1.2 },
     ],
   },
@@ -577,6 +644,8 @@ const SPECS = [
       { t: 'over', a: { t: 'laser', host: 'floor', h: 360, on: 1.0, off: 0.9 }, b: { t: 'spike', side: 'ceil', n: 3 }, f: 2.4 },
       { t: 'run', n: 1 },
       { t: 'alt', n: 6, c: 2, f: 1.95 },
+      { t: 'mspike', side: 'floor', c: 3, period: 1.8, on: 0.55, f: 2.2 },
+      { t: 'trap', side: 'ceil', w: 44, f: 2.3 },
       { t: 'run', n: 1.4 },
     ],
   },
