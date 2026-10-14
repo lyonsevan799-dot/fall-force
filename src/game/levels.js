@@ -196,7 +196,7 @@ export function buildLevel(spec, index) {
     }
     if (safe) {
       const phase = Math.floor((cx - x0) / gemSpacing);
-      const y = phase % 3 === 0 ? 300 : phase % 3 === 1 ? 460 : MID_Y;
+      const y = phase % 2 === 0 ? FLOOR_Y - 30 : CEIL_Y + 30;
       items.push({ type: 'gem', x: cx, y, r: 13 });
     }
   }
