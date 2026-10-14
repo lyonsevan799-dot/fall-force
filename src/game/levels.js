@@ -1,5 +1,6 @@
 import { BASE_SPEED, CROSS_TIME, START_X, FLOOR_Y, CEIL_Y, MID_Y } from './config';
 import { SPIKE_W } from './geom';
+import { enrichGems } from './gemPlace';
 
 // ---- Level composer -------------------------------------------------------
 // Levels are described as a list of sections. Every gap is expressed in
@@ -226,24 +227,11 @@ export function buildLevel(spec, index) {
       if (it.type === 'spike' && h > 0) { it.hint = true; h--; }
     }
   }
-  // Auto-place gems in safe corridors — gives every level collectibles
-  // without cluttering the hand-authored obstacle layout.
-  const gemSpacing = step * 2.5;
-  for (let cx = x0 + step * 2; cx < length - step * 2; cx += gemSpacing) {
-    let safe = true;
-    for (const it of items) {
-      if (it.type === 'spike' || it.type === 'mspike' || it.type === 'trap') {
-        if (cx > it.x - step * 0.5 && cx < it.x + it.w + step * 0.5) { safe = false; break; }
-      } else if (it.type === 'saw' || it.type === 'blade' || it.type === 'crusher' || it.type === 'laser' || it.type === 'drop' || it.type === 'wall' || it.type === 'bounce') {
-        if (Math.abs(cx - it.x) < step * 1.0) { safe = false; break; }
-      }
-    }
-    if (safe) {
-      const phase = Math.floor((cx - x0) / gemSpacing);
-      const y = phase % 3 === 0 ? 300 : phase % 3 === 1 ? 460 : MID_Y;
-      items.push({ type: 'gem', x: cx, y, r: 13 });
-    }
-  }
+  // Rich gem placement — a frequent stream across floor/ceiling/mid lanes,
+  // periodic clusters, a gem above every platform, and a trail through every
+  // gravity tunnel. Integrated into the level's own item list so it shares
+  // the same spacing and collision system as the hand-authored obstacles.
+  enrichGems(items, x0, length, step);
 
   return {
     index,

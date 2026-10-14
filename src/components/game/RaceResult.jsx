@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import confetti from 'canvas-confetti';
-import { RotateCcw, Home } from 'lucide-react';
+import { RotateCcw, Home, Gem } from 'lucide-react';
 import { GameButton, Panel } from './ui';
 
 export default function RaceResult({ ui, sound, onRestart, onExit }) {
@@ -42,6 +42,11 @@ export default function RaceResult({ ui, sound, onRestart, onExit }) {
           {loserFinished
             ? <>Player {loserNum} finished in <span className="font-mono text-white/70">{(loserTime || 0).toFixed(2)}s</span></>
             : <>Player {loserNum} reached <span className="font-mono text-white/70">{Math.round(loserFinalProgress * 100)}%</span> of the course</>}
+        </div>
+
+        <div className="mt-3 flex items-center justify-center gap-5 text-xs">
+          <span className="flex items-center gap-1.5 text-cyan-200"><Gem size={13} className="text-cyan-300" />P1 {ui.p1Gems || 0}</span>
+          <span className="flex items-center gap-1.5 text-pink-200"><Gem size={13} className="text-pink-300" />P2 {ui.p2Gems || 0}</span>
         </div>
 
         <div className="mt-6 space-y-3">

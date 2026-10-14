@@ -2,6 +2,7 @@ import { Engine } from './engine';
 import { emit } from './levels';
 import { BASE_SPEED, CROSS_TIME, START_X, clamp } from './config';
 import { ENDLESS_CHUNKS } from './endlessChunks';
+import { gemClear, LANE } from './gemPlace';
 
 // Visual sections — theme and name are driven by difficulty so transitions
 // happen smoothly as the player survives longer.
@@ -128,20 +129,25 @@ export class EndlessEngine extends Engine {
   }
 
   _scatterGems(x0, x1, items, step) {
-    const spacing = step * 2.2;
-    for (let cx = x0 + step; cx < x1 - step; cx += spacing) {
-      let safe = true;
-      for (const it of items) {
-        if (it.x == null) continue;
-        if (it.type === 'spike' || it.type === 'mspike' || it.type === 'trap') {
-          if (cx > it.x - step * 0.5 && cx < it.x + it.w + step * 0.5) { safe = false; break; }
-        } else if (it.type === 'saw' || it.type === 'blade' || it.type === 'crusher' || it.type === 'laser' || it.type === 'drop' || it.type === 'wall' || it.type === 'bounce') {
-          if (Math.abs(cx - it.x) < step * 1.0) { safe = false; break; }
-        }
-      }
-      if (safe && Math.random() < 0.35) {
-        const y = Math.random() < 0.5 ? 300 : 460;
-        items.push({ type: 'gem', x: cx, y, r: 13 });
+    // Dense, varied gem scatter: a frequent alternating stream across
+    // floor/ceiling/mid lanes plus occasional 3-gem clusters. Uses the shared
+    // bounding-box clearance check so gems never land inside hazards, and
+    // every lane is reachable by the player's normal movement.
+    const spacing = step * 1.5;
+    const lanes = [LANE.floor, LANE.ceil, LANE.mid, LANE.midLow, LANE.midHigh];
+    let i = 0;
+    for (let cx = x0 + step; cx < x1 - step; cx += spacing, i++) {
+      const y = lanes[i % lanes.length];
+      if (gemClear(items, cx, y)) items.push({ type: 'gem', x: cx, y, r: 13 });
+    }
+    // Occasional cluster — a short line of 3 gems in a safe lane.
+    for (let cx = x0 + step * 3; cx < x1 - step; cx += step * 6) {
+      if (Math.random() > 0.5) continue;
+      const ly = lanes[Math.floor(Math.random() * 3)];
+      if (!gemClear(items, cx, ly)) continue;
+      for (let k = -1; k <= 1; k++) {
+        const gx = cx + k * step * 0.34;
+        if (gemClear(items, gx, ly)) items.push({ type: 'gem', x: gx, y: ly, r: 13 });
       }
     }
   }

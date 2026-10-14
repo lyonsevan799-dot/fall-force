@@ -51,6 +51,7 @@ export class RaceEngine {
     this.zones = L.items.filter((i) => i.type === 'zone');
     this.portals = L.items.filter((i) => i.type === 'portal');
     this.gates = L.items.filter((i) => i.type === 'speed');
+    this.collectibles = L.items.filter((i) => i.type === 'gem');
     this.players = [this._mkPlayer(0), this._mkPlayer(1)];
     this.particles.clear();
     this.state = 'ready';
@@ -77,6 +78,7 @@ export class RaceEngine {
       alive: true, deadT: 0, invuln: 0,
       finished: false, finishTime: null, finalProgress: 0,
       portalsUsed: this.portals.map(() => false),
+      gems: 0, gemSet: new Set(),
       trail: [],
     };
   }
@@ -159,6 +161,27 @@ export class RaceEngine {
         const cx = p.px + size / 2, cy = p.py + size / 2;
         this.particles.ring(cx, cy, { r: 8, rv: 680, life: 0.45, color: '#ffffff', w: 5 });
         this.particles.ring(cx, cy, { r: 14, rv: 400, life: 0.7, color: this.theme.accent, w: 3 });
+      }
+    }
+    // Gems — collected per player without consuming the shared gem, so both
+    // players have equal access to the same pickups. Never affects winning
+    // (the race is still first to the finish); just a fun side reward.
+    if (this.collectibles.length) {
+      const pcx = p.px + size / 2, pcy = p.py + size / 2;
+      const rr = 13 + size * 0.4;
+      for (let gi = 0; gi < this.collectibles.length; gi++) {
+        if (p.gemSet.has(gi)) continue;
+        const gem = this.collectibles[gi];
+        const dx = pcx - gem.x, dy = pcy - gem.y;
+        if (dx * dx + dy * dy < rr * rr) {
+          p.gemSet.add(gi);
+          p.gems++;
+          this.sound.sfx('gem');
+          const theme = this.theme;
+          this.particles.burst(gem.x, gem.y, 10, { color: [theme.accent, '#ffffff', theme.accent2], speed: 190, size: 3.4, life: 0.5, drag: 2.5, shape: 'spark' });
+          this.particles.ring(gem.x, gem.y, { r: 5, rv: 280, life: 0.35, color: theme.accent, w: 3 });
+          this.flash = Math.min(1, this.flash + 0.08);
+        }
       }
     }
   }

@@ -13,7 +13,7 @@ export default function RaceCanvas({ levelIndex, settings, displaySettings, soun
   const canvasRef = useRef(null);
   const engineRef = useRef(null);
   const cbRef = useRef({});
-  const [ui, setUi] = useState({ state: 'ready', countdown: 3, raceTime: 0, winner: -1, p1: 0, p2: 0, p1Finished: false, p2Finished: false, p1Time: null, p2Time: null, p1Final: 0, p2Final: 0 });
+  const [ui, setUi] = useState({ state: 'ready', countdown: 3, raceTime: 0, winner: -1, p1: 0, p2: 0, p1Finished: false, p2Finished: false, p1Time: null, p2Time: null, p1Final: 0, p2Final: 0, p1Gems: 0, p2Gems: 0 });
   const [paused, setPaused] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [isTouch, setIsTouch] = useState(false);
@@ -54,6 +54,7 @@ export default function RaceCanvas({ levelIndex, settings, displaySettings, soun
       p1Finished: eng.players[0].finished, p2Finished: eng.players[1].finished,
       p1Time: eng.players[0].finishTime, p2Time: eng.players[1].finishTime,
       p1Final: eng.players[0].finalProgress, p2Final: eng.players[1].finalProgress,
+      p1Gems: eng.players[0].gems, p2Gems: eng.players[1].gems,
     });
 
     const loop = (now) => {
