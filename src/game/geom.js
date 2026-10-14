@@ -104,11 +104,124 @@ export function vanishGeom(it, t) {
 
 export function spikeGeom(it) {
   const floor = it.side === 'floor';
+  const hitH = it.h ? it.h * 0.8 : SPIKE_HIT_H;
   return {
     x: it.x + SPIKE_HIT_INSET,
-    y: floor ? FLOOR_Y - SPIKE_HIT_H : CEIL_Y,
+    y: floor ? FLOOR_Y - hitH : CEIL_Y,
     w: Math.max(6, it.w - SPIKE_HIT_INSET * 2),
-    h: SPIKE_HIT_H,
+    h: hitH,
+  };
+}
+
+// Moving spike: extends/retracts from floor or ceiling on a rhythmic timer.
+export function mspikeGeom(it, t) {
+  const period = it.period || 2.4;
+  const onFrac = it.on || 0.5;
+  const u = wrap(t + (it.phase || 0), period) / period;
+  let ext;
+  if (u < onFrac) {
+    const k = u / onFrac;
+    ext = k < 0.14 ? k / 0.14 : 1;
+  } else {
+    const k = (u - onFrac) / (1 - onFrac);
+    ext = k < 0.14 ? 1 - k / 0.14 : 0;
+  }
+  const floor = it.side === 'floor';
+  const hitH = SPIKE_HIT_H * ext;
+  return {
+    x: it.x + SPIKE_HIT_INSET,
+    y: floor ? FLOOR_Y - hitH : CEIL_Y,
+    w: Math.max(6, it.w - SPIKE_HIT_INSET * 2),
+    h: hitH, ext, drawH: SPIKE_H * ext, floor, active: ext > 0.35,
+  };
+}
+
+// Falling block: shakes when the player approaches, then drops and lands as a
+// persistent hazard on the opposite surface. Stateful (proximity-triggered).
+export function dropGeom(it, t, px) {
+  const trigger = it.trigger || 280;
+  const dist = it.x - px;
+  const fromCeil = it.side !== 'floor';
+  const y0 = fromCeil ? CEIL_Y - it.h : FLOOR_Y;
+  const y1 = fromCeil ? FLOOR_Y - it.h : CEIL_Y;
+  if (dist > trigger + 120) { it._triggered = false; it._phase = 'idle'; }
+  if (!it._triggered && dist < trigger) {
+    it._triggered = true; it._triggerT = t; it._phase = 'shake';
+  }
+  if (!it._triggered) return { x: it.x, y: y0, w: it.w, h: it.h, phase: 'idle', active: false, fromCeil };
+  const dt = t - it._triggerT;
+  const shakeDur = it.shake || 0.45;
+  if (dt < shakeDur) {
+    const shake = Math.sin(dt * 90) * 3;
+    return { x: it.x + shake, y: y0, w: it.w, h: it.h, phase: 'shake', active: false, fromCeil };
+  }
+  const ft = dt - shakeDur;
+  const g = it.g || 1800;
+  const fallDist = 0.5 * g * ft * ft;
+  const y = fromCeil ? y0 + fallDist : y0 - fallDist;
+  const reached = fromCeil ? y >= y1 : y <= y1;
+  if (reached) {
+    it._phase = 'landed';
+    return { x: it.x, y: y1, w: it.w, h: it.h, phase: 'landed', active: true, fromCeil };
+  }
+  it._phase = 'fall';
+  return { x: it.x, y, w: it.w, h: it.h, phase: 'fall', active: false, fromCeil };
+}
+
+// Crushing walls: two walls slide in from the top and bottom, leaving a timed
+// gap in the middle. The player must be on the correct surface to pass.
+export function wallGeom(it, t) {
+  const P = it.period || 3.2;
+  const u = wrap(t + (it.phase || 0), P) / P;
+  const gap = it.gap || 150;
+  const maxDepth = (FLOOR_Y - CEIL_Y - gap) / 2;
+  let depth = 0, phase = 'open', warn = 0;
+  if (u < 0.12) { phase = 'warn'; warn = u / 0.12; }
+  else if (u < 0.18) { phase = 'close'; const k = (u - 0.12) / 0.06; depth = maxDepth * (k * k); }
+  else if (u < 0.72) { phase = 'hold'; depth = maxDepth; }
+  else if (u < 0.80) { phase = 'open'; const k = (u - 0.72) / 0.08; depth = maxDepth * (1 - k); }
+  else { phase = 'open'; depth = 0; }
+  return { x: it.x, w: it.w || 50, topH: depth, botH: depth, phase, warn, gap, maxDepth };
+}
+
+// Bouncing hazard: an orb that bounces between two y-points with a triangular
+// (linear) wave, giving a predictable rhythm distinct from the sine-based saw.
+export function bounceGeom(it, t) {
+  const period = it.period || 2.4;
+  const u = wrap(t + (it.phase || 0), period) / period;
+  const y0 = it.y0 != null ? it.y0 : CEIL_Y + 50;
+  const y1 = it.y1 != null ? it.y1 : FLOOR_Y - 50;
+  const tri = u < 0.5 ? u * 2 : 2 - u * 2;
+  const y = y0 + (y1 - y0) * tri;
+  return { x: it.x, y, r: it.r || 22 };
+}
+
+// Pop-up trap (fake safe zone): a spike that shoots up from the floor or
+// ceiling when the player approaches, with a brief warning flash first.
+export function trapGeom(it, t, px) {
+  const trigger = it.trigger || 220;
+  const dist = it.x - px;
+  const floor = it.side !== 'ceil';
+  if (dist > trigger + 120) { it._triggered = false; it._phase = 'idle'; }
+  if (!it._triggered && dist < trigger) {
+    it._triggered = true; it._triggerT = t; it._phase = 'warn';
+  }
+  if (!it._triggered) return { x: it.x, y: floor ? FLOOR_Y : CEIL_Y, w: it.w, h: 0, ext: 0, phase: 'idle', floor, active: false };
+  const dt = t - it._triggerT;
+  const warnDur = it.warn || 0.32;
+  const upDur = it.up || 1.0;
+  let ext = 0, phase = 'warn';
+  if (dt < warnDur) { phase = 'warn'; ext = 0; }
+  else if (dt < warnDur + 0.07) { phase = 'pop'; ext = (dt - warnDur) / 0.07; }
+  else if (dt < warnDur + upDur) { phase = 'up'; ext = 1; }
+  else if (dt < warnDur + upDur + 0.1) { phase = 'down'; ext = 1 - (dt - warnDur - upDur) / 0.1; }
+  else { phase = 'idle'; ext = 0; it._triggered = false; }
+  const hitH = SPIKE_HIT_H * ext;
+  return {
+    x: it.x + SPIKE_HIT_INSET,
+    y: floor ? FLOOR_Y - hitH : CEIL_Y,
+    w: Math.max(6, it.w - SPIKE_HIT_INSET * 2),
+    h: hitH, ext, drawH: SPIKE_H * ext, phase, floor, active: ext > 0.35,
   };
 }
 
