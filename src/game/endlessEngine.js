@@ -133,9 +133,9 @@ export class EndlessEngine extends Engine {
       let safe = true;
       for (const it of items) {
         if (it.x == null) continue;
-        if (it.type === 'spike') {
+        if (it.type === 'spike' || it.type === 'mspike' || it.type === 'trap') {
           if (cx > it.x - step * 0.5 && cx < it.x + it.w + step * 0.5) { safe = false; break; }
-        } else if (it.type === 'saw' || it.type === 'blade' || it.type === 'crusher' || it.type === 'laser') {
+        } else if (it.type === 'saw' || it.type === 'blade' || it.type === 'crusher' || it.type === 'laser' || it.type === 'drop' || it.type === 'wall' || it.type === 'bounce') {
           if (Math.abs(cx - it.x) < step * 1.0) { safe = false; break; }
         }
       }
@@ -148,7 +148,7 @@ export class EndlessEngine extends Engine {
 
   _rebuild() {
     const L = this._level;
-    this.hazards = L.items.filter((i) => i.type === 'spike' || i.type === 'saw' || i.type === 'blade' || i.type === 'crusher' || i.type === 'laser');
+    this.hazards = L.items.filter((i) => i.type === 'spike' || i.type === 'saw' || i.type === 'blade' || i.type === 'crusher' || i.type === 'laser' || i.type === 'mspike' || i.type === 'drop' || i.type === 'wall' || i.type === 'bounce' || i.type === 'trap');
     this.solids = L.items.filter((i) => i.type === 'plat' || i.type === 'vanish');
     this.zones = L.items.filter((i) => i.type === 'zone');
     this.portals = L.items.filter((i) => i.type === 'portal');

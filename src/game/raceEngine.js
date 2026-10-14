@@ -2,6 +2,7 @@ import { GRAVITY, LAUNCH_V, MAX_VY, PLAYER_SIZE, CEIL_Y, FLOOR_Y, THEMES, clamp,
 import { Particles } from './particles';
 import {
   sawGeom, bladeGeom, crusherGeom, laserGeom, platGeom, vanishGeom, spikeGeom,
+  mspikeGeom, dropGeom, wallGeom, bounceGeom, trapGeom,
   rectHit, circleHit, segmentHit,
 } from './geom';
 import { RACE_LEVELS } from './raceLevels';
@@ -42,7 +43,10 @@ export class RaceEngine {
   load(index) {
     this.levelIndex = index;
     const L = this.level;
-    this.hazards = L.items.filter((i) => i.type === 'spike' || i.type === 'saw' || i.type === 'blade' || i.type === 'crusher' || i.type === 'laser');
+    this.hazards = L.items.filter((i) => i.type === 'spike' || i.type === 'saw' || i.type === 'blade' || i.type === 'crusher' || i.type === 'laser' || i.type === 'mspike' || i.type === 'drop' || i.type === 'wall' || i.type === 'bounce' || i.type === 'trap');
+    for (const h of this.hazards) {
+      if (h.type === 'drop' || h.type === 'trap') { h._triggered = false; h._phase = 'idle'; h._triggerT = 0; }
+    }
     this.solids = L.items.filter((i) => i.type === 'plat' || i.type === 'vanish');
     this.zones = L.items.filter((i) => i.type === 'zone');
     this.portals = L.items.filter((i) => i.type === 'portal');
@@ -206,6 +210,11 @@ export class RaceEngine {
         case 'blade': { const g = bladeGeom(it, t); if (segmentHit(g.x1, g.y1, g.x2, g.y2, bx, by, bw, bh, 7)) return this.diePlayer(p); break; }
         case 'crusher': { const g = crusherGeom(it, t); if (rectHit(bx, by, bw, bh, g.x - g.w / 2 + 4, g.y + 4, g.w - 8, g.h - 8)) return this.diePlayer(p); break; }
         case 'laser': { const g = laserGeom(it, t); if (g.active && rectHit(bx, by, bw, bh, g.x + 3, g.y, g.w - 6, g.h)) return this.diePlayer(p); break; }
+        case 'mspike': { const g = mspikeGeom(it, t); if (g.active && rectHit(bx, by, bw, bh, g.x, g.y, g.w, g.h)) return this.diePlayer(p); break; }
+        case 'drop': { const g = dropGeom(it, t, p.px); if (g.active && rectHit(bx, by, bw, bh, g.x + 3, g.y + 3, g.w - 6, g.h - 6)) return this.diePlayer(p); break; }
+        case 'wall': { const g = wallGeom(it, t); if (g.topH > 4 && rectHit(bx, by, bw, bh, g.x, CEIL_Y, g.w, g.topH)) return this.diePlayer(p); if (g.botH > 4 && rectHit(bx, by, bw, bh, g.x, FLOOR_Y - g.botH, g.w, g.botH)) return this.diePlayer(p); break; }
+        case 'bounce': { const g = bounceGeom(it, t); if (circleHit(g.x, g.y, g.r - 3, bx, by, bw, bh)) return this.diePlayer(p); break; }
+        case 'trap': { const g = trapGeom(it, t, p.px); if (g.active && rectHit(bx, by, bw, bh, g.x, g.y, g.w, g.h)) return this.diePlayer(p); break; }
         default: break;
       }
     }
