@@ -1,8 +1,8 @@
 import React from 'react';
-import { Coins, Flame, RotateCcw, Home } from 'lucide-react';
+import { Gem, Flame, RotateCcw, Home } from 'lucide-react';
 import { GameButton, Panel } from './ui';
 
-export default function EndlessGameOver({ score, best, distance, gems, coins, maxStreak, isNewBest, sound, onRestart, onExit }) {
+export default function EndlessGameOver({ score, best, distance, gems, maxStreak, isNewBest, sound, onRestart, onExit }) {
   return (
     <div className="absolute inset-0 z-30 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
       <Panel className="gs-pop w-full max-w-md text-center">
@@ -31,9 +31,9 @@ export default function EndlessGameOver({ score, best, distance, gems, coins, ma
             <div className="font-heading text-[8px] uppercase tracking-[0.2em] text-white/40">Distance</div>
             <div className="font-mono text-sm text-white/80">{(distance || 0).toLocaleString()}m</div>
           </div>
-          <div className="rounded-xl border border-amber-300/15 bg-amber-400/5 px-3 py-2">
-            <div className="font-heading text-[8px] uppercase tracking-[0.2em] text-amber-200/60">Coins</div>
-            <div className="font-mono text-sm text-amber-100">{coins || 0}</div>
+          <div className="rounded-xl border border-cyan-300/15 bg-cyan-400/5 px-3 py-2">
+            <div className="font-heading text-[8px] uppercase tracking-[0.2em] text-cyan-200/60">Gems</div>
+            <div className="font-mono text-sm text-cyan-100">{gems || 0}</div>
           </div>
         </div>
 

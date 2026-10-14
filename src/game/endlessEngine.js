@@ -24,7 +24,6 @@ export class EndlessEngine extends Engine {
     this.score = 0;
     this.best = 0;
     this.gems = 0;
-    this.coins = 0;
     this.streakTime = 0;
     this.streak = 1;
     this.maxStreak = 1;
@@ -43,7 +42,6 @@ export class EndlessEngine extends Engine {
     this.best = best || 0;
     this.score = 0;
     this.gems = 0;
-    this.coins = 0;
     this.streakTime = 0;
     this.streak = 1;
     this.maxStreak = 1;
@@ -122,14 +120,14 @@ export class EndlessEngine extends Engine {
 
     let x = g.x;
     for (const d of chunk.sections) x = emit(d, x, g.items, ctx);
-    this._scatterCoins(g.x, x, g.items, step);
+    this._scatterGems(g.x, x, g.items, step);
     g.x = x;
     g.chunkCount++;
     this._level.length = g.x + step * 4;
     this._rebuild();
   }
 
-  _scatterCoins(x0, x1, items, step) {
+  _scatterGems(x0, x1, items, step) {
     const spacing = step * 2.2;
     for (let cx = x0 + step; cx < x1 - step; cx += spacing) {
       let safe = true;
@@ -230,7 +228,6 @@ export class EndlessEngine extends Engine {
   collectGem(gem) {
     gem.collected = true;
     this.gems++;
-    this.coins++;
     const value = 100 * (1 + (this._gen ? this._gen.difficulty : 0));
     this.score += value;
     this.sound.sfx('gem');
@@ -249,7 +246,6 @@ export class EndlessEngine extends Engine {
     this.ui.distance = Math.floor(this.px / PX_PER_METER);
     this.ui.best = this.best;
     this.ui.gems = this.gems;
-    this.ui.coins = this.coins;
     this.ui.streak = this.streak;
     this.ui.maxStreak = this.maxStreak;
     this.ui.sectionName = this.sectionName;

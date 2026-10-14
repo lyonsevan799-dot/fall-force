@@ -1,9 +1,9 @@
 import React from 'react';
-import { Coins } from 'lucide-react';
+import { Gem } from 'lucide-react';
 import { GameButton, Panel, Stars } from './ui';
 import { LEVELS } from '@/game/levels';
 
-export default function LevelComplete({ levelIndex, stars, deaths, time, coins, isLast, onNext, onRetry, onExit, sound }) {
+export default function LevelComplete({ levelIndex, stars, deaths, time, gems, isLast, onNext, onRetry, onExit, sound }) {
   return (
     <div className="absolute inset-0 z-30 flex items-center justify-center bg-black/55 p-4 backdrop-blur-sm">
       <Panel className="gs-pop w-full max-w-md text-center">
@@ -17,7 +17,7 @@ export default function LevelComplete({ levelIndex, stars, deaths, time, coins, 
         <div className="mt-5 flex items-center justify-center gap-6 font-mono text-xs text-white/60">
           <span>Time {time.toFixed(2)}s</span>
           <span>Deaths {deaths}</span>
-          <span className="flex items-center gap-1 text-amber-300"><Coins size={12} /> {coins || 0}</span>
+          <span className="flex items-center gap-1 text-cyan-300"><Gem size={12} /> {gems || 0}</span>
         </div>
         <div className="mt-6 grid grid-cols-2 gap-3">
           {isLast ? (

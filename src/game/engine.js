@@ -31,8 +31,8 @@ export class Engine {
     this.speedMult = 1; this.gateIndex = 0;
     this.finishReached = false;
     this.stars = 3;
-    this.coins = 0;
-    this.ui = { state: 'intro', deaths: 0, time: 0, progress: 0, checkpoint: 0, level: 0, coins: 0 };
+    this.gems = 0;
+    this.ui = { state: 'intro', deaths: 0, time: 0, progress: 0, checkpoint: 0, level: 0, gems: 0 };
   }
 
   get level() { return LEVELS[this.levelIndex]; }
@@ -61,7 +61,7 @@ export class Engine {
 
   restart(full = true) {
     if (full || this.cpIndex < 0) {
-      if (full) { this.deaths = 0; this.cpIndex = -1; this.coins = 0; }
+      if (full) { this.deaths = 0; this.cpIndex = -1; this.gems = 0; }
       this.px = this.level.startX;
       this.dir = 1;
     } else {
@@ -119,7 +119,7 @@ export class Engine {
     this.ui.progress = clamp(this.px / this.level.length, 0, 1);
     this.ui.checkpoint = this.cpIndex + 1;
     this.ui.level = this.levelIndex;
-    this.ui.coins = this.coins;
+    this.ui.gems = this.gems;
   }
 
   addShake(mag, dur) {
@@ -238,7 +238,7 @@ export class Engine {
 
   collectGem(gem) {
     gem.collected = true;
-    this.coins++;
+    this.gems++;
     this.sound.sfx('gem');
     const theme = this.theme;
     this.particles.burst(gem.x, gem.y, 10, {
@@ -475,7 +475,7 @@ export class Engine {
     const worldDt = dt * this.timeScale;
     if (this.state === 'playing' || this.state === 'intro' || this.state === 'complete') {
       this.t += worldDt;
-      this.attemptTime += worldDt;
+      if (this.state === 'playing') this.attemptTime += worldDt;
       let rem = worldDt;
       let guard = 0;
       while (rem > 0.0005 && guard++ < 12) {

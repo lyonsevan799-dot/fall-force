@@ -10,7 +10,7 @@ import SettingsPanel from './SettingsPanel';
 import GravityButton from './GravityButton';
 import RotateOverlay from './RotateOverlay';
 
-export default function GameCanvas({ levelIndex, totalLevels, settings, displaySettings, sound, totalCoins, onExit, onComplete, onNext, onUpdateSettings, onResetProgress }) {
+export default function GameCanvas({ levelIndex, totalLevels, settings, displaySettings, sound, totalGems, onExit, onComplete, onNext, onUpdateSettings, onResetProgress }) {
   const wrapRef = useRef(null);
   const canvasRef = useRef(null);
   const engineRef = useRef(null);
@@ -91,7 +91,7 @@ export default function GameCanvas({ levelIndex, totalLevels, settings, displayS
       if (eng.state === 'complete' && !completedRef.current) {
         completedRef.current = true;
         if (cbRef.current.onComplete) {
-          cbRef.current.onComplete(levelIndex, { deaths: eng.deaths, time: eng.attemptTime, stars: eng.stars, coins: eng.coins });
+          cbRef.current.onComplete(levelIndex, { deaths: eng.deaths, time: eng.attemptTime, stars: eng.stars, gems: eng.gems });
         }
       }
       // Auto-respawn shortly after death so the player is back in the action
@@ -230,7 +230,7 @@ export default function GameCanvas({ levelIndex, totalLevels, settings, displayS
         onContextMenu={(e) => e.preventDefault()}
       />
 
-      <Hud levelIndex={levelIndex} ui={ui} totalCoins={totalCoins} onPause={togglePause} sound={sound} />
+      <Hud levelIndex={levelIndex} ui={ui} totalGems={totalGems} onPause={togglePause} sound={sound} />
 
       {isTouch && ui.state === 'playing' ? <GravityButton onPress={primary} sound={sound} /> : null}
 
@@ -260,7 +260,7 @@ export default function GameCanvas({ levelIndex, totalLevels, settings, displayS
           stars={ui.stars}
           deaths={ui.deaths}
           time={ui.time}
-          coins={ui.coins}
+          gems={ui.gems}
           isLast={levelIndex >= totalLevels - 1}
           sound={sound}
           onNext={() => cbRef.current.onNext()}

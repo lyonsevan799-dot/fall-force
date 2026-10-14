@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Sound } from '@/game/audio';
 import { LEVEL_COUNT } from '@/game/levels';
-import { loadProgress, saveProgress, recordResult, clearProgress, commitLevelCoins, commitEndlessCoins, FALLBACK } from '@/game/progress';
+import { loadProgress, saveProgress, recordResult, clearProgress, commitLevelGems, commitEndlessGems, FALLBACK } from '@/game/progress';
 import MainMenu from '@/components/game/MainMenu';
 import LevelSelect from '@/components/game/LevelSelect';
 import RaceLevelSelect from '@/components/game/RaceLevelSelect';
@@ -48,14 +48,14 @@ export default function Home() {
   const handleComplete = (i, result) => {
     setSave((p) => {
       const withResult = recordResult(p, i, { stars: result.stars, time: result.time }, LEVEL_COUNT);
-      return commitLevelCoins(withResult, i, result.coins || 0);
+      return commitLevelGems(withResult, i, result.gems || 0);
     });
   };
 
-  const handleEndlessResult = (score, coins) => {
+  const handleEndlessResult = (score, gems) => {
     setSave((p) => {
       const withBest = { ...p, endlessBest: Math.max(p.endlessBest || 0, score) };
-      return commitEndlessCoins(withBest, coins || 0);
+      return commitEndlessGems(withBest, gems || 0);
     });
   };
 
@@ -90,7 +90,7 @@ export default function Home() {
           settings={settingsRef.current}
           displaySettings={save.settings}
           sound={sound}
-          totalCoins={save.totalCoins || 0}
+          totalGems={save.totalGems || 0}
           onExit={() => setScreen('levels')}
           onComplete={handleComplete}
           onNext={() => setLevelIndex((i) => Math.min(LEVEL_COUNT - 1, i + 1))}
@@ -105,7 +105,7 @@ export default function Home() {
           displaySettings={save.settings}
           sound={sound}
           best={save.endlessBest || 0}
-          totalCoins={save.totalCoins || 0}
+          totalGems={save.totalGems || 0}
           onResult={handleEndlessResult}
           onExit={() => setScreen('menu')}
           onUpdateSettings={handleUpdateSettings}

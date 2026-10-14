@@ -182,10 +182,10 @@ export function buildLevel(spec, index) {
       if (it.type === 'spike' && h > 0) { it.hint = true; h--; }
     }
   }
-  // Auto-place coins in safe corridors — gives every level collectibles
+  // Auto-place gems in safe corridors — gives every level collectibles
   // without cluttering the hand-authored obstacle layout.
-  const coinSpacing = step * 2.5;
-  for (let cx = x0 + step * 2; cx < length - step * 2; cx += coinSpacing) {
+  const gemSpacing = step * 2.5;
+  for (let cx = x0 + step * 2; cx < length - step * 2; cx += gemSpacing) {
     let safe = true;
     for (const it of items) {
       if (it.type === 'spike') {
@@ -195,7 +195,7 @@ export function buildLevel(spec, index) {
       }
     }
     if (safe) {
-      const phase = Math.floor((cx - x0) / coinSpacing);
+      const phase = Math.floor((cx - x0) / gemSpacing);
       const y = phase % 3 === 0 ? 300 : phase % 3 === 1 ? 460 : MID_Y;
       items.push({ type: 'gem', x: cx, y, r: 13 });
     }

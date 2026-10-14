@@ -5,8 +5,8 @@ export const FALLBACK = {
   unlocked: 0,         // highest playable level index (0-based)
   endlessBest: 0,      // highest endless score
   raceWins: 0,         // total race victories
-  totalCoins: 0,       // persistent coins across all modes
-  levelCoins: {},     // { [levelIndex]: bestCoinsCollected }
+  totalGems: 0,        // persistent gems across all modes
+  levelGems: {},       // { [levelIndex]: bestGemsCollected }
   settings: { music: true, sfx: true, shake: true, reduced: false, musicVolume: 0.5, sfxVolume: 0.7 },
 };
 
@@ -22,8 +22,8 @@ export function loadProgress() {
       unlocked: typeof p.unlocked === 'number' ? p.unlocked : 1,
       endlessBest: typeof p.endlessBest === 'number' ? p.endlessBest : 0,
       raceWins: typeof p.raceWins === 'number' ? p.raceWins : 0,
-      totalCoins: typeof p.totalCoins === 'number' ? p.totalCoins : 0,
-      levelCoins: p.levelCoins && typeof p.levelCoins === 'object' ? p.levelCoins : {},
+      totalGems: typeof p.totalGems === 'number' ? p.totalGems : (typeof p.totalCoins === 'number' ? p.totalCoins : 0),
+      levelGems: p.levelGems && typeof p.levelGems === 'object' ? p.levelGems : (p.levelCoins && typeof p.levelCoins === 'object' ? p.levelCoins : {}),
       settings: { ...FALLBACK.settings, ...(p.settings || {}) },
     };
   } catch (e) {
@@ -51,19 +51,19 @@ export function recordResult(progress, levelIndex, { stars, time }, totalLevels)
   return next;
 }
 
-export function commitLevelCoins(progress, levelIndex, coins) {
+export function commitLevelGems(progress, levelIndex, gems) {
   const next = clone(progress);
-  const prevBest = next.levelCoins[levelIndex] || 0;
-  if (coins > prevBest) {
-    next.totalCoins += coins - prevBest;
-    next.levelCoins[levelIndex] = coins;
+  const prevBest = next.levelGems[levelIndex] || 0;
+  if (gems > prevBest) {
+    next.totalGems += gems - prevBest;
+    next.levelGems[levelIndex] = gems;
   }
   return next;
 }
 
-export function commitEndlessCoins(progress, coins) {
+export function commitEndlessGems(progress, gems) {
   const next = clone(progress);
-  next.totalCoins += coins;
+  next.totalGems += gems;
   return next;
 }
 

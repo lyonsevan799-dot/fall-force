@@ -58,7 +58,7 @@ export default function MainMenu({ save, sound, onCareer, onEndless, onRace, onS
         <span>{done} / {LEVELS.length} cleared</span>
         <span className="text-amber-200/70">{stars} / {LEVELS.length * 3} stars</span>
         <span className="text-cyan-200/70">Best {best}</span>
-        <span className="text-amber-200/70">{save.totalCoins || 0} coins</span>
+        <span className="text-cyan-200/70">{save.totalGems || 0} gems</span>
         <span className="text-pink-200/70">{save.raceWins || 0} wins</span>
       </div>
 
