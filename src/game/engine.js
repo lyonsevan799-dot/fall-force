@@ -370,7 +370,7 @@ export class Engine {
       const cy = this.py + size / 2;
       const dx = cx - gem.x;
       const dy = cy - gem.y;
-      const rr = (gem.r || 13) + size * 0.6;
+      const rr = (gem.r || 13) + size * 0.4;
       if (dx * dx + dy * dy < rr * rr) this.collectGem(gem);
     }
   }

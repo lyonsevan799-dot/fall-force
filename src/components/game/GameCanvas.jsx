@@ -17,7 +17,7 @@ export default function GameCanvas({ levelIndex, totalLevels, settings, displayS
   const cbRef = useRef({});
   const completedRef = useRef(false);
 
-  const [ui, setUi] = useState({ state: 'intro', deaths: 0, time: 0, progress: 0, checkpoint: 0, stars: 3 });
+  const [ui, setUi] = useState({ state: 'intro', deaths: 0, time: 0, progress: 0, checkpoint: 0, stars: 3, gems: 0 });
   const [paused, setPaused] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [toast, setToast] = useState(false);
@@ -79,6 +79,7 @@ export default function GameCanvas({ levelIndex, totalLevels, settings, displayS
     const push = () => setUi({
       state: eng.state, deaths: eng.deaths, time: eng.attemptTime,
       progress: eng.ui.progress, checkpoint: eng.ui.checkpoint, stars: eng.stars,
+      gems: eng.gems,
     });
 
     const loop = (now) => {
