@@ -19,7 +19,7 @@ export default function GemCounter({ count, total, size = 'sm' }) {
   return (
     <div className="relative flex items-center gap-1.5">
       <Gem size={iconSize} className="text-cyan-300 drop-shadow-[0_0_4px_rgba(56,232,255,0.5)]" />
-      <span className={`font-mono ${textSize} text-white/80`}>{(total || 0).toLocaleString()}</span>
+      <span className={`font-mono ${textSize} text-white/80`}>{((total || 0) + (count || 0)).toLocaleString()}</span>
       {popKey > 0 && (
         <div key={popKey} className="gs-gem-pop pointer-events-none absolute -top-1 left-5 font-mono text-xs font-bold text-cyan-300">+1</div>
       )}
