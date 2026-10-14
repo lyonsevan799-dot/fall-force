@@ -1,6 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Gem } from 'lucide-react';
 
+// Displays the player's persistent total gem balance (gem icon + number).
+// `count` (gems collected this level/run) is only used to trigger the +1 pop
+// animation — it is not shown, since there is no per-level gem target.
 export default function GemCounter({ count, total, size = 'sm' }) {
   const prevCountRef = useRef(count || 0);
   const [popKey, setPopKey] = useState(0);
@@ -16,10 +19,7 @@ export default function GemCounter({ count, total, size = 'sm' }) {
   return (
     <div className="relative flex items-center gap-1.5">
       <Gem size={iconSize} className="text-cyan-300 drop-shadow-[0_0_4px_rgba(56,232,255,0.5)]" />
-      <span className={`font-mono ${textSize} text-white/80`}>{count || 0}</span>
-      {total != null && (
-        <span className={`font-mono ${size === 'sm' ? 'text-[10px]' : 'text-xs'} text-cyan-200/50`}>/ {total.toLocaleString()}</span>
-      )}
+      <span className={`font-mono ${textSize} text-white/80`}>{(total || 0).toLocaleString()}</span>
       {popKey > 0 && (
         <div key={popKey} className="gs-gem-pop pointer-events-none absolute -top-1 left-5 font-mono text-xs font-bold text-cyan-300">+1</div>
       )}

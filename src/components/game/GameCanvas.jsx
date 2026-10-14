@@ -262,6 +262,7 @@ export default function GameCanvas({ levelIndex, totalLevels, settings, displayS
           deaths={ui.deaths}
           time={ui.time}
           gems={ui.gems}
+          totalGems={totalGems}
           isLast={levelIndex >= totalLevels - 1}
           sound={sound}
           onNext={() => cbRef.current.onNext()}

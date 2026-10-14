@@ -53,11 +53,8 @@ export function recordResult(progress, levelIndex, { stars, time }, totalLevels)
 
 export function commitLevelGems(progress, levelIndex, gems) {
   const next = clone(progress);
-  const prevBest = next.levelGems[levelIndex] || 0;
-  if (gems > prevBest) {
-    next.totalGems += gems - prevBest;
-    next.levelGems[levelIndex] = gems;
-  }
+  next.totalGems += gems || 0;
+  next.levelGems[levelIndex] = Math.max(next.levelGems[levelIndex] || 0, gems || 0);
   return next;
 }
 
