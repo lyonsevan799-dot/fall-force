@@ -132,7 +132,14 @@ export default function GameCanvas({ levelIndex, totalLevels, settings, displayS
       if (ro) ro.disconnect();
       engineRef.current = null;
     };
-  }, [levelIndex, sound, settings]);
+  }, [levelIndex, sound]);
+
+  // Live-update engine settings (volume, shake, reduced effects) without
+  // restarting the run — changing a setting mid-level must not reset progress.
+  useEffect(() => {
+    const eng = engineRef.current;
+    if (eng) eng.settings = displaySettings;
+  }, [displaySettings]);
 
   // ---- actions -------------------------------------------------------------
   const primary = () => {

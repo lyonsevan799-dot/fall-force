@@ -78,7 +78,13 @@ export default function RaceCanvas({ levelIndex, settings, displaySettings, soun
     let ro = null;
     if (window.ResizeObserver && wrap) { ro = new ResizeObserver(resize); ro.observe(wrap); }
     return () => { cancelAnimationFrame(raf); window.removeEventListener('resize', resize); if (ro) ro.disconnect(); engineRef.current = null; };
-  }, [levelIndex, sound, settings]);
+  }, [levelIndex, sound]);
+
+  // Live-update engine settings without restarting the race.
+  useEffect(() => {
+    const eng = engineRef.current;
+    if (eng) eng.settings = displaySettings;
+  }, [displaySettings]);
 
   const startRace = () => { const eng = engineRef.current; if (!eng) return; sound.init(); sound.resume(); eng.start(); };
   const p1Switch = () => { const eng = engineRef.current; if (!eng) return; sound.init(); sound.resume(); eng.switchPlayer(eng.players[0]); };

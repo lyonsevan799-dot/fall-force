@@ -19,11 +19,11 @@ export function loadProgress() {
     const p = JSON.parse(raw);
     return {
       levels: p.levels && typeof p.levels === 'object' ? p.levels : {},
-      unlocked: typeof p.unlocked === 'number' ? p.unlocked : 1,
+      unlocked: typeof p.unlocked === 'number' ? p.unlocked : 0,
       endlessBest: typeof p.endlessBest === 'number' ? p.endlessBest : 0,
       raceWins: typeof p.raceWins === 'number' ? p.raceWins : 0,
-      totalGems: typeof p.totalGems === 'number' ? p.totalGems : (typeof p.totalCoins === 'number' ? p.totalCoins : 0),
-      levelGems: p.levelGems && typeof p.levelGems === 'object' ? p.levelGems : (p.levelCoins && typeof p.levelCoins === 'object' ? p.levelCoins : {}),
+      totalGems: typeof p.totalGems === 'number' ? p.totalGems : 0,
+      levelGems: p.levelGems && typeof p.levelGems === 'object' ? p.levelGems : {},
       settings: { ...FALLBACK.settings, ...(p.settings || {}) },
     };
   } catch (e) {

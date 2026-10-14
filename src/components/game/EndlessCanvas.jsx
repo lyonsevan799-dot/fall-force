@@ -96,7 +96,13 @@ export default function EndlessCanvas({ settings, displaySettings, sound, best, 
       if (ro) ro.disconnect();
       engineRef.current = null;
     };
-  }, [sound, settings]);
+  }, [sound]);
+
+  // Live-update engine settings without restarting the run.
+  useEffect(() => {
+    const eng = engineRef.current;
+    if (eng) eng.settings = displaySettings;
+  }, [displaySettings]);
 
   const primary = () => {
     const eng = engineRef.current;

@@ -67,8 +67,13 @@ export default function MainMenu({ save, sound, onCareer, onEndless, onRace, onS
         <Settings2 size={14} /> Settings
       </button>
 
-      <div className="font-heading text-[9px] uppercase tracking-[0.3em] text-white/25">
-        Flip gravity · dodge · survive
+      <div className="flex flex-col items-center gap-1">
+        <div className="font-heading text-[9px] uppercase tracking-[0.3em] text-white/25">
+          Flip gravity · dodge · survive
+        </div>
+        <div className="font-heading text-[9px] uppercase tracking-[0.24em] text-cyan-200/40">
+          Tap · Space · Click to flip
+        </div>
       </div>
     </div>
   );
