@@ -7,9 +7,8 @@ import DeathOverlay from './DeathOverlay';
 import LevelComplete from './LevelComplete';
 import PauseMenu from './PauseMenu';
 import SettingsPanel from './SettingsPanel';
-import GravityButton from './GravityButton';
-import RushButton from './RushButton';
 import RotateOverlay from './RotateOverlay';
+import { useTapHoldControl } from '@/hooks/useTapHoldControl';
 
 export default function GameCanvas({ levelIndex, totalLevels, settings, displaySettings, sound, totalGems, onExit, onComplete, onNext, onUpdateSettings, onResetProgress }) {
   const wrapRef = useRef(null);
@@ -22,7 +21,6 @@ export default function GameCanvas({ levelIndex, totalLevels, settings, displayS
   const [paused, setPaused] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [toast, setToast] = useState(false);
-  const [isTouch, setIsTouch] = useState(false);
   const [needsRotate, setNeedsRotate] = useState(false);
   const [rotateDismissed, setRotateDismissed] = useState(false);
 
@@ -220,7 +218,6 @@ export default function GameCanvas({ levelIndex, totalLevels, settings, displayS
     const check = () => {
       const coarse = window.matchMedia ? window.matchMedia('(pointer: coarse)').matches : false;
       const touch = ('ontouchstart' in window) || navigator.maxTouchPoints > 0 || coarse;
-      setIsTouch(touch);
       setNeedsRotate(touch && window.innerWidth < 720 && window.innerHeight > window.innerWidth);
     };
     check();
@@ -238,8 +235,9 @@ export default function GameCanvas({ levelIndex, totalLevels, settings, displayS
     return () => clearTimeout(id);
   }, [toast]);
 
-  const startRush = () => { const eng = engineRef.current; if (eng) eng.rushHeld = true; };
-  const endRush = () => { const eng = engineRef.current; if (eng) eng.rushHeld = false; };
+  const flip = () => { const eng = engineRef.current; if (eng && (eng.state === 'playing' || eng.state === 'intro')) eng.switchGravity(); };
+  const deadTap = () => { const eng = engineRef.current; if (eng && eng.state === 'dead') eng.respawn(); };
+  const pointer = useTapHoldControl({ engineRef, sound, onFlip: flip, onDeadTap: deadTap });
 
   const showRotate = needsRotate && !rotateDismissed;
 
@@ -248,22 +246,19 @@ export default function GameCanvas({ levelIndex, totalLevels, settings, displayS
       <canvas
         ref={canvasRef}
         className="absolute inset-0 block h-full w-full touch-none"
-        onPointerDown={(e) => { e.preventDefault(); primary(); }}
+        onPointerDown={pointer.onPointerDown}
+        onPointerUp={pointer.onPointerUp}
+        onPointerCancel={pointer.onPointerCancel}
+        onPointerLeave={pointer.onPointerLeave}
         onContextMenu={(e) => e.preventDefault()}
       />
 
       <Hud levelIndex={levelIndex} ui={ui} totalGems={totalGems} onPause={togglePause} sound={sound} />
 
-      {isTouch && ui.state === 'playing' ? <GravityButton onPress={primary} sound={sound} /> : null}
-
-      {isTouch && ui.state === 'playing' && ui.rushAvailable ? (
-        <RushButton onPressStart={startRush} onPressEnd={endRush} active={ui.rush} sound={sound} />
-      ) : null}
-
-      {!isTouch && ui.rushAvailable && !ui.rush && ui.state === 'playing' ? (
+      {ui.rushAvailable && !ui.rush && ui.state === 'playing' ? (
         <div className="pointer-events-none absolute bottom-6 left-1/2 z-20 -translate-x-1/2">
           <div className="gs-pop rounded-full border border-cyan-300/30 bg-black/50 px-4 py-2 font-heading text-[10px] uppercase tracking-[0.28em] text-cyan-100/90 backdrop-blur">
-            Hold Shift to follow gem row
+            Hold to follow gem row
           </div>
         </div>
       ) : null}

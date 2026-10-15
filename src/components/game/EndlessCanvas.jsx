@@ -6,9 +6,8 @@ import EndlessGameOver from './EndlessGameOver';
 import MilestoneToast from './MilestoneToast';
 import PauseMenu from './PauseMenu';
 import SettingsPanel from './SettingsPanel';
-import GravityButton from './GravityButton';
-import RushButton from './RushButton';
 import RotateOverlay from './RotateOverlay';
+import { useTapHoldControl } from '@/hooks/useTapHoldControl';
 
 export default function EndlessCanvas({ settings, displaySettings, sound, best, totalGems, onResult, onExit, onUpdateSettings, onResetProgress }) {
   const wrapRef = useRef(null);
@@ -23,7 +22,6 @@ export default function EndlessCanvas({ settings, displaySettings, sound, best, 
   const [milestone, setMilestone] = useState(null);
   const [paused, setPaused] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
-  const [isTouch, setIsTouch] = useState(false);
   const [needsRotate, setNeedsRotate] = useState(false);
   const [rotateDismissed, setRotateDismissed] = useState(false);
 
@@ -169,7 +167,6 @@ export default function EndlessCanvas({ settings, displaySettings, sound, best, 
     const check = () => {
       const coarse = window.matchMedia ? window.matchMedia('(pointer: coarse)').matches : false;
       const touch = ('ontouchstart' in window) || navigator.maxTouchPoints > 0 || coarse;
-      setIsTouch(touch);
       setNeedsRotate(touch && window.innerWidth < 720 && window.innerHeight > window.innerWidth);
     };
     check();
@@ -178,8 +175,8 @@ export default function EndlessCanvas({ settings, displaySettings, sound, best, 
     return () => { window.removeEventListener('resize', check); window.removeEventListener('orientationchange', check); };
   }, []);
 
-  const startRush = () => { const eng = engineRef.current; if (eng) eng.rushHeld = true; };
-  const endRush = () => { const eng = engineRef.current; if (eng) eng.rushHeld = false; };
+  const flip = () => { const eng = engineRef.current; if (eng && (eng.state === 'playing' || eng.state === 'intro')) eng.switchGravity(); };
+  const pointer = useTapHoldControl({ engineRef, sound, onFlip: flip, onDeadTap: restart });
 
   const showRotate = needsRotate && !rotateDismissed;
   const prevBest = runStartBestRef.current;
@@ -189,28 +186,20 @@ export default function EndlessCanvas({ settings, displaySettings, sound, best, 
   return (
     <div ref={wrapRef} className="gs-screen-in fixed inset-0 touch-none select-none overflow-hidden bg-[#04050c]">
       <canvas ref={canvasRef} className="absolute inset-0 block h-full w-full touch-none"
-        onPointerDown={(e) => {
-          e.preventDefault();
-          const eng = engineRef.current;
-          if (eng && eng.state === 'dead') { restart(); return; }
-          primary();
-        }}
+        onPointerDown={pointer.onPointerDown}
+        onPointerUp={pointer.onPointerUp}
+        onPointerCancel={pointer.onPointerCancel}
+        onPointerLeave={pointer.onPointerLeave}
         onContextMenu={(e) => e.preventDefault()} />
 
       <EndlessHud ui={ui} best={finalBest} totalGems={totalGems} onPause={togglePause} sound={sound} />
 
       <MilestoneToast event={milestone} />
 
-      {isTouch && ui.state === 'playing' ? <GravityButton onPress={primary} sound={sound} /> : null}
-
-      {isTouch && ui.state === 'playing' && ui.rushAvailable ? (
-        <RushButton onPressStart={startRush} onPressEnd={endRush} active={ui.rush} sound={sound} />
-      ) : null}
-
-      {!isTouch && ui.rushAvailable && !ui.rush && ui.state === 'playing' ? (
+      {ui.rushAvailable && !ui.rush && ui.state === 'playing' ? (
         <div className="pointer-events-none absolute bottom-6 left-1/2 z-20 -translate-x-1/2">
           <div className="gs-pop rounded-full border border-cyan-300/30 bg-black/50 px-4 py-2 font-heading text-[10px] uppercase tracking-[0.28em] text-cyan-100/90 backdrop-blur">
-            Hold Shift to follow gem row
+            Hold to follow gem row
           </div>
         </div>
       ) : null}
