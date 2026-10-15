@@ -156,6 +156,11 @@ export class Sound {
         this.tone({ type: 'triangle', freq: 880, to: 1320, dur: 0.12, gain: 0.07 });
         this.tone({ type: 'sine', freq: 1320, to: 1760, dur: 0.08, gain: 0.04, delay: 0.03 });
         break;
+      case 'rush':
+        this.tone({ type: 'sawtooth', freq: 520, to: 1400, dur: 0.3, gain: 0.08, filter: 3000 });
+        this.tone({ type: 'sine', freq: 260, to: 880, dur: 0.34, gain: 0.06, delay: 0.04 });
+        this.noise({ freq: 1200, to: 4200, dur: 0.28, gain: 0.04, filterType: 'bandpass', q: 2 });
+        break;
       case 'beep':
         this.tone({ type: 'square', freq: 740, dur: 0.09, gain: 0.07, filter: 3200 });
         break;

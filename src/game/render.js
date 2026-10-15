@@ -642,6 +642,55 @@ function drawFinish(ctx, eng) {
   }
 }
 
+function drawGemRows(ctx, eng) {
+  const theme = eng.theme;
+  const t = eng.t;
+  const items = eng.level.items;
+  const groups = {};
+  for (let i = 0; i < items.length; i++) {
+    const it = items[i];
+    if (it.type !== 'gem' || it.groupId == null || it.collected) continue;
+    if (!groups[it.groupId]) groups[it.groupId] = [];
+    groups[it.groupId].push(it);
+  }
+  for (const id in groups) {
+    const gs = groups[id];
+    if (gs.length < 4) continue;
+    gs.sort((a, b) => a.x - b.x);
+    const pulse = 0.5 + 0.3 * Math.sin(t * 3 + gs[0].x * 0.01);
+    ctx.strokeStyle = hexA(theme.accent, 0.1 * pulse);
+    ctx.lineWidth = 9;
+    ctx.beginPath();
+    ctx.moveTo(gs[0].x, gs[0].y);
+    for (let i = 1; i < gs.length; i++) ctx.lineTo(gs[i].x, gs[i].y);
+    ctx.stroke();
+    ctx.strokeStyle = hexA(theme.accent, 0.22 * pulse);
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.moveTo(gs[0].x, gs[0].y);
+    for (let i = 1; i < gs.length; i++) ctx.lineTo(gs[i].x, gs[i].y);
+    ctx.stroke();
+  }
+}
+
+function drawRushGuide(ctx, eng) {
+  if (!eng.rush) return;
+  const r = eng.rush;
+  const theme = eng.theme;
+  const size = PLAYER_SIZE;
+  const cx = eng.px + size / 2, cy = eng.py + size / 2;
+  const ex = r.startX + r.dir.x * r.totalLen;
+  const ey = r.startY + r.dir.y * r.totalLen;
+  ctx.strokeStyle = hexA(theme.accent2, 0.22);
+  ctx.lineWidth = 12;
+  ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(ex, ey); ctx.stroke();
+  ctx.strokeStyle = hexA(theme.accent, 0.6);
+  ctx.lineWidth = 3;
+  ctx.setLineDash([12, 9]);
+  ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(ex, ey); ctx.stroke();
+  ctx.setLineDash([]);
+}
+
 function drawParticles(ctx, eng) {
   const pool = eng.particles.pool;
   ctx.save();
@@ -681,10 +730,11 @@ function drawParticles(ctx, eng) {
 
 function drawTrail(ctx, eng) {
   const theme = eng.theme;
+  const boost = eng.rush ? 2.4 : 1;
   for (let i = 0; i < eng.trail.length; i++) {
     const tr = eng.trail[i];
     const k = tr.life / tr.max;
-    ctx.fillStyle = hexA(theme.player, 0.13 * k);
+    ctx.fillStyle = hexA(eng.rush ? theme.accent : theme.player, 0.13 * k * boost);
     rr(ctx, tr.x + 4, tr.y + 4, PLAYER_SIZE - 8, PLAYER_SIZE - 8, 6);
     ctx.fill();
   }
@@ -779,10 +829,12 @@ export function render(ctx, eng, w, h, dpr = 1) {
   ctx.save();
   ctx.setTransform(s * dpr, 0, 0, s * dpr, tx * dpr, ty * dpr);
   drawTerrain(ctx, eng, camLeft, viewW);
+  drawGemRows(ctx, eng);
   if (!eng.level.noFinish) drawFinish(ctx, eng);
   drawHazards(ctx, eng);
   drawParticles(ctx, eng);
   if (eng.state !== 'dying' && eng.state !== 'dead') {
+    drawRushGuide(ctx, eng);
     drawTrail(ctx, eng);
     drawPlayer(ctx, eng);
   }

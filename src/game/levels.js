@@ -7,6 +7,8 @@ import { enrichGems } from './gemPlace';
 // "crossings" (how long the player takes to flip across the corridor), so the
 // spacing stays fair as the run speed grows level by level.
 
+let _gemGroupId = 1;
+
 export function emit(d, x, out, ctx) {
   const { step, gap } = ctx;
   const f = d.f == null ? gap : d.f;
@@ -180,8 +182,12 @@ export function emit(d, x, out, ctx) {
     case 'gem': {
       const n = d.n || 1;
       const spacing = d.spacing || 0.5;
+      const isRow = n >= 4;
+      const groupId = isRow ? _gemGroupId++ : undefined;
       for (let i = 0; i < n; i++) {
-        out.push({ type: 'gem', x: x + i * step * spacing, y: d.y || MID_Y, r: 13 });
+        const gem = { type: 'gem', x: x + i * step * spacing, y: d.y || MID_Y, r: 13 };
+        if (isRow) { gem.groupId = groupId; gem.rowLen = n; gem.rowDir = { x: 1, y: 0 }; }
+        out.push(gem);
       }
       return x + n * step * spacing;
     }

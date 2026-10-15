@@ -2,7 +2,7 @@ import { Engine } from './engine';
 import { emit } from './levels';
 import { BASE_SPEED, CROSS_TIME, START_X, clamp } from './config';
 import { ENDLESS_CHUNKS } from './endlessChunks';
-import { gemClear, LANE } from './gemPlace';
+import { gemClear, LANE, placeRow } from './gemPlace';
 
 // Visual sections — theme and name are driven by difficulty so transitions
 // happen smoothly as the player survives longer.
@@ -150,6 +150,19 @@ export class EndlessEngine extends Engine {
         if (gemClear(items, gx, ly)) items.push({ type: 'gem', x: gx, y: ly, r: 13 });
       }
     }
+    // Large gem rows (4-6) — straight lines that enable Gem Rush. Alternates
+    // horizontal floor/ceiling and diagonal floor-to-mid / ceiling-to-mid
+    // paths, each checked against hazards so it never crosses an obstacle.
+    for (let cx = x0 + step * 5; cx < x1 - step * 3; cx += step * 9) {
+      if (Math.random() > 0.55) continue;
+      const count = 4 + Math.floor(Math.random() * 3);
+      const spacing = step * 0.5;
+      const m = Math.floor(cx / step) % 4;
+      if (m === 0) placeRow(items, cx, LANE.floor, count, 1, 0, spacing);
+      else if (m === 1) placeRow(items, cx, LANE.ceil, count, 1, 0, spacing);
+      else if (m === 2) placeRow(items, cx, LANE.floor, count, 1, -1, spacing);
+      else placeRow(items, cx, LANE.ceil, count, 1, 1, spacing);
+    }
   }
 
   _rebuild() {
@@ -160,6 +173,7 @@ export class EndlessEngine extends Engine {
     this.portals = L.items.filter((i) => i.type === 'portal');
     this.gates = L.items.filter((i) => i.type === 'speed');
     this.collectibles = L.items.filter((i) => i.type === 'gem');
+    this.buildGemGroups();
   }
 
   _cull() {

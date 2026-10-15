@@ -33,7 +33,11 @@ export class Engine {
     this.finishReached = false;
     this.stars = 3;
     this.gems = 0;
-    this.ui = { state: 'intro', deaths: 0, time: 0, progress: 0, checkpoint: 0, level: 0, gems: 0 };
+    this.rush = null;
+    this.rushHeld = false;
+    this.rushCandidate = null;
+    this.gemGroups = {};
+    this.ui = { state: 'intro', deaths: 0, time: 0, progress: 0, checkpoint: 0, level: 0, gems: 0, rush: false, rushAvailable: false };
   }
 
   get level() { return LEVELS[this.levelIndex]; }
@@ -50,6 +54,9 @@ export class Engine {
     this.checkpointItems = L.items.filter((i) => i.type === 'checkpoint');
     this.collectibles = L.items.filter((i) => i.type === 'gem');
     this.collectibles.forEach((g) => { g.collected = false; });
+    this.buildGemGroups();
+    this.rush = null;
+    this.rushCandidate = null;
     L.checkpoints.forEach((c) => { c.done = false; });
     this.deaths = 0;
     this.cpIndex = -1;
@@ -99,6 +106,8 @@ export class Engine {
     });
     if (full) this.collectibles.forEach((g) => { g.collected = false; });
     this.spawnT = 0;
+    this.rush = null;
+    this.rushCandidate = null;
     if (!full) {
       // Quick respawn-in: the player materialises at the checkpoint with a
       // short scale-up animation so retry feels instant, not jarring.
@@ -128,6 +137,26 @@ export class Engine {
     this.ui.checkpoint = this.cpIndex + 1;
     this.ui.level = this.levelIndex;
     this.ui.gems = this.gems;
+    this.ui.rush = !!this.rush;
+    this.ui.rushAvailable = this.rushAvailable;
+  }
+
+  buildGemGroups() {
+    this.gemGroups = {};
+    for (const g of this.collectibles) {
+      if (g.groupId == null) continue;
+      if (!this.gemGroups[g.groupId]) this.gemGroups[g.groupId] = [];
+      this.gemGroups[g.groupId].push(g);
+    }
+  }
+
+  get rushAvailable() {
+    if (this.rush || this.rushCandidate) return true;
+    for (const g of this.collectibles) {
+      if (g.collected || g.rowLen == null || g.rowLen < 4) continue;
+      if (g.x > this.px && g.x - this.px < 520) return true;
+    }
+    return false;
   }
 
   addShake(mag, dur) {
@@ -168,6 +197,8 @@ export class Engine {
     this.state = 'dying';
     this.dieT = 0;
     this.deaths++;
+    this.rush = null;
+    this.rushCandidate = null;
     this.hitstop = 0.075;
     this.flash = 0.95;
     this.addShake(17, 0.55);
@@ -250,12 +281,17 @@ export class Engine {
     this.gems++;
     this.sound.sfx('gem');
     const theme = this.theme;
-    this.particles.burst(gem.x, gem.y, 10, {
+    const rushing = !!this.rush;
+    this.particles.burst(gem.x, gem.y, rushing ? 14 : 10, {
       color: [theme.accent, '#ffffff', theme.accent2],
-      speed: 180, size: 3.5, life: 0.5, drag: 2.5, shape: 'spark',
+      speed: rushing ? 230 : 180, size: 3.5, life: 0.5, drag: 2.5, shape: 'spark',
     });
-    this.particles.ring(gem.x, gem.y, { r: 5, rv: 280, life: 0.35, color: theme.accent, w: 3 });
-    this.flash = Math.min(1, this.flash + 0.1);
+    this.particles.ring(gem.x, gem.y, { r: 5, rv: rushing ? 360 : 280, life: 0.35, color: theme.accent, w: 3 });
+    this.flash = Math.min(1, this.flash + (rushing ? 0.14 : 0.1));
+    // Large row: open a brief window to hold the rush input and follow the row.
+    if (gem.groupId != null && gem.rowLen >= 4 && !this.rush && this.state === 'playing') {
+      this.rushCandidate = { groupId: gem.groupId, t: 0.5 };
+    }
   }
 
   land(plat) {
@@ -283,6 +319,7 @@ export class Engine {
   }
 
   step(h) {
+    if (this.rush) { this.stepRush(h); return; }
     const L = this.level;
     const size = PLAYER_SIZE;
 
@@ -367,6 +404,11 @@ export class Engine {
       const cp = this.level.checkpoints[i];
       if (!cp.done && this.px + size > cp.x) this.triggerCheckpoint(i);
     }
+    this.collectGems();
+  }
+
+  collectGems() {
+    const size = PLAYER_SIZE;
     for (let i = 0; i < this.collectibles.length; i++) {
       const gem = this.collectibles[i];
       if (gem.collected) continue;
@@ -487,6 +529,78 @@ export class Engine {
     return null;
   }
 
+  // ---- Gem Rush: hold to glide along a straight row of 4+ gems ----
+  activateRush(groupId) {
+    const group = this.gemGroups[groupId];
+    if (!group || group.length < 4) return;
+    const dir0 = group[0].rowDir || { x: 1, y: 0 };
+    const len = Math.hypot(dir0.x, dir0.y) || 1;
+    const nx = dir0.x / len, ny = dir0.y / len;
+    const sorted = group.slice().sort((a, b) => (a.x * nx + a.y * ny) - (b.x * nx + b.y * ny));
+    let startGem = null;
+    for (const g of sorted) { if (!g.collected) { startGem = g; break; } }
+    if (!startGem) return;
+    const size = PLAYER_SIZE;
+    const cx = this.px + size / 2, cy = this.py + size / 2;
+    let s = (cx - startGem.x) * nx + (cy - startGem.y) * ny;
+    if (s < 0) s = 0;
+    const last = sorted[sorted.length - 1];
+    const totalLen = Math.max(1, (last.x - startGem.x) * nx + (last.y - startGem.y) * ny);
+    this.rush = { dir: { x: nx, y: ny }, startX: startGem.x, startY: startGem.y, s, totalLen };
+    this.rushCandidate = null;
+    this.grounded = false; this.groundPlat = null; this.vy = 0;
+    this.sx = 0.8; this.sy = 1.2;
+    this.sound.sfx('rush');
+    this.flash = Math.min(1, this.flash + 0.3);
+    this.addShake(5, 0.2);
+    const theme = this.theme;
+    this.particles.ring(cx, cy, { r: 8, rv: 420, life: 0.4, color: theme.accent, w: 4 });
+  }
+
+  endRush() {
+    if (!this.rush) return;
+    this.rush = null;
+    this.grounded = false;
+    this.groundPlat = null;
+    this.flash = Math.min(1, this.flash + 0.12);
+  }
+
+  solidBlocksRush() {
+    const size = PLAYER_SIZE;
+    const bx = this.px + 4, by = this.py + 4, bw = size - 8, bh = size - 8;
+    for (const it of this.solids) {
+      const g = it.type === 'vanish' ? vanishGeom(it, this.t) : platGeom(it, this.t);
+      if (!g.solid) continue;
+      if (rectHit(bx, by, bw, bh, g.x, g.y, g.w, g.h)) return true;
+    }
+    return false;
+  }
+
+  stepRush(h) {
+    const size = PLAYER_SIZE;
+    const r = this.rush;
+    const baseSpeed = this.level.speed * this.speedMult;
+    const dirX = r.dir.x;
+    let rushSpeed = dirX > 0.05 ? baseSpeed / dirX : baseSpeed * 2;
+    rushSpeed = Math.min(rushSpeed, baseSpeed * 2.4);
+    r.s += rushSpeed * h;
+    const ncx = r.startX + r.dir.x * r.s;
+    const ncy = r.startY + r.dir.y * r.s;
+    this.px = ncx - size / 2;
+    this.py = clamp(ncy - size / 2, CEIL_Y, FLOOR_Y - size);
+    if (this.gateIndex < this.gates.length && this.px >= this.gates[this.gateIndex].x) {
+      this.speedMult = this.gates[this.gateIndex].mult;
+      this.gateIndex++;
+    }
+    this.collectGems();
+    this.checkHazards();
+    if (!this.rush || this.state !== 'playing') return;
+    if (this.solidBlocksRush()) { this.endRush(); return; }
+    if (r.s >= r.totalLen) { this.endRush(); return; }
+    if (!this.rushHeld) { this.endRush(); return; }
+    if (!this.finishReached && this.px >= this.level.length) this.reachFinish();
+  }
+
   update(dtRaw) {
     if (this.paused) return;
     const dt = Math.min(0.05, dtRaw);
@@ -531,12 +645,21 @@ export class Engine {
       }
     }
 
+    // Gem Rush activation window: if the player holds the rush input shortly
+    // after collecting the first gem of a large row, lock onto the row.
+    if (this.rushCandidate && !this.rush) {
+      this.rushCandidate.t -= dt;
+      if (this.rushCandidate.t <= 0) this.rushCandidate = null;
+      else if (this.rushHeld) this.activateRush(this.rushCandidate.groupId);
+    }
     // squash / stretch spring
     const k = Math.min(1, dt * 13);
     this.sx += (1 - this.sx) * k;
     this.sy += (1 - this.sy) * k;
     this.rotV *= Math.max(0, 1 - dt * 6);
-    const targetRot = clamp(this.vy / 2600, -0.32, 0.32) * this.dir;
+    const targetRot = this.rush
+      ? clamp(this.rush.dir.y * 0.5, -0.32, 0.32)
+      : clamp(this.vy / 2600, -0.32, 0.32) * this.dir;
     this.rot += (targetRot - this.rot) * Math.min(1, dt * 10) + this.rotV * dt;
 
     // speed trail

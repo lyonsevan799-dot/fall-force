@@ -4,6 +4,9 @@
 // Every candidate is checked against static hazard/solid bounding boxes so a
 // gem never spawns inside an obstacle, and the lanes themselves are reachable
 // by the player's normal movement, so every gem can be collected.
+//
+// Large rows (4+ gems) are tagged with a shared groupId + rowLen + rowDir so
+// the engine can offer the Gem Rush hold-to-follow mechanic on them.
 
 import { CEIL_Y, FLOOR_Y, MID_Y, PLAYER_SIZE } from './config';
 
@@ -17,6 +20,8 @@ export const LANE = {
   midLow: 460,                             // lower-mid, collected on the way up/down
   midHigh: 300,                            // upper-mid, collected on the way up/down
 };
+
+let _gid = 1;
 
 const HAZARD = new Set(['spike', 'saw', 'blade', 'crusher', 'laser', 'mspike', 'drop', 'wall', 'bounce', 'trap']);
 const SOLID = new Set(['plat', 'vanish']);
@@ -101,26 +106,89 @@ export function gemClear(items, x, y, r = 13) {
   return true;
 }
 
-// Enrich a level's item list with a varied gem layout: a frequent alternating
-// stream across floor/ceiling/mid lanes, periodic 3-gem clusters, a gem just
-// above every platform, and a trail of gems through every gravity tunnel.
+// Sample a segment between two points and ensure no hazard/solid blocks the
+// path, so a gem row never crosses an obstacle the player would clip through.
+function pathClear(items, x1, y1, x2, y2) {
+  const steps = 6;
+  for (let i = 1; i <= steps; i++) {
+    const k = i / steps;
+    const px = x1 + (x2 - x1) * k;
+    const py = y1 + (y2 - y1) * k;
+    if (!gemClear(items, px, py, 10)) return false;
+  }
+  return true;
+}
+
+function rollback(items, gems) {
+  for (const g of gems) {
+    const idx = items.indexOf(g);
+    if (idx >= 0) items.splice(idx, 1);
+  }
+}
+
+// Place a straight row of `count` gems starting at (x, y) moving in direction
+// (dirX, dirY) with `spacing` between each gem. All gems share a groupId so
+// the engine can offer Gem Rush on rows of 4+. Returns the placed gems, or
+// null (and removes any partial row) if any position or path segment is blocked.
+export function placeRow(items, x, y, count, dirX, dirY, spacing) {
+  const len = Math.hypot(dirX, dirY) || 1;
+  const nx = dirX / len, ny = dirY / len;
+  const groupId = _gid++;
+  const gems = [];
+  let prevX = x, prevY = y;
+  for (let i = 0; i < count; i++) {
+    const gx = x + nx * spacing * i;
+    const gy = y + ny * spacing * i;
+    if (gy < CEIL_Y + 8 || gy > FLOOR_Y - 8) { rollback(items, gems); return null; }
+    if (!gemClear(items, gx, gy)) { rollback(items, gems); return null; }
+    if (i > 0 && !pathClear(items, prevX, prevY, gx, gy)) { rollback(items, gems); return null; }
+    const gem = { type: 'gem', x: gx, y: gy, r: 13, groupId, rowLen: count, rowDir: { x: nx, y: ny } };
+    gems.push(gem);
+    items.push(gem);
+    prevX = gx; prevY = gy;
+  }
+  return gems;
+}
+
+// Enrich a level's item list with a varied gem layout: large rows first (so
+// they get clear space), then a frequent alternating stream across
+// floor/ceiling/mid lanes, periodic 3-gem clusters, a gem just above every
+// platform, and a trail of gems through every gravity tunnel.
 // Deterministic (no randomness) so a given level always plays the same way.
 // Mutates `items` and returns the array of gems added.
 export function enrichGems(items, x0, length, step) {
   const added = [];
-  const place = (g) => { items.push(g); added.push(g); };
+  const place = (g) => { if (g) for (const gem of g) { items.push(gem); added.push(gem); } };
+  const placeSingle = (g) => { items.push(g); added.push(g); };
 
-  // 1. Baseline stream — frequent single gems cycling through reachable lanes
+  // 1. Large gem rows — straight lines of 4-6 gems that enable Gem Rush.
+  //    Horizontal rows sit on floor/ceiling lanes; diagonal rows glide from
+  //    floor toward mid (or ceiling toward mid). Placed first so they get
+  //    priority on clear space; the stream below fills around them.
+  let ri = 0;
+  for (let cx = x0 + step * 6; cx < length - step * 4; cx += step * 10, ri++) {
+    const count = 4 + (ri % 3); // 4, 5, 6
+    const spacing = step * 0.5;
+    const m = ri % 4;
+    let row = null;
+    if (m === 0) row = placeRow(items, cx, LANE.floor, count, 1, 0, spacing);
+    else if (m === 1) row = placeRow(items, cx, LANE.ceil, count, 1, 0, spacing);
+    else if (m === 2) row = placeRow(items, cx, LANE.floor, count, 1, -1, spacing);
+    else row = placeRow(items, cx, LANE.ceil, count, 1, 1, spacing);
+    if (row) for (const g of row) added.push(g);
+  }
+
+  // 2. Baseline stream — frequent single gems cycling through reachable lanes
   //    so the player collects a steady rhythm while running and switching.
   const baseSpacing = step * 1.5;
   let i = 0;
   for (let cx = x0 + step * 1.5; cx < length - step * 1.5; cx += baseSpacing, i++) {
     const m = i % 5;
     const y = m === 0 ? LANE.floor : m === 1 ? LANE.ceil : m === 2 ? LANE.mid : m === 3 ? LANE.midLow : LANE.midHigh;
-    if (gemClear(items, cx, y)) place({ type: 'gem', x: cx, y, r: 13 });
+    if (gemClear(items, cx, y)) placeSingle({ type: 'gem', x: cx, y, r: 13 });
   }
 
-  // 2. Clusters — every ~7 steps a tight line of 3 gems in the first safe
+  // 3. Clusters — every ~7 steps a tight line of 3 gems in the first safe
   //    lane, making collection bursts feel satisfying.
   let ci = 0;
   for (let cx = x0 + step * 4; cx < length - step * 2; cx += step * 7, ci++) {
@@ -130,27 +198,27 @@ export function enrichGems(items, x0, length, step) {
     const dx = step * 0.34;
     for (let k = -1; k <= 1; k++) {
       const gx = cx + k * dx;
-      if (gemClear(items, gx, ly)) place({ type: 'gem', x: gx, y: ly, r: 13 });
+      if (gemClear(items, gx, ly)) placeSingle({ type: 'gem', x: gx, y: ly, r: 13 });
     }
   }
 
-  // 3. Platform gems — one gem hovering just above each platform/vanish pad,
+  // 4. Platform gems — one gem hovering just above each platform/vanish pad,
   //    rewarding players who land on it.
   for (const it of items) {
     if (it.type !== 'plat' && it.type !== 'vanish') continue;
     const cx = it.x + it.w / 2;
     const gy = it.y - 34;
     if (cx < x0 || cx > length - step) continue;
-    if (gemClear(items, cx, gy)) place({ type: 'gem', x: cx, y: gy, r: 13 });
+    if (gemClear(items, cx, gy)) placeSingle({ type: 'gem', x: cx, y: gy, r: 13 });
   }
 
-  // 4. Zone trails — a line of gems through every gravity tunnel at mid y,
+  // 5. Zone trails — a line of gems through every gravity tunnel at mid y,
   //    gathered while the tunnel carries the player across.
   for (const it of items) {
     if (it.type !== 'zone') continue;
     const zstep = step * 0.55;
     for (let cx = it.x + zstep; cx < it.x + it.w - zstep; cx += zstep) {
-      if (gemClear(items, cx, LANE.mid)) place({ type: 'gem', x: cx, y: LANE.mid, r: 13 });
+      if (gemClear(items, cx, LANE.mid)) placeSingle({ type: 'gem', x: cx, y: LANE.mid, r: 13 });
     }
   }
 

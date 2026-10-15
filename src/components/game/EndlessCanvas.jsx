@@ -7,6 +7,7 @@ import MilestoneToast from './MilestoneToast';
 import PauseMenu from './PauseMenu';
 import SettingsPanel from './SettingsPanel';
 import GravityButton from './GravityButton';
+import RushButton from './RushButton';
 import RotateOverlay from './RotateOverlay';
 
 export default function EndlessCanvas({ settings, displaySettings, sound, best, totalGems, onResult, onExit, onUpdateSettings, onResetProgress }) {
@@ -18,7 +19,7 @@ export default function EndlessCanvas({ settings, displaySettings, sound, best, 
   const bestRef = useRef(best || 0);
   const runStartBestRef = useRef(best || 0);
 
-  const [ui, setUi] = useState({ state: 'intro', score: 0, distance: 0, gems: 0, streak: 1, sectionName: 'Training', speed: 0.62 });
+  const [ui, setUi] = useState({ state: 'intro', score: 0, distance: 0, gems: 0, streak: 1, sectionName: 'Training', speed: 0.62, rush: false, rushAvailable: false });
   const [milestone, setMilestone] = useState(null);
   const [paused, setPaused] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
@@ -66,6 +67,8 @@ export default function EndlessCanvas({ settings, displaySettings, sound, best, 
       maxStreak: eng.maxStreak,
       sectionName: eng.sectionName,
       speed: eng._gen ? eng._gen.speed : 0.62,
+      rush: !!eng.rush,
+      rushAvailable: eng.rushAvailable,
     });
 
     const loop = (now) => {
@@ -141,16 +144,25 @@ export default function EndlessCanvas({ settings, displaySettings, sound, best, 
         e.preventDefault();
         if (eng.state === 'dead') { restart(); }
         else { primary(); }
+      } else if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') {
+        e.preventDefault();
+        eng.rushHeld = true;
       } else if (e.code === 'KeyR') { e.preventDefault(); restart(); }
       else if (e.code === 'Escape' || e.code === 'KeyP') { e.preventDefault(); togglePause(); }
+    };
+    const onKeyUp = (e) => {
+      const eng = engineRef.current;
+      if (!eng) return;
+      if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') eng.rushHeld = false;
     };
     const onVis = () => {
       const eng = engineRef.current;
       if (document.hidden && eng && !eng.paused && eng.state === 'playing') { eng.paused = true; setPaused(true); }
     };
     window.addEventListener('keydown', onKey);
+    window.addEventListener('keyup', onKeyUp);
     document.addEventListener('visibilitychange', onVis);
-    return () => { window.removeEventListener('keydown', onKey); document.removeEventListener('visibilitychange', onVis); };
+    return () => { window.removeEventListener('keydown', onKey); window.removeEventListener('keyup', onKeyUp); document.removeEventListener('visibilitychange', onVis); };
   }, [sound]);
 
   useEffect(() => {
@@ -165,6 +177,9 @@ export default function EndlessCanvas({ settings, displaySettings, sound, best, 
     window.addEventListener('orientationchange', check);
     return () => { window.removeEventListener('resize', check); window.removeEventListener('orientationchange', check); };
   }, []);
+
+  const startRush = () => { const eng = engineRef.current; if (eng) eng.rushHeld = true; };
+  const endRush = () => { const eng = engineRef.current; if (eng) eng.rushHeld = false; };
 
   const showRotate = needsRotate && !rotateDismissed;
   const prevBest = runStartBestRef.current;
@@ -187,6 +202,26 @@ export default function EndlessCanvas({ settings, displaySettings, sound, best, 
       <MilestoneToast event={milestone} />
 
       {isTouch && ui.state === 'playing' ? <GravityButton onPress={primary} sound={sound} /> : null}
+
+      {isTouch && ui.state === 'playing' && ui.rushAvailable ? (
+        <RushButton onPressStart={startRush} onPressEnd={endRush} active={ui.rush} sound={sound} />
+      ) : null}
+
+      {!isTouch && ui.rushAvailable && !ui.rush && ui.state === 'playing' ? (
+        <div className="pointer-events-none absolute bottom-6 left-1/2 z-20 -translate-x-1/2">
+          <div className="gs-pop rounded-full border border-cyan-300/30 bg-black/50 px-4 py-2 font-heading text-[10px] uppercase tracking-[0.28em] text-cyan-100/90 backdrop-blur">
+            Hold Shift to follow gem row
+          </div>
+        </div>
+      ) : null}
+
+      {ui.rush ? (
+        <div className="pointer-events-none absolute inset-x-0 top-24 z-20 flex justify-center">
+          <div className="gs-pop rounded-full border border-fuchsia-300/40 bg-black/50 px-4 py-1.5 font-heading text-[10px] uppercase tracking-[0.3em] text-fuchsia-100 backdrop-blur">
+            Gem Rush
+          </div>
+        </div>
+      ) : null}
 
       {ui.state === 'intro' ? (
         <div className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center">
