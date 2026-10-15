@@ -10,7 +10,7 @@ import SettingsPanel from './SettingsPanel';
 import RotateOverlay from './RotateOverlay';
 import { useTapHoldControl } from '@/hooks/useTapHoldControl';
 
-export default function GameCanvas({ levelIndex, totalLevels, settings, displaySettings, sound, totalGems, onExit, onComplete, onNext, onUpdateSettings, onResetProgress }) {
+export default function GameCanvas({ levelIndex, totalLevels, settings, displaySettings, sound, totalGems, groupJustCompleted, nextGroupName, isFinalGroup, onExit, onComplete, onNext, onEnterNextGroup, onUpdateSettings, onResetProgress }) {
   const wrapRef = useRef(null);
   const canvasRef = useRef(null);
   const engineRef = useRef(null);
@@ -300,10 +300,14 @@ export default function GameCanvas({ levelIndex, totalLevels, settings, displayS
           gems={ui.gems}
           totalGems={totalGems}
           isLast={levelIndex >= totalLevels - 1}
+          groupJustCompleted={groupJustCompleted}
+          nextGroupName={nextGroupName}
+          isFinalGroup={isFinalGroup}
           sound={sound}
           onNext={() => cbRef.current.onNext()}
           onRetry={restart}
           onExit={onExit}
+          onEnterNextGroup={onEnterNextGroup}
         />
       ) : null}
 

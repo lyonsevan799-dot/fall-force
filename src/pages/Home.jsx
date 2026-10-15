@@ -1,8 +1,10 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Sound } from '@/game/audio';
 import { LEVEL_COUNT } from '@/game/levels';
+import { groupForLevel, groupCompleted, nextGroupAfter, groupIndex } from '@/game/groups';
 import { loadProgress, saveProgress, recordResult, clearProgress, commitLevelGems, commitEndlessGems, FALLBACK } from '@/game/progress';
 import MainMenu from '@/components/game/MainMenu';
+import CareerGroups from '@/components/game/CareerGroups';
 import LevelSelect from '@/components/game/LevelSelect';
 import RaceLevelSelect from '@/components/game/RaceLevelSelect';
 import SettingsPanel from '@/components/game/SettingsPanel';
@@ -22,6 +24,8 @@ export default function Home() {
   const [screen, setScreen] = useState('menu');
   const [levelIndex, setLevelIndex] = useState(Math.min(initial.unlocked || 0, LEVEL_COUNT - 1));
   const [raceIndex, setRaceIndex] = useState(0);
+  const [careerGroup, setCareerGroup] = useState(0);
+  const [completedInfo, setCompletedInfo] = useState({ groupJustCompleted: false, nextGroupName: null, isFinalGroup: false });
 
   useEffect(() => {
     settingsRef.current = save.settings;
@@ -45,11 +49,31 @@ export default function Home() {
   const startLevel = (i) => { sound.init(); sound.resume(); setLevelIndex(i); setScreen('game'); };
   const startRace = (i) => { sound.init(); sound.resume(); setRaceIndex(i); setScreen('race'); };
 
+  const enterGroup = (gi) => { sound.sfx('click'); setCareerGroup(gi); setScreen('levels'); };
+
   const handleComplete = (i, result) => {
-    setSave((p) => {
-      const withResult = recordResult(p, i, { stars: result.stars, time: result.time }, LEVEL_COUNT);
-      return commitLevelGems(withResult, i, result.gems || 0);
+    const group = groupForLevel(i);
+    const before = groupCompleted(save, group);
+    const withResult = recordResult(save, i, { stars: result.stars, time: result.time }, LEVEL_COUNT);
+    const after = groupCompleted(withResult, group);
+    const nextGrp = nextGroupAfter(group);
+    setCompletedInfo({
+      groupJustCompleted: !before && after,
+      nextGroupName: nextGrp ? nextGrp.name : null,
+      isFinalGroup: !nextGrp,
     });
+    setSave(commitLevelGems(withResult, i, result.gems || 0));
+  };
+
+  const handleEnterNextGroup = () => {
+    const group = groupForLevel(levelIndex);
+    const nextGrp = nextGroupAfter(group);
+    if (nextGrp) {
+      setCareerGroup(groupIndex(nextGrp));
+      setScreen('levels');
+    } else {
+      setScreen('career');
+    }
   };
 
   const handleEndlessResult = (score, gems) => {
@@ -91,9 +115,13 @@ export default function Home() {
           displaySettings={save.settings}
           sound={sound}
           totalGems={save.totalGems || 0}
+          groupJustCompleted={completedInfo.groupJustCompleted}
+          nextGroupName={completedInfo.nextGroupName}
+          isFinalGroup={completedInfo.isFinalGroup}
           onExit={() => setScreen('levels')}
           onComplete={handleComplete}
           onNext={() => setLevelIndex((i) => Math.min(LEVEL_COUNT - 1, i + 1))}
+          onEnterNextGroup={handleEnterNextGroup}
           onUpdateSettings={handleUpdateSettings}
           onResetProgress={handleReset}
         />
@@ -134,7 +162,7 @@ export default function Home() {
               <MainMenu
                 save={save}
                 sound={sound}
-                onCareer={() => setScreen('levels')}
+                onCareer={() => setScreen('career')}
                 onEndless={() => setScreen('endless')}
                 onRace={() => setScreen('race-levels')}
                 onSettings={() => setScreen('settings')}
@@ -142,8 +170,12 @@ export default function Home() {
             </div>
           ) : null}
 
+          {screen === 'career' ? (
+            <CareerGroups save={save} sound={sound} onEnter={enterGroup} onBack={() => setScreen('menu')} />
+          ) : null}
+
           {screen === 'levels' ? (
-            <LevelSelect save={save} sound={sound} onSelect={startLevel} onBack={() => setScreen('menu')} />
+            <LevelSelect save={save} groupIndex={careerGroup} sound={sound} onSelect={startLevel} onBack={() => setScreen('career')} />
           ) : null}
 
           {screen === 'race-levels' ? (

@@ -1,16 +1,38 @@
 import React from 'react';
-import { Gem } from 'lucide-react';
+import { Gem, Trophy, ChevronRight } from 'lucide-react';
 import { GameButton, Panel, Stars } from './ui';
 import { LEVELS } from '@/game/levels';
+import { groupForLevel } from '@/game/groups';
 
-export default function LevelComplete({ levelIndex, stars, deaths, time, gems, totalGems, isLast, onNext, onRetry, onExit, sound }) {
+export default function LevelComplete({ levelIndex, stars, deaths, time, gems, totalGems, isLast, groupJustCompleted, nextGroupName, isFinalGroup, onNext, onRetry, onExit, onEnterNextGroup, sound }) {
+  const isLastInGroup = levelIndex === groupForLevel(levelIndex).end;
+  const showGroupComplete = isLastInGroup && groupJustCompleted;
+  const showFinal = showGroupComplete && isFinalGroup;
+
   return (
     <div className="absolute inset-0 z-30 flex items-center justify-center bg-black/55 p-4 backdrop-blur-sm">
       <Panel className="gs-pop w-full max-w-md text-center">
-        <div className="font-heading text-[10px] uppercase tracking-[0.5em] text-cyan-200/80">Level Complete</div>
-        <h2 className="mt-2 font-heading text-2xl uppercase tracking-[0.2em] text-white">
-          {LEVELS[levelIndex].name}
-        </h2>
+        {showFinal ? (
+          <>
+            <div className="flex justify-center"><Trophy size={40} className="text-amber-300 drop-shadow-[0_0_18px_rgba(252,211,77,0.6)]" /></div>
+            <div className="mt-3 font-heading text-[10px] uppercase tracking-[0.5em] text-amber-200/80">Fall Force Complete</div>
+            <h2 className="mt-2 font-heading text-2xl uppercase tracking-[0.2em] text-white">You Conquered It All</h2>
+          </>
+        ) : showGroupComplete ? (
+          <>
+            <div className="flex justify-center"><Trophy size={36} className="text-cyan-200 drop-shadow-[0_0_16px_rgba(56,232,255,0.6)]" /></div>
+            <div className="mt-3 font-heading text-[10px] uppercase tracking-[0.5em] text-cyan-200/80">Group Complete</div>
+            <h2 className="mt-2 font-heading text-2xl uppercase tracking-[0.2em] text-white">{groupForLevel(levelIndex).name} Cleared</h2>
+          </>
+        ) : (
+          <>
+            <div className="font-heading text-[10px] uppercase tracking-[0.5em] text-cyan-200/80">Level Complete</div>
+            <h2 className="mt-2 font-heading text-2xl uppercase tracking-[0.2em] text-white">
+              {LEVELS[levelIndex].name}
+            </h2>
+          </>
+        )}
+
         <div className="mt-6 flex justify-center">
           <Stars value={stars} size={40} />
         </div>
@@ -26,8 +48,15 @@ export default function LevelComplete({ levelIndex, stars, deaths, time, gems, t
             <span className="text-[10px] text-cyan-200/50">total</span>
           </div>
         </div>
+
         <div className="mt-6 grid grid-cols-2 gap-3">
-          {isLast ? (
+          {showFinal ? (
+            <GameButton variant="primary" className="col-span-2" sound={sound} onClick={onExit}>Finish</GameButton>
+          ) : showGroupComplete ? (
+            <GameButton variant="primary" className="col-span-2" sound={sound} onClick={onEnterNextGroup}>
+              Enter {nextGroupName} <ChevronRight size={14} className="ml-1" />
+            </GameButton>
+          ) : isLast ? (
             <GameButton variant="primary" className="col-span-2" sound={sound} onClick={onExit}>Finish</GameButton>
           ) : (
             <GameButton variant="primary" className="col-span-2" sound={sound} onClick={onNext}>Next Level</GameButton>
