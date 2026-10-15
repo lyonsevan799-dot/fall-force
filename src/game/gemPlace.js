@@ -152,6 +152,7 @@ export function placeRow(items, x, y, count, dirX, dirY, spacing) {
   const len = Math.hypot(dirX, dirY) || 1;
   const nx = dirX / len, ny = dirY / len;
   const groupId = _gid++;
+  console.error('PLACEROW call gid=' + groupId + ' x=' + x.toFixed(0) + ' y=' + y.toFixed(0) + ' count=' + count + ' dir=(' + dirX + ',' + dirY + ') spacing=' + spacing.toFixed(0));
   const gems = [];
   let prevX = x, prevY = y;
   // Rows of 4+ start with an oversized trigger gem: collecting it auto-
@@ -178,6 +179,7 @@ export function placeRow(items, x, y, count, dirX, dirY, spacing) {
     items.push(gem);
     prevX = gx; prevY = gy;
   }
+  console.error('PLACEROW ok gid=' + groupId + ' placed=' + gems.length + ' (trigger=' + (!!gems[0].trigger) + ') gems=' + gems.map(g=>'(' + g.x.toFixed(0) + ',' + g.y.toFixed(0) + ',r' + g.r + (g.trigger ? ',T' : '') + ')').join(' '));
   return gems;
 }
 
