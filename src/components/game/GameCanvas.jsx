@@ -257,8 +257,8 @@ export default function GameCanvas({ levelIndex, totalLevels, settings, displayS
 
       {ui.rushAvailable && !ui.rush && ui.state === 'playing' ? (
         <div className="pointer-events-none absolute bottom-6 left-1/2 z-20 -translate-x-1/2">
-          <div className="gs-pop rounded-full border border-cyan-300/30 bg-black/50 px-4 py-2 font-heading text-[10px] uppercase tracking-[0.28em] text-cyan-100/90 backdrop-blur">
-            Hold to follow gem row
+          <div className="gs-pop rounded-full border border-fuchsia-300/40 bg-black/50 px-4 py-2 font-heading text-[10px] uppercase tracking-[0.28em] text-fuchsia-100/90 backdrop-blur">
+            Grab the glowing gem to rush
           </div>
         </div>
       ) : null}

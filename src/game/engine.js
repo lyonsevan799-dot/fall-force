@@ -151,10 +151,10 @@ export class Engine {
   }
 
   get rushAvailable() {
-    if (this.rush || this.rushCandidate) return true;
+    if (this.rush) return true;
     for (const g of this.collectibles) {
-      if (g.collected || g.rowLen == null || g.rowLen < 4) continue;
-      if (g.x > this.px && g.x - this.px < 520) return true;
+      if (g.collected || !g.trigger) continue;
+      if (g.x > this.px && g.x - this.px < 560) return true;
     }
     return false;
   }
@@ -288,9 +288,10 @@ export class Engine {
     });
     this.particles.ring(gem.x, gem.y, { r: 5, rv: rushing ? 360 : 280, life: 0.35, color: theme.accent, w: 3 });
     this.flash = Math.min(1, this.flash + (rushing ? 0.14 : 0.1));
-    // Large row: open a brief window to hold the rush input and follow the row.
-    if (gem.groupId != null && gem.rowLen >= 4 && !this.rush && this.state === 'playing') {
-      this.rushCandidate = { groupId: gem.groupId, t: 0.5 };
+    // Special trigger gem: immediately engage Gem Rush along its row — no
+    // hold required. The rush auto-follows the row and ends on its own.
+    if (gem.trigger && gem.groupId != null && !this.rush && this.state === 'playing') {
+      this.activateRush(gem.groupId);
     }
   }
 
@@ -597,7 +598,6 @@ export class Engine {
     if (!this.rush || this.state !== 'playing') return;
     if (this.solidBlocksRush()) { this.endRush(); return; }
     if (r.s >= r.totalLen) { this.endRush(); return; }
-    if (!this.rushHeld) { this.endRush(); return; }
     if (!this.finishReached && this.px >= this.level.length) this.reachFinish();
   }
 
@@ -645,13 +645,6 @@ export class Engine {
       }
     }
 
-    // Gem Rush activation window: if the player holds the rush input shortly
-    // after collecting the first gem of a large row, lock onto the row.
-    if (this.rushCandidate && !this.rush) {
-      this.rushCandidate.t -= dt;
-      if (this.rushCandidate.t <= 0) this.rushCandidate = null;
-      else if (this.rushHeld) this.activateRush(this.rushCandidate.groupId);
-    }
     // squash / stretch spring
     const k = Math.min(1, dt * 13);
     this.sx += (1 - this.sx) * k;

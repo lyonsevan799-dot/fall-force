@@ -258,6 +258,10 @@ export class EndlessEngine extends Engine {
     });
     this.particles.ring(gem.x, gem.y, { r: 5, rv: 300, life: 0.35, color: theme.accent, w: 3 });
     this.flash = Math.min(1, this.flash + 0.12);
+    // Special trigger gem: auto-engage Gem Rush along its row (no hold).
+    if (gem.trigger && gem.groupId != null && !this.rush && this.state === 'playing') {
+      this.activateRush(gem.groupId);
+    }
   }
 
   syncUi() {

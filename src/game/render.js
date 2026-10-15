@@ -597,22 +597,40 @@ function drawHazards(ctx, eng) {
       }
       case 'gem': {
         if (it.collected) break;
-        const pulse = 1 + 0.15 * Math.sin(t * 4 + it.x * 0.01);
+        const isTrigger = !!it.trigger;
+        const pulse = 1 + (isTrigger ? 0.22 : 0.15) * Math.sin(t * (isTrigger ? 5 : 4) + it.x * 0.01);
         const r = (it.r || 13) * pulse;
         ctx.save();
         ctx.translate(it.x, it.y);
-        const glow = ctx.createRadialGradient(0, 0, 0, 0, 0, r * 2.5);
-        glow.addColorStop(0, hexA(theme.accent, 0.35));
-        glow.addColorStop(1, hexA(theme.accent, 0));
+        const glowR = r * (isTrigger ? 3.4 : 2.5);
+        const glowColor = isTrigger ? theme.accent2 : theme.accent;
+        const glow = ctx.createRadialGradient(0, 0, 0, 0, 0, glowR);
+        glow.addColorStop(0, hexA(glowColor, isTrigger ? 0.6 : 0.35));
+        glow.addColorStop(1, hexA(glowColor, 0));
         ctx.fillStyle = glow;
-        ctx.beginPath(); ctx.arc(0, 0, r * 2.5, 0, 6.2832); ctx.fill();
+        ctx.beginPath(); ctx.arc(0, 0, glowR, 0, 6.2832); ctx.fill();
+        if (isTrigger) {
+          // pulsing halo ring + dashed directional trail toward the row
+          ctx.strokeStyle = hexA(theme.accent2, 0.55 + 0.3 * Math.sin(t * 5));
+          ctx.lineWidth = 3;
+          ctx.beginPath(); ctx.arc(0, 0, r * 1.55, 0, 6.2832); ctx.stroke();
+          const dir = it.rowDir || { x: 1, y: 0 };
+          ctx.strokeStyle = hexA(theme.accent, 0.35);
+          ctx.lineWidth = 4;
+          ctx.setLineDash([7, 9]);
+          ctx.beginPath();
+          ctx.moveTo(dir.x * r * 1.3, dir.y * r * 1.3);
+          ctx.lineTo(dir.x * r * 3.4, dir.y * r * 3.4);
+          ctx.stroke();
+          ctx.setLineDash([]);
+        }
         ctx.rotate(t * 1.5);
-        ctx.fillStyle = theme.accent;
+        ctx.fillStyle = isTrigger ? theme.accent2 : theme.accent;
         ctx.beginPath();
         ctx.moveTo(0, -r); ctx.lineTo(r * 0.7, 0); ctx.lineTo(0, r); ctx.lineTo(-r * 0.7, 0);
         ctx.closePath(); ctx.fill();
         ctx.fillStyle = '#ffffff';
-        ctx.globalAlpha = 0.75;
+        ctx.globalAlpha = 0.78;
         ctx.beginPath();
         ctx.moveTo(0, -r * 0.5); ctx.lineTo(r * 0.35, 0); ctx.lineTo(0, r * 0.2); ctx.lineTo(-r * 0.35, 0);
         ctx.closePath(); ctx.fill();

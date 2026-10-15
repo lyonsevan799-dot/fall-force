@@ -136,12 +136,25 @@ export function placeRow(items, x, y, count, dirX, dirY, spacing) {
   const groupId = _gid++;
   const gems = [];
   let prevX = x, prevY = y;
+  // Rows of 4+ start with an oversized trigger gem: collecting it auto-
+  // engages Gem Rush along the rest of the row (no hold required).
+  const hasTrigger = count >= 4;
+  const triggerR = 24;
+  if (hasTrigger) {
+    if (y < CEIL_Y + 8 || y > FLOOR_Y - 8) return null;
+    if (!gemClear(items, x, y, triggerR)) return null;
+    const trigger = { type: 'gem', x, y, r: triggerR, groupId, trigger: true, rowLen: count, rowDir: { x: nx, y: ny } };
+    gems.push(trigger);
+    items.push(trigger);
+    prevX = x; prevY = y;
+  }
   for (let i = 0; i < count; i++) {
-    const gx = x + nx * spacing * i;
-    const gy = y + ny * spacing * i;
+    const off = hasTrigger ? i + 1 : i;
+    const gx = x + nx * spacing * off;
+    const gy = y + ny * spacing * off;
     if (gy < CEIL_Y + 8 || gy > FLOOR_Y - 8) { rollback(items, gems); return null; }
     if (!gemClear(items, gx, gy)) { rollback(items, gems); return null; }
-    if (i > 0 && !pathClear(items, prevX, prevY, gx, gy)) { rollback(items, gems); return null; }
+    if ((i > 0 || hasTrigger) && !pathClear(items, prevX, prevY, gx, gy)) { rollback(items, gems); return null; }
     const gem = { type: 'gem', x: gx, y: gy, r: 13, groupId, rowLen: count, rowDir: { x: nx, y: ny } };
     gems.push(gem);
     items.push(gem);
