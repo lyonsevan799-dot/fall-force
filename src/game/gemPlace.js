@@ -106,6 +106,24 @@ export function gemClear(items, x, y, r = 13) {
   return true;
 }
 
+// True if a gem-sized spot at (x, y) is clear of every hazard and solid in
+// `items` (ignoring other gems). Used to verify a row's path doesn't cross an
+// obstacle — sibling gems along the row are expected and must not block it.
+function hazardsClear(items, x, y, r) {
+  const pad = 8;
+  const gx = x - r - pad, gy = y - r - pad, gw = r * 2 + pad * 2, gh = r * 2 + pad * 2;
+  for (const it of items) {
+    if (!HAZARD.has(it.type) && !SOLID.has(it.type)) continue;
+    const b = boxOf(it);
+    if (!b) continue;
+    if (SOLID.has(it.type)) {
+      const sx = b.x - 2, sy = b.y - 2, sw = b.w + 4, sh = b.h + 4;
+      if (overlap(gx, gy, gw, gh, sx, sy, sw, sh)) return false;
+    } else if (overlap(gx, gy, gw, gh, b.x, b.y, b.w, b.h)) return false;
+  }
+  return true;
+}
+
 // Sample a segment between two points and ensure no hazard/solid blocks the
 // path, so a gem row never crosses an obstacle the player would clip through.
 function pathClear(items, x1, y1, x2, y2) {
@@ -114,7 +132,7 @@ function pathClear(items, x1, y1, x2, y2) {
     const k = i / steps;
     const px = x1 + (x2 - x1) * k;
     const py = y1 + (y2 - y1) * k;
-    if (!gemClear(items, px, py, 10)) return false;
+    if (!hazardsClear(items, px, py, 10)) return false;
   }
   return true;
 }
