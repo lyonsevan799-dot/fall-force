@@ -10,6 +10,8 @@ import { enrichGems } from './gemPlace';
 export function emit(d, x, out, ctx) {
   const { step, gap } = ctx;
   const f = d.f == null ? gap : d.f;
+  const fs = ctx.fScale == null ? 1 : ctx.fScale;
+  const sf = f * fs;
   switch (d.t) {
     case 'run':
       return x + step * (d.n || 1) * (d.f == null ? 1 : d.f);
@@ -19,7 +21,7 @@ export function emit(d, x, out, ctx) {
       const item = { type: 'spike', side: d.side || 'floor', x, w: SPIKE_W * n };
       if (d.h) item.h = d.h;
       out.push(item);
-      return x + SPIKE_W * n + step * f;
+      return x + SPIKE_W * n + step * sf;
     }
 
     case 'alt': {
@@ -27,7 +29,7 @@ export function emit(d, x, out, ctx) {
       const c = d.c || 2;
       for (let i = 0; i < (d.n || 3); i++) {
         out.push({ type: 'spike', side, x, w: SPIKE_W * c });
-        x += SPIKE_W * c + step * f;
+        x += SPIKE_W * c + step * sf;
         side = side === 'floor' ? 'ceil' : 'floor';
       }
       return x;
@@ -52,7 +54,7 @@ export function emit(d, x, out, ctx) {
           base.y = d.at === 'ceil' ? CEIL_Y + r * 0.55 : d.at === 'mid' ? MID_Y : FLOOR_Y - r * 0.55;
         }
         out.push(base);
-        x += step * f;
+        x += step * sf;
       }
       return x;
     }
@@ -65,7 +67,7 @@ export function emit(d, x, out, ctx) {
           arm: d.arm || 120, spin: d.spin || 0.85,
           a0: (d.a0 || 0) + i * 1.2, phase: d.phase || 0,
         });
-        x += step * f;
+        x += step * sf;
       }
       return x;
     }
@@ -76,7 +78,7 @@ export function emit(d, x, out, ctx) {
           type: 'crusher', x, w: d.w || 56, side: d.side || 'ceil',
           period: d.period || 2.6, phase: (d.phase || 0) + i * 1.4,
         });
-        x += step * f;
+        x += step * sf;
       }
       return x;
     }
@@ -87,7 +89,7 @@ export function emit(d, x, out, ctx) {
           type: 'laser', x, host: d.host || 'floor', h: d.h || 330,
           on: d.on || 1.2, off: d.off || 1.0, phase: (d.phase || 0) + i * 0.55,
         });
-        x += step * f;
+        x += step * sf;
       }
       return x;
     }
@@ -100,7 +102,7 @@ export function emit(d, x, out, ctx) {
           amp: d.amp || 0, period: d.period || 3.2, phase: d.phase || 0,
           axis: d.axis || 'y',
         });
-        x += step * f;
+        x += step * sf;
       }
       return x;
     }
@@ -112,7 +114,7 @@ export function emit(d, x, out, ctx) {
           type: 'vanish', x: x - w / 2, y: d.y || MID_Y, w,
           on: d.on || 1.8, off: d.off || 1.2, phase: d.phase || 0,
         });
-        x += step * f;
+        x += step * sf;
       }
       return x;
     }
@@ -125,7 +127,7 @@ export function emit(d, x, out, ctx) {
 
     case 'portal': {
       out.push({ type: 'portal', x, y: d.y || MID_Y, dir: d.dir || 1, boost: d.boost || 0.08 });
-      return x + step * f;
+      return x + step * sf;
     }
 
     case 'speed': {
@@ -138,7 +140,7 @@ export function emit(d, x, out, ctx) {
       const w = SPIKE_W * (d.c || 2);
       for (let i = 0; i < n; i++) {
         out.push({ type: 'mspike', side: d.side || 'floor', x, w, period: d.period || 2.4, on: d.on || 0.5, phase: (d.phase || 0) + i * 0.5 });
-        x += step * f;
+        x += step * sf;
       }
       return x;
     }
@@ -146,7 +148,7 @@ export function emit(d, x, out, ctx) {
     case 'drop': {
       for (let i = 0; i < (d.n || 1); i++) {
         out.push({ type: 'drop', x, w: d.w || 60, h: d.h || 44, side: d.side || 'ceil', trigger: d.trigger || 280, shake: d.shake || 0.45 });
-        x += step * f;
+        x += step * sf;
       }
       return x;
     }
@@ -154,7 +156,7 @@ export function emit(d, x, out, ctx) {
     case 'wall': {
       for (let i = 0; i < (d.n || 1); i++) {
         out.push({ type: 'wall', x, w: d.w || 50, gap: d.gap || 150, period: d.period || 3.2, phase: (d.phase || 0) + i * 0.6 });
-        x += step * f;
+        x += step * sf;
       }
       return x;
     }
@@ -162,7 +164,7 @@ export function emit(d, x, out, ctx) {
     case 'bounce': {
       for (let i = 0; i < (d.n || 1); i++) {
         out.push({ type: 'bounce', x, r: d.r || 22, y0: d.y0, y1: d.y1, period: d.period || 2.4, phase: (d.phase || 0) + i * 0.5 });
-        x += step * f;
+        x += step * sf;
       }
       return x;
     }
@@ -170,7 +172,7 @@ export function emit(d, x, out, ctx) {
     case 'trap': {
       for (let i = 0; i < (d.n || 1); i++) {
         out.push({ type: 'trap', x, w: d.w || 40, side: d.side || 'floor', trigger: d.trigger || 220, warn: d.warn || 0.32, up: d.up || 1.0 });
-        x += step * f;
+        x += step * sf;
       }
       return x;
     }
@@ -200,7 +202,10 @@ export function buildLevel(spec, index) {
   const step = speed * CROSS_TIME;
   const items = [];
   const checkpoints = [];
-  const ctx = { step, gap: spec.gap };
+  // fScale: scales hazard spacing to maintain a continuous difficulty curve.
+  // Levels 1-15 use fScale=1 (unscaled). Levels 16+ use fScale<1 to tighten
+  // spacing so difficulty continues from where level 15 left off.
+  const ctx = { step, gap: spec.gap, fScale: spec.fScale || 1 };
   // Guarantee a safe runway before the first hazard (the player is frozen
   // during the level intro, so this is the full reaction window). The earliest
   // levels get a longer runway so beginners have more time to react.
@@ -643,7 +648,7 @@ const SPECS = [
   // Introduces moving spikes (mspike) and spike clusters with forgiving spacing.
   // ==========================================================================
   {
-    name: 'Spike Surge', theme: 'neon', speed: 0.72, gap: 2.6, startRun: 3.5, hints: 2,
+    name: 'Spike Surge', theme: 'neon', speed: 1.26, gap: 1.75, fScale: 0.62,
     tip: 'Moving spikes pulse — time your flip',
     sections: [
       { t: 'run', n: 2 },
@@ -668,7 +673,7 @@ const SPECS = [
     ],
   },
   {
-    name: 'Rising Threat', theme: 'neon', speed: 0.75, gap: 2.5,
+    name: 'Rising Threat', theme: 'neon', speed: 1.28, gap: 1.73, fScale: 0.64,
     tip: 'Different rhythms — watch the timing',
     sections: [
       { t: 'run', n: 1.5 },
@@ -693,7 +698,7 @@ const SPECS = [
     ],
   },
   {
-    name: 'Spike Garden', theme: 'industrial', speed: 0.78, gap: 2.4,
+    name: 'Spike Garden', theme: 'industrial', speed: 1.30, gap: 1.71, fScale: 0.66,
     tip: 'Tall spikes need earlier flips',
     sections: [
       { t: 'run', n: 1.5 },
@@ -717,7 +722,7 @@ const SPECS = [
     ],
   },
   {
-    name: 'Pulse Floor', theme: 'industrial', speed: 0.80, gap: 2.3,
+    name: 'Pulse Floor', theme: 'industrial', speed: 1.31, gap: 1.69, fScale: 0.67,
     tip: 'Fast pulses mean quick switches',
     sections: [
       { t: 'run', n: 1.5 },
@@ -742,7 +747,7 @@ const SPECS = [
     ],
   },
   {
-    name: 'Spike Mastery', theme: 'industrial', speed: 0.82, gap: 2.2,
+    name: 'Spike Mastery', theme: 'industrial', speed: 1.32, gap: 1.67, fScale: 0.68,
     tip: 'Spikes and saws — switch with care',
     sections: [
       { t: 'run', n: 1.5 },
@@ -773,7 +778,7 @@ const SPECS = [
   // moving platforms (plat). Combines two obstacle types at a time.
   // ==========================================================================
   {
-    name: 'Falling Sky', theme: 'industrial', speed: 0.85, gap: 2.1,
+    name: 'Falling Sky', theme: 'industrial', speed: 1.34, gap: 1.65, fScale: 0.65,
     tip: 'Blocks fall from above — switch to dodge',
     sections: [
       { t: 'run', n: 1.5 },
@@ -798,7 +803,7 @@ const SPECS = [
     ],
   },
   {
-    name: 'Vanishing Act', theme: 'space', speed: 0.88, gap: 2.05,
+    name: 'Vanishing Act', theme: 'space', speed: 1.35, gap: 1.63, fScale: 0.67,
     tip: "Platforms fade — don't linger",
     sections: [
       { t: 'run', n: 1.5 },
@@ -821,7 +826,7 @@ const SPECS = [
     ],
   },
   {
-    name: 'Moving Ground', theme: 'space', speed: 0.90, gap: 2.0,
+    name: 'Moving Ground', theme: 'space', speed: 1.36, gap: 1.61, fScale: 0.68,
     tip: 'Ride the platforms — time your landing',
     sections: [
       { t: 'run', n: 1.5 },
@@ -846,7 +851,7 @@ const SPECS = [
     ],
   },
   {
-    name: 'Precise Steps', theme: 'space', speed: 0.92, gap: 1.95,
+    name: 'Precise Steps', theme: 'space', speed: 1.38, gap: 1.59, fScale: 0.66,
     tip: 'Vanish and fall — plan your path',
     sections: [
       { t: 'run', n: 1.5 },
@@ -870,7 +875,7 @@ const SPECS = [
     ],
   },
   {
-    name: 'Timing Trial', theme: 'space', speed: 0.95, gap: 1.9,
+    name: 'Timing Trial', theme: 'space', speed: 1.39, gap: 1.57, fScale: 0.68,
     tip: 'Platforms, vanishes, drops — stay sharp',
     sections: [
       { t: 'run', n: 1.5 },
@@ -900,7 +905,7 @@ const SPECS = [
   // tunnels (zone). Longer sequences requiring multiple consecutive switches.
   // ==========================================================================
   {
-    name: 'Blade Dance', theme: 'cyber', speed: 0.98, gap: 1.88,
+    name: 'Blade Dance', theme: 'cyber', speed: 1.40, gap: 1.55, fScale: 0.74,
     tip: 'Blades sweep — find the opening',
     sections: [
       { t: 'run', n: 1.5 },
@@ -927,7 +932,7 @@ const SPECS = [
     ],
   },
   {
-    name: 'Laser Grid', theme: 'cyber', speed: 1.00, gap: 1.85,
+    name: 'Laser Grid', theme: 'cyber', speed: 1.42, gap: 1.53, fScale: 0.73,
     tip: 'Lasers pulse — dash through the dark',
     sections: [
       { t: 'run', n: 1.5 },
@@ -953,7 +958,7 @@ const SPECS = [
     ],
   },
   {
-    name: 'Gravity Tunnel', theme: 'cyber', speed: 1.03, gap: 1.82,
+    name: 'Gravity Tunnel', theme: 'cyber', speed: 1.43, gap: 1.51, fScale: 0.75,
     tip: 'Tunnels flip you — ride the current',
     sections: [
       { t: 'run', n: 1.5 },
@@ -982,7 +987,7 @@ const SPECS = [
     ],
   },
   {
-    name: 'Convergence', theme: 'cyber', speed: 1.05, gap: 1.80,
+    name: 'Convergence', theme: 'cyber', speed: 1.44, gap: 1.49, fScale: 0.73,
     tip: 'Blades, lasers, tunnels — all at once',
     sections: [
       { t: 'run', n: 1.5 },
@@ -1005,7 +1010,7 @@ const SPECS = [
     ],
   },
   {
-    name: 'Advanced Gauntlet', theme: 'cyber', speed: 1.08, gap: 1.78,
+    name: 'Advanced Gauntlet', theme: 'cyber', speed: 1.46, gap: 1.47, fScale: 0.75,
     tip: 'Long sequences — keep your rhythm',
     sections: [
       { t: 'run', n: 1.5 },
@@ -1037,7 +1042,7 @@ const SPECS = [
   // complex floor-to-ceiling transitions. Requires precision and fast reactions.
   // ==========================================================================
   {
-    name: 'Chaos Engine', theme: 'energy', speed: 1.12, gap: 1.75,
+    name: 'Chaos Engine', theme: 'energy', speed: 1.48, gap: 1.45, fScale: 0.70,
     tip: 'Spikes, drops, blades — chaos',
     sections: [
       { t: 'run', n: 1.5 },
@@ -1061,7 +1066,7 @@ const SPECS = [
     ],
   },
   {
-    name: 'Crushing Depth', theme: 'energy', speed: 1.15, gap: 1.72,
+    name: 'Crushing Depth', theme: 'energy', speed: 1.50, gap: 1.43, fScale: 0.65,
     tip: 'Walls crush — traps bite',
     sections: [
       { t: 'run', n: 1.5 },
@@ -1087,7 +1092,7 @@ const SPECS = [
     ],
   },
   {
-    name: 'Bouncing Madness', theme: 'energy', speed: 1.18, gap: 1.70,
+    name: 'Bouncing Madness', theme: 'energy', speed: 1.52, gap: 1.41, fScale: 0.69,
     tip: 'Bounce, blade, laser — stay alive',
     sections: [
       { t: 'run', n: 1.5 },
@@ -1112,7 +1117,7 @@ const SPECS = [
     ],
   },
   {
-    name: 'Singularity Drive', theme: 'void', speed: 1.22, gap: 1.68,
+    name: 'Singularity Drive', theme: 'void', speed: 1.54, gap: 1.39, fScale: 0.67,
     tip: 'Everything converges — find the path',
     sections: [
       { t: 'run', n: 1.5 },
@@ -1137,7 +1142,7 @@ const SPECS = [
     ],
   },
   {
-    name: 'The Final Flip', theme: 'void', speed: 1.25, gap: 1.65,
+    name: 'The Final Flip', theme: 'void', speed: 1.56, gap: 1.37, fScale: 0.64,
     tip: 'The ultimate test — flip to the end',
     sections: [
       { t: 'run', n: 1.8 },
