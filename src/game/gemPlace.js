@@ -166,7 +166,7 @@ export function enrichGems(items, x0, length, step) {
   //    floor toward mid (or ceiling toward mid). Placed first so they get
   //    priority on clear space; the stream below fills around them.
   let ri = 0;
-  for (let cx = x0 + step * 6; cx < length - step * 4; cx += step * 10, ri++) {
+  for (let cx = x0 + step * 6; cx < length - step * 4; cx += step * 6, ri++) {
     const count = 4 + (ri % 3); // 4, 5, 6
     const spacing = step * 0.5;
     const m = ri % 4;

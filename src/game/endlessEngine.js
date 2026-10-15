@@ -153,8 +153,8 @@ export class EndlessEngine extends Engine {
     // Large gem rows (4-6) — straight lines that enable Gem Rush. Alternates
     // horizontal floor/ceiling and diagonal floor-to-mid / ceiling-to-mid
     // paths, each checked against hazards so it never crosses an obstacle.
-    for (let cx = x0 + step * 5; cx < x1 - step * 3; cx += step * 9) {
-      if (Math.random() > 0.55) continue;
+    for (let cx = x0 + step * 5; cx < x1 - step * 3; cx += step * 6) {
+      if (Math.random() > 0.3) continue;
       const count = 4 + Math.floor(Math.random() * 3);
       const spacing = step * 0.5;
       const m = Math.floor(cx / step) % 4;
