@@ -2,11 +2,12 @@ import React, { useEffect } from 'react';
 import confetti from 'canvas-confetti';
 import { Gem, ChevronRight } from 'lucide-react';
 import { GameButton, Panel } from './ui';
+import GemCounter from '@/components/game/GemCounter';
 
 // Celebration overlay shown the first time a no-death challenge is completed.
 // Displays the reward amount prominently and lets the player collect it or
 // replay the level (no second reward).
-export default function ChallengeComplete({ reward, challengeName, sound, onContinue, onPlayAgain }) {
+export default function ChallengeComplete({ reward, challengeName, sound, onContinue, onPlayAgain, totalGems }) {
   useEffect(() => {
     const colors = ['#38e8ff', '#ff3ea5', '#ffffff', '#fbbf24'];
     const fire = () =>
@@ -39,6 +40,7 @@ export default function ChallengeComplete({ reward, challengeName, sound, onCont
           </div>
         </div>
         <div className="mt-2 text-[11px] text-white/45">Added to your gem balance</div>
+        {totalGems != null ? <div className="mt-2 flex justify-center"><GemCounter total={totalGems} size="lg" /></div> : null}
 
         <div className="mt-7 flex flex-col gap-3">
           <GameButton variant="primary" className="w-full" sound={sound} onClick={onContinue}>

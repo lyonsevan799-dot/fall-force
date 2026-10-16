@@ -1,8 +1,7 @@
 import React from 'react';
-import { Gem, Check, Lock, ChevronLeft, ChevronRight, Target } from 'lucide-react';
+import { Gem, Check, Lock, ChevronLeft, ChevronRight, Target, MoveVertical, Crosshair, Orbit } from 'lucide-react';
 import { GameButton } from './ui';
 import { CHALLENGES, challengeGroup, challengeUnlocked, isChallengeDone } from '@/game/challenges';
-import { groupProgress } from '@/game/groups';
 
 const ACCENT = {
   cyan: {
@@ -63,16 +62,19 @@ export default function Challenges({ save, sound, onStart, onBack }) {
 
       <div className="flex flex-col gap-4">
         {CHALLENGES.map((ch, ci) => {
+          const middle = ch.type === 'middle';
+          const ChallengeIcon = middle ? ({ easy: MoveVertical, medium: Crosshair, hard: Orbit }[ch.groupId]) : Target;
           const group = challengeGroup(ch);
           const unlocked = challengeUnlocked(save, ch);
           const done = isChallengeDone(save, ch.id);
           const a = ACCENT[group.accent];
-          const { done: gDone, total } = groupProgress(save, group);
+          const failed = middle && save.challenges?.[ch.id]?.failedAttempt;
           return (
             <div
               key={ch.id}
               className={`relative overflow-hidden rounded-3xl border ${unlocked ? `${a.ring} bg-white/[0.04] ${a.glow}` : 'border-white/10 bg-white/[0.02]'} p-5 transition-all duration-200 sm:p-6`}
             >
+              {middle && ci === 3 ? <h2 className="mb-4 font-heading text-sm uppercase tracking-widest text-white/80">Stay in the Middle</h2> : null}
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-3">
@@ -82,18 +84,18 @@ export default function Challenges({ save, sound, onStart, onBack }) {
                     <span className={`rounded-full border px-2.5 py-0.5 font-heading text-[9px] uppercase tracking-[0.22em] ${unlocked ? a.chip : 'border-white/15 bg-white/5 text-white/40'}`}>
                       {group.name}
                     </span>
-                    <DifficultyDots level={ci + 1} accent={a} />
+                    <DifficultyDots level={['easy', 'medium', 'hard'].indexOf(ch.groupId) + 1} accent={a} />
                     {done ? (
                       <span className={`flex items-center gap-1 font-heading text-[9px] uppercase tracking-[0.2em] ${a.text}`}>
                         <Check size={12} /> Completed
                       </span>
                     ) : (
-                      <span className="font-heading text-[9px] uppercase tracking-[0.2em] text-white/40">Available</span>
+                      <span className="font-heading text-[9px] uppercase tracking-[0.2em] text-white/40">{!unlocked ? 'Locked' : failed ? 'Failed Attempt' : 'Available'}</span>
                     )}
                   </div>
 
                   <div className="mt-3 flex items-start gap-2">
-                    <Target size={14} className={`mt-0.5 shrink-0 ${unlocked ? 'text-white/55' : 'text-white/30'}`} />
+                    <ChallengeIcon size={14} className={`mt-0.5 shrink-0 ${unlocked ? 'text-white/55' : 'text-white/30'}`} />
                     <p className={`text-[12px] leading-relaxed ${unlocked ? 'text-white/55' : 'text-white/35'}`}>
                       {ch.objective} in a single run.
                     </p>
@@ -134,7 +136,7 @@ export default function Challenges({ save, sound, onStart, onBack }) {
       </div>
 
       <p className="text-center text-[11px] text-white/30">
-        Finish a level from start to finish without a single death to claim the reward. Each challenge pays once.
+        No-Death: finish without dying. Stay in the Middle: avoid both boundaries for the entire level; deaths and restarts fail the attempt. Start a fresh attempt from the level picker. Each challenge pays once.
       </p>
     </div>
   );

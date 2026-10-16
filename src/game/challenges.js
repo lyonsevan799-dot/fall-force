@@ -27,6 +27,12 @@ export const CHALLENGES = [
     reward: 1000,
     objective: 'Complete any Hard level without dying',
   },
+  { id: 'easy_middle_master', name: 'Middle Master', groupId: 'easy', type: 'middle', reward: 1000,
+    objective: 'Complete any Easy Career level without touching the top or bottom boundary' },
+  { id: 'medium_precision_pro', name: 'Precision Pro', groupId: 'medium', type: 'middle', reward: 2500,
+    objective: 'Complete any Medium Career level without touching the top or bottom boundary' },
+  { id: 'hard_gravity_expert', name: 'Gravity Expert', groupId: 'hard', type: 'middle', reward: 4000,
+    objective: 'Complete any Hard Career level without touching the top or bottom boundary' },
 ];
 
 export function challengeById(id) {

@@ -10,13 +10,17 @@ import SettingsPanel from './SettingsPanel';
 import RotateOverlay from './RotateOverlay';
 import ChallengeComplete from './ChallengeComplete';
 import { useTapHoldControl } from '@/hooks/useTapHoldControl';
+import MiddleAttempt from '@/game/middleAttempt';
+import MiddleChallengeIntro from '@/components/game/MiddleChallengeIntro';
+import ChallengeRunStatus from '@/components/game/ChallengeRunStatus';
 
-export default function GameCanvas({ levelIndex, totalLevels, settings, displaySettings, sound, totalGems, groupJustCompleted, nextGroupName, isFinalGroup, onExit, onComplete, onNext, onEnterNextGroup, onUpdateSettings, onResetProgress, challenge, challengeReward, onClearReward }) {
+export default function GameCanvas({ levelIndex, totalLevels, settings, displaySettings, sound, totalGems, groupJustCompleted, nextGroupName, isFinalGroup, onExit, onComplete, onNext, onEnterNextGroup, onUpdateSettings, onResetProgress, challenge, challengeReward, onClearReward, onChallengeFailure, onNewChallengeAttempt }) {
   const wrapRef = useRef(null);
   const canvasRef = useRef(null);
   const engineRef = useRef(null);
   const cbRef = useRef({});
   const completedRef = useRef(false);
+  const [middleReady, setMiddleReady] = useState(challenge?.type === 'middle');
 
   const [ui, setUi] = useState({ state: 'intro', deaths: 0, time: 0, progress: 0, checkpoint: 0, stars: 3, gems: 0, rush: false, rushAvailable: false });
   const [paused, setPaused] = useState(false);
@@ -25,7 +29,7 @@ export default function GameCanvas({ levelIndex, totalLevels, settings, displayS
   const [needsRotate, setNeedsRotate] = useState(false);
   const [rotateDismissed, setRotateDismissed] = useState(false);
 
-  cbRef.current = { onExit, onComplete, onNext };
+  cbRef.current = { onExit, onComplete, onNext, onChallengeFailure };
 
   // ---- main loop -----------------------------------------------------------
   useEffect(() => {
@@ -34,6 +38,12 @@ export default function GameCanvas({ levelIndex, totalLevels, settings, displayS
     const ctx = canvas.getContext('2d', { alpha: false });
     const eng = new Engine({ sound, settings });
     eng.load(levelIndex);
+    if (challenge?.type === 'middle') {
+      eng.middleAttempt = new MiddleAttempt((reason) => cbRef.current.onChallengeFailure?.(challenge.id, reason));
+      eng.middleAttempt.position(eng);
+      eng.paused = true;
+    }
+    setMiddleReady(challenge?.type === 'middle');
     engineRef.current = eng;
     completedRef.current = false;
     setPaused(false);
@@ -80,6 +90,7 @@ export default function GameCanvas({ levelIndex, totalLevels, settings, displayS
       state: eng.state, deaths: eng.deaths, time: eng.attemptTime,
       progress: eng.ui.progress, checkpoint: eng.ui.checkpoint, stars: eng.stars,
       gems: eng.gems, rush: !!eng.rush, rushAvailable: eng.rushAvailable,
+      middleFailed: !!eng.middleAttempt?.failed, middleReason: eng.middleAttempt?.reason,
     });
 
     const loop = (now) => {
@@ -92,7 +103,7 @@ export default function GameCanvas({ levelIndex, totalLevels, settings, displayS
       if (eng.state === 'complete' && !completedRef.current) {
         completedRef.current = true;
         if (cbRef.current.onComplete) {
-          cbRef.current.onComplete(levelIndex, { deaths: eng.deaths, time: eng.attemptTime, stars: eng.stars, gems: eng.gems });
+          cbRef.current.onComplete(levelIndex, { deaths: eng.deaths, time: eng.attemptTime, stars: eng.stars, gems: eng.gems, middleSuccess: eng.middleAttempt?.succeeded === true });
         }
       }
       // Auto-respawn shortly after death so the player is back in the action
@@ -142,6 +153,14 @@ export default function GameCanvas({ levelIndex, totalLevels, settings, displayS
   }, [displaySettings]);
 
   // ---- actions -------------------------------------------------------------
+  const startMiddle = () => {
+    const eng = engineRef.current;
+    if (!eng?.middleAttempt || eng.middleAttempt.started) return;
+    sound.init(); sound.resume();
+    eng.middleAttempt.start(eng);
+    setMiddleReady(false);
+  };
+
   const primary = () => {
     const eng = engineRef.current;
     if (!eng || eng.paused) return;
@@ -154,6 +173,7 @@ export default function GameCanvas({ levelIndex, totalLevels, settings, displayS
   const restart = () => {
     const eng = engineRef.current;
     if (!eng) return;
+    if (eng.middleAttempt && !eng.middleAttempt.started) return;
     completedRef.current = false;
     eng.paused = false;
     eng.restart(true);
@@ -163,7 +183,7 @@ export default function GameCanvas({ levelIndex, totalLevels, settings, displayS
 
   const togglePause = () => {
     const eng = engineRef.current;
-    if (!eng || eng.state === 'dead' || eng.state === 'complete') return;
+    if (!eng || (eng.middleAttempt && !eng.middleAttempt.started) || eng.state === 'dead' || eng.state === 'complete') return;
     const next = !eng.paused;
     eng.paused = next;
     setPaused(next);
@@ -176,6 +196,8 @@ export default function GameCanvas({ levelIndex, totalLevels, settings, displayS
       if (e.repeat) return;
       const eng = engineRef.current;
       if (!eng) return;
+      if (eng.middleAttempt && e.target instanceof Element && e.target.closest('button, input, select, textarea')) return;
+      if (eng.middleAttempt && !eng.middleAttempt.started) return;
       sound.init();
       sound.resume();
       if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'ArrowDown' || e.code === 'Enter') {
@@ -256,12 +278,8 @@ export default function GameCanvas({ levelIndex, totalLevels, settings, displayS
 
       <Hud levelIndex={levelIndex} ui={ui} totalGems={totalGems} onPause={togglePause} sound={sound} />
 
-      {challenge && (ui.state === 'playing' || ui.state === 'intro') ? (
-        <div className="pointer-events-none absolute inset-x-0 top-16 z-20 flex justify-center">
-          <div className="gs-pop rounded-full border border-fuchsia-300/40 bg-black/50 px-4 py-1.5 font-heading text-[10px] uppercase tracking-[0.24em] text-fuchsia-100 backdrop-blur">
-            No-Death · {challenge.name} · +{challenge.reward} Gems
-          </div>
-        </div>
+      {challenge && !middleReady && (ui.state === 'playing' || ui.state === 'intro') ? (
+        <ChallengeRunStatus challenge={challenge} failed={ui.middleFailed} reason={ui.middleReason} onNewAttempt={onNewChallengeAttempt} sound={sound} />
       ) : null}
 
       {ui.rushAvailable && !ui.rush && ui.state === 'playing' ? (
@@ -280,7 +298,7 @@ export default function GameCanvas({ levelIndex, totalLevels, settings, displayS
         </div>
       ) : null}
 
-      {ui.state === 'intro' ? <LevelIntro levelIndex={levelIndex} /> : null}
+      {middleReady ? <MiddleChallengeIntro challenge={challenge} sound={sound} onStart={startMiddle} onExit={onExit} /> : ui.state === 'intro' ? <LevelIntro levelIndex={levelIndex} /> : null}
 
       {toast ? (
         <div className="pointer-events-none absolute inset-x-0 top-1/3 z-20 flex justify-center">
@@ -305,9 +323,10 @@ export default function GameCanvas({ levelIndex, totalLevels, settings, displayS
           <ChallengeComplete
             reward={challengeReward.amount}
             challengeName={challengeReward.name}
+            totalGems={challenge?.type === 'middle' ? totalGems : undefined}
             sound={sound}
             onContinue={onExit}
-            onPlayAgain={() => { if (onClearReward) onClearReward(); restart(); }}
+            onPlayAgain={() => { if (onClearReward) onClearReward(); if (challenge?.type === 'middle') onNewChallengeAttempt(); else restart(); }}
           />
         ) : (
           <LevelComplete
@@ -323,9 +342,10 @@ export default function GameCanvas({ levelIndex, totalLevels, settings, displayS
             isFinalGroup={isFinalGroup}
             sound={sound}
             challengeMode={!!challenge}
+            challengeFailure={challenge?.type === 'middle' && ui.middleFailed ? ui.middleReason : null}
             exitLabel={challenge ? 'Challenges' : 'Levels'}
             onNext={() => cbRef.current.onNext()}
-            onRetry={restart}
+            onRetry={challenge?.type === 'middle' ? onNewChallengeAttempt : restart}
             onExit={onExit}
             onEnterNextGroup={onEnterNextGroup}
           />

@@ -69,6 +69,7 @@ export class Engine {
   }
 
   restart(full = true) {
+    this.middleAttempt?.fail(full ? 'Restarted the level' : 'Respawned during this attempt');
     if (full || this.cpIndex < 0) {
       if (full) { this.deaths = 0; this.cpIndex = -1; this.gems = 0; }
       this.px = this.level.startX;
@@ -123,6 +124,7 @@ export class Engine {
       this.zoomTarget = 1.04;
       this.sound.sfx('spawn');
     }
+    this.middleAttempt?.position(this);
     this.state = this.state === 'intro' ? 'intro' : 'playing';
     this.syncUi();
   }
@@ -167,6 +169,7 @@ export class Engine {
 
   switchGravity() {
     if (this.state !== 'playing' && this.state !== 'intro') return;
+    this.middleAttempt?.sample(this);
     this.dir = -this.dir;
     this.vy = this.dir * LAUNCH_V;
     this.grounded = false;
@@ -194,6 +197,7 @@ export class Engine {
 
   die() {
     if (this.state !== 'playing' && this.state !== 'intro') return;
+    this.middleAttempt?.fail('Died during this attempt');
     this.state = 'dying';
     this.dieT = 0;
     this.deaths++;
@@ -231,6 +235,8 @@ export class Engine {
   }
 
   reachFinish() {
+    if (this.middleAttempt && this.state !== 'playing') return;
+    this.middleAttempt?.finish(this);
     this.finishReached = true;
     this.state = 'complete';
     this.completeT = 0;
@@ -320,6 +326,7 @@ export class Engine {
   }
 
   step(h) {
+    this.middleAttempt?.sample(this);
     if (this.rush) { this.stepRush(h); return; }
     const L = this.level;
     const size = PLAYER_SIZE;
@@ -337,6 +344,7 @@ export class Engine {
       const ox = this.px + size - 6 > g.x && this.px + 6 < g.x + g.w;
       if (g.solid && ox) {
         this.py += dy;
+        this.middleAttempt?.sample(this);
       } else {
         this.grounded = false;
         this.groundPlat = null;
@@ -355,8 +363,10 @@ export class Engine {
       this.py += this.vy * h;
     }
 
+    this.middleAttempt?.sample(this);
     this.checkTriggers();
     this.resolveSurfaces(prevY);
+    this.middleAttempt?.sample(this);
     this.checkHazards();
 
     if (!this.finishReached && this.px >= L.length) this.reachFinish();
@@ -588,6 +598,7 @@ export class Engine {
     const ncx = r.startX + r.dir.x * r.s;
     const ncy = r.startY + r.dir.y * r.s;
     this.px = ncx - size / 2;
+    this.middleAttempt?.sample(this, ncy - size / 2);
     this.py = clamp(ncy - size / 2, CEIL_Y, FLOOR_Y - size);
     if (this.gateIndex < this.gates.length && this.px >= this.gates[this.gateIndex].x) {
       this.speedMult = this.gates[this.gateIndex].mult;

@@ -80,7 +80,7 @@ export function claimChallenge(progress, challengeId, reward) {
   const next = clone(progress);
   next.challenges = { ...(next.challenges || {}) };
   if (next.challenges[challengeId] && next.challenges[challengeId].completed) return next;
-  next.challenges[challengeId] = { completed: true, awardedAt: Date.now() };
+  next.challenges[challengeId] = { ...next.challenges[challengeId], completed: true, awardedAt: Date.now() };
   next.totalGems = (next.totalGems || 0) + (reward || 0);
   return next;
 }

@@ -4,7 +4,7 @@ import { GameButton, Panel, Stars } from './ui';
 import { LEVELS } from '@/game/levels';
 import { groupForLevel } from '@/game/groups';
 
-export default function LevelComplete({ levelIndex, stars, deaths, time, gems, totalGems, isLast, groupJustCompleted, nextGroupName, isFinalGroup, onNext, onRetry, onExit, onEnterNextGroup, sound, challengeMode = false, exitLabel = 'Levels' }) {
+export default function LevelComplete({ levelIndex, stars, deaths, time, gems, totalGems, isLast, groupJustCompleted, nextGroupName, isFinalGroup, onNext, onRetry, onExit, onEnterNextGroup, sound, challengeMode = false, exitLabel = 'Levels', challengeFailure = null }) {
   const isLastInGroup = levelIndex === groupForLevel(levelIndex).end;
   const showGroupComplete = isLastInGroup && groupJustCompleted && !challengeMode;
   const showFinal = showGroupComplete && isFinalGroup;
@@ -49,6 +49,7 @@ export default function LevelComplete({ levelIndex, stars, deaths, time, gems, t
           </div>
         </div>
 
+        {challengeFailure ? <p role="status" className="mt-3 text-xs text-pink-200">Failed Attempt: {challengeFailure}. Retry starts a new attempt from the level picker.</p> : null}
         <div className="mt-6 grid grid-cols-2 gap-3">
           {challengeMode ? (
             <>

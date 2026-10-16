@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Sound } from '@/game/audio';
 import { LEVEL_COUNT } from '@/game/levels';
 import { commitRaceResult } from '@/game/raceRewards';
+import { recordMiddleFailure, middleChallengeEligible } from '@/game/middleProgress';
 import { groupForLevel, groupCompleted, nextGroupAfter, groupIndex } from '@/game/groups';
 import { loadProgress, saveProgress, recordResult, clearProgress, commitLevelGems, commitEndlessGems, claimChallenge, FALLBACK } from '@/game/progress';
 import { challengeGroup, challengeGroupIndex, isChallengeDone } from '@/game/challenges';
@@ -24,6 +25,8 @@ export default function Home() {
   const settingsRef = useRef({ ...initial.settings });
 
   const [save, setSave] = useState(initial);
+  const saveRef = useRef(initial);
+  saveRef.current = save;
   const [screen, setScreen] = useState('menu');
   const [levelIndex, setLevelIndex] = useState(Math.min(initial.unlocked || 0, LEVEL_COUNT - 1));
   const [raceIndex, setRaceIndex] = useState(0);
@@ -51,15 +54,23 @@ export default function Home() {
     return () => { window.removeEventListener('pointerdown', unlock); window.removeEventListener('keydown', unlock); };
   }, [sound, save.settings.music]);
 
-  const startLevel = (i) => { sound.init(); sound.resume(); setLevelIndex(i); setScreen('game'); };
+  const startLevel = (i) => { sound.init(); sound.resume(); setChallenge(null); setChallengeReward(null); setLevelIndex(i); setScreen('game'); };
   const startRace = (i) => { sound.init(); sound.resume(); setRaceIndex(i); setScreen('race'); };
 
   const enterGroup = (gi) => { sound.sfx('click'); setCareerGroup(gi); setScreen('levels'); };
 
+  const handleMiddleFailure = (id, reason) => {
+    const nextSave = recordMiddleFailure(saveRef.current, id, reason);
+    saveRef.current = nextSave;
+    saveProgress(nextSave);
+    setSave(nextSave);
+  };
+
   const handleComplete = (i, result) => {
+    const currentSave = saveRef.current;
     const group = groupForLevel(i);
-    const before = groupCompleted(save, group);
-    const withResult = recordResult(save, i, { stars: result.stars, time: result.time }, LEVEL_COUNT);
+    const before = groupCompleted(currentSave, group);
+    const withResult = recordResult(currentSave, i, { stars: result.stars, time: result.time }, LEVEL_COUNT);
     const after = groupCompleted(withResult, group);
     const nextGrp = nextGroupAfter(group);
     setCompletedInfo({
@@ -69,11 +80,13 @@ export default function Home() {
     });
     let nextSave = commitLevelGems(withResult, i, result.gems || 0);
     let reward = null;
-    if (challenge && result.deaths === 0 && group.id === challenge.groupId && !isChallengeDone(save, challenge.id)) {
+    if (challenge && middleChallengeEligible(challenge, result) && group.id === challenge.groupId && !isChallengeDone(currentSave, challenge.id)) {
       nextSave = claimChallenge(nextSave, challenge.id, challenge.reward);
       reward = { amount: challenge.reward, name: challenge.name };
     }
     setChallengeReward(reward);
+    saveRef.current = nextSave;
+    saveProgress(nextSave);
     setSave(nextSave);
   };
 
@@ -156,6 +169,8 @@ export default function Home() {
           challenge={challenge}
           challengeReward={challengeReward}
           onClearReward={() => setChallengeReward(null)}
+          onChallengeFailure={handleMiddleFailure}
+          onNewChallengeAttempt={() => { setChallengeReward(null); setScreen('challenge-levels'); }}
           onExit={() => (challenge ? exitChallenge() : setScreen('levels'))}
           onComplete={handleComplete}
           onNext={() => setLevelIndex((i) => Math.min(LEVEL_COUNT - 1, i + 1))}
@@ -230,7 +245,7 @@ export default function Home() {
               onSelect={startChallengeLevel}
               onBack={() => setScreen('challenges')}
               backLabel="Challenges"
-              banner={challenge ? { name: challenge.name, reward: challenge.reward } : null}
+              banner={challenge ? { name: challenge.name, reward: challenge.reward, type: challenge.type } : null}
             />
           ) : null}
 

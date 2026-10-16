@@ -2,7 +2,7 @@ import React from 'react';
 import { Lock, ChevronLeft, Play, Target, Gem } from 'lucide-react';
 import { Stars } from './ui';
 import { LEVELS } from '@/game/levels';
-import { GROUPS, isLevelPlayable } from '@/game/groups';
+import { GROUPS, isLevelPlayable, groupUnlocked } from '@/game/groups';
 
 export default function LevelSelect({ save, groupIndex, onSelect, onBack, sound, backLabel = 'Groups', banner = null }) {
   const group = GROUPS[groupIndex] || GROUPS[0];
@@ -41,7 +41,7 @@ export default function LevelSelect({ save, groupIndex, onSelect, onBack, sound,
         {levels.map((lv, k) => {
           const i = group.start + k;
           const rec = save.levels[i];
-          const playable = isLevelPlayable(save, i);
+          const playable = banner?.type === 'middle' ? groupUnlocked(save, groupIndex) : isLevelPlayable(save, i);
           const isCurrent = i === current && playable && !(rec && rec.completed);
           return (
             <button
