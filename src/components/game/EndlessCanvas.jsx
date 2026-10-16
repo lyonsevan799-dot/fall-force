@@ -8,6 +8,7 @@ import PauseMenu from './PauseMenu';
 import SettingsPanel from './SettingsPanel';
 import RotateOverlay from './RotateOverlay';
 import { useTapHoldControl } from '@/hooks/useTapHoldControl';
+import { useGameLifecycle } from '@/hooks/useGameLifecycle';
 
 export default function EndlessCanvas({ settings, displaySettings, sound, best, totalGems, onResult, onExit, onUpdateSettings, onResetProgress }) {
   const wrapRef = useRef(null);
@@ -27,6 +28,7 @@ export default function EndlessCanvas({ settings, displaySettings, sound, best, 
 
   cbRef.current = { onResult, onExit };
   bestRef.current = best || 0;
+  useGameLifecycle(engineRef, setPaused);
 
   useEffect(() => {
     const wrap = wrapRef.current;
@@ -137,6 +139,7 @@ export default function EndlessCanvas({ settings, displaySettings, sound, best, 
       if (e.repeat) return;
       const eng = engineRef.current;
       if (!eng) return;
+      if (e.target instanceof Element && e.target.closest('button, input, select, textarea')) return;
       sound.init(); sound.resume();
       if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'ArrowDown' || e.code === 'Enter') {
         e.preventDefault();
@@ -153,14 +156,9 @@ export default function EndlessCanvas({ settings, displaySettings, sound, best, 
       if (!eng) return;
       if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') eng.rushHeld = false;
     };
-    const onVis = () => {
-      const eng = engineRef.current;
-      if (document.hidden && eng && !eng.paused && eng.state === 'playing') { eng.paused = true; setPaused(true); }
-    };
     window.addEventListener('keydown', onKey);
     window.addEventListener('keyup', onKeyUp);
-    document.addEventListener('visibilitychange', onVis);
-    return () => { window.removeEventListener('keydown', onKey); window.removeEventListener('keyup', onKeyUp); document.removeEventListener('visibilitychange', onVis); };
+    return () => { window.removeEventListener('keydown', onKey); window.removeEventListener('keyup', onKeyUp);  };
   }, [sound]);
 
   useEffect(() => {
@@ -245,7 +243,7 @@ export default function EndlessCanvas({ settings, displaySettings, sound, best, 
       ) : null}
 
       {showRotate ? (
-        <RotateOverlay onDismiss={() => { setRotateDismissed(true); const el = document.documentElement; if (el.requestFullscreen) el.requestFullscreen().catch(() => {}); }} />
+        <RotateOverlay onDismiss={() => { setRotateDismissed(true); const el = document.documentElement; if (!import.meta.env.CRAZYGAMES && el.requestFullscreen) el.requestFullscreen().catch(() => {}); }} />
       ) : null}
     </div>
   );

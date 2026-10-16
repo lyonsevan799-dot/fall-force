@@ -183,10 +183,13 @@ export function emit(d, x, out, ctx) {
       const n = d.n || 1;
       const spacing = d.spacing || 0.5;
       const isRow = n >= 4;
-      const groupId = isRow ? _gemGroupId++ : undefined;
+      const groupId = isRow ? `authored_${_gemGroupId++}` : undefined;
       for (let i = 0; i < n; i++) {
         const gem = { type: 'gem', x: x + i * step * spacing, y: d.y || MID_Y, r: 13 };
-        if (isRow) { gem.groupId = groupId; gem.rowLen = n; gem.rowDir = { x: 1, y: 0 }; }
+        if (isRow) {
+          gem.groupId = groupId; gem.rowLen = n; gem.rowDir = { x: 1, y: 0 };
+          if (i === 0) { gem.trigger = true; gem.r = 24; }
+        }
         out.push(gem);
       }
       return x + n * step * spacing;

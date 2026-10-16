@@ -50,7 +50,7 @@ export class Sound {
   }
 
   resume() {
-    if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume();
+    if (this.ctx && (this.ctx.state === 'suspended' || this.ctx.state === 'interrupted')) this.ctx.resume().catch(() => {});
   }
 
   applySettings() {
@@ -199,11 +199,19 @@ export class Sound {
     }
   }
 
+  dispose() {
+    this.stopMusic();
+    if (this.ctx && this.ctx.state !== 'closed') this.ctx.close().catch(() => {});
+    this.ctx = null; this.ready = false;
+  }
+
   setIntensity(i) { this.intensity = i; }
 
   schedule() {
     if (!this.musicPlaying || !this.ready) return;
     const ctx = this.ctx;
+    // Never schedule thousands of missed notes after a suspended tab resumes.
+    if (this.nextTime < ctx.currentTime - 0.1) this.nextTime = ctx.currentTime + 0.02;
     const bpm = 108 + this.intensity * 9;
     const stepDur = 60 / bpm / 4; // 16th notes
     while (this.nextTime < ctx.currentTime + 0.2) {

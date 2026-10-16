@@ -1,56 +1,31 @@
-# Fall Force — Standalone HTML5 Export
+# Gravity Switch / Fall Force: standalone HTML5 candidate
 
-This folder contains everything needed to turn an exported copy of the Base44
-app into a self-contained HTML5 game bundle for CrazyGames.
+This is a game-only build, separate from the hosted Base44 application. The existing in-game title is Fall Force; it has not been renamed by this stability pass.
 
-The game itself is 100% client-side (canvas, WebAudio, localStorage). The only
-Base44 dependency is the auth shell that wraps the app — this kit removes it.
+## Requirements and commands
 
-## What's in here
+Use Node.js 22.12+ and npm. From an exported project root, run `npm install` once, then `npx vite build --config standalone/vite.config.js`. Alternatively run `bash standalone/prepare-standalone.sh` after dependencies are installed. The script no longer replaces or deletes application files, hooks, or authentication code.
 
-| File | Purpose |
-|------|---------|
-| `src/App.jsx` | Minimal entry — renders `<Home />` directly, no auth/router/providers |
-| `vite.config.js` | Vite config without the `@base44/vite-plugin` (keeps the `@` alias) |
-| `package.json` | Slim deps: only `react`, `react-dom`, `lucide-react`, `canvas-confetti` |
-| `index.html` | Same branded splash, local favicon (no base44.com logo) |
-| `prepare-standalone.sh` | One-command script that assembles & builds the standalone project |
+The separate output is `dist-standalone/`, with `index.html` at its root. With a ZIP utility installed the script also packages that directory's CONTENTS as `gravity-switch-crazygames.zip`. Do not include a parent dist folder in the uploaded ZIP.
 
-## How to use
+To run the built game locally use `npx vite preview --config standalone/vite.config.js --host 127.0.0.1` and open the printed HTTP URL. Do not double-click index.html: ES modules need HTTP, and CrazyGames serves the bundle over HTTPS. Dev mode uses `npx vite --config standalone/vite.config.js`.
 
-1. **Export** your app from the Base44 editor (top-right export button → ZIP).
-2. **Unzip** the download and open a terminal in the project root.
-3. **Run:**
-   ```bash
-   bash standalone/prepare-standalone.sh
-   ```
-4. The script replaces the entry files, deletes all Base44/auth/UI-shell files,
-   installs the slim dependency set, and runs `vite build`.
-5. **Upload the contents of `dist/`** to CrazyGames.
+## Dependency isolation
 
-## What gets removed
+The standalone configuration selects `standalone/src/App.jsx` instead of the hosted auth/router entry and does not load the Base44 Vite plugin. It retains all game hooks and UI. The game itself uses Canvas, procedural WebAudio, and localStorage, with React, ReactDOM, lucide-react and canvas-confetti. No Base44 SDK, auth, database, analytics, or backend endpoints are needed by this build's reachable game code.
 
-- `base44/` — entity schemas, backend functions, config (no backend needed)
-- `src/api/`, `src/lib/`, `src/hooks/`, `src/utils/` — Base44 SDK client, auth context, helpers
-- `src/components/ui/` — shadcn/ui component library (the game has its own UI)
-- `src/components/{AuthLayout,GoogleIcon,ProtectedRoute,ScrollToTop,UserNotRegisteredError}.jsx`
-- `src/pages/{Login,Register,ForgotPassword,ResetPassword,OAuthConsent}.jsx`
-- `@base44/sdk`, `@base44/vite-plugin` and ~60 unused dependencies from package.json
+Fonts are bundled locally with their SIL Open Font License notices; paths are relative. No Google Fonts request is necessary for this build. No advertisements, SDK mocks, third-party trackers, or account screens are added. Custom fullscreen requests are disabled for the CrazyGames build, since the portal supplies fullscreen.
 
-## What stays
+The downloadable source kit uses the slim manifest from `standalone/package.json` at its root and includes only the game source, hooks, fonts and build configuration. The regular Base44 source export can also use this configuration without replacing its original package manifest.
 
-- `src/main.jsx`, `src/App.jsx` (replaced), `src/index.css`, `tailwind.config.js`
-- `src/pages/Home.jsx` — the entire game (menu, level select, all game modes)
-- `src/game/**` — engine, levels, renderer, audio, particles, progress
-- `src/components/game/**` — all in-game UI components
-- `postcss.config.js`, `jsconfig.json`
+## Saves
 
-## Notes
+The original `gravity-switch-save-v1` key and progress format are retained and repaired field-by-field when needed. Unreadable JSON is copied to `gravity-switch-save-v1-corrupt-backup` before fallback. Data is local to a browser and origin. CrazyGames cannot automatically read saves from base44.app, other domains or private-browser sessions. Keep the same CrazyGames game ID/origin for future updates. No player data is bundled in either ZIP.
 
-- Player progress (unlocked levels, stars, gems, settings) is saved to
-  `localStorage` — no backend, no account required.
-- The branded loading splash is preserved in `index.html`.
-- The `standalone/` folder itself is not part of the Vite build (nothing imports
-  it), so it's safe to leave in or delete after building.
-- Your hosted Base44 app at flip-shift-dash.base44.app is untouched — this kit
-  only modifies the local exported copy.
+There is no server-authoritative economy in this offline game. Local saves can be edited by their owner. Rewards must not be used for cash or competitive leaderboards without a separate trusted service. Cloud saves/account synchronization would be later SDK work.
+
+## Submission status
+
+This is a Basic Launch candidate, NOT a claim of CrazyGames acceptance or completed gameplay QA. Under the official requirements reviewed on 2026-10-16, SDK integration is optional for Basic Launch and ads are not allowed; Full Launch requires the official SDK gameplay lifecycle and applicable account/progress integrations. None is faked here.
+
+Before submission, run the included QA checklist through Testing Agent and the CrazyGames Developer Portal preview, confirm desktop/mobile/iframe behavior, and supply real cover assets and gameplay videos. See `src/standalone/PUBLISHING_REPORT.md` for findings, measured build results and remaining checks.

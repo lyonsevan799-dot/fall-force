@@ -25,7 +25,7 @@ export default function Hud({ levelIndex, ui, totalGems, onPause, sound }) {
           </div>
           <div className="flex items-center gap-2">
             <div className="rounded-2xl border border-cyan-300/20 bg-black/40 px-3 py-2 backdrop-blur">
-              <GemCounter count={ui.gems || 0} total={totalGems || 0} size="md" />
+              <GemCounter count={ui.state === 'complete' ? 0 : ui.gems || 0} total={totalGems || 0} size="md" />
             </div>
             <IconButton label="Pause" onClick={onPause} sound={sound}><Pause size={16} /></IconButton>
           </div>

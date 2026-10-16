@@ -4,8 +4,8 @@ import { GameButton, Panel } from './ui';
 
 export default function EndlessGameOver({ score, best, distance, gems, maxStreak, isNewBest, sound, onRestart, onExit }) {
   return (
-    <div className="absolute inset-0 z-30 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-      <Panel className="gs-pop w-full max-w-md text-center">
+    <div className="absolute inset-0 z-30 flex items-center justify-center overflow-y-auto bg-black/60 p-4 backdrop-blur-sm">
+      <Panel className="gs-pop my-auto w-full max-w-md shrink-0 text-center">
         <div className="font-heading text-[10px] uppercase tracking-[0.5em] text-rose-200/80">Game Over</div>
         <h2 className="mt-2 font-heading text-2xl uppercase tracking-[0.2em] text-white">Endless Run</h2>
 

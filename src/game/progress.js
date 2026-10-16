@@ -1,3 +1,7 @@
+import { normalizeProgress, safeInteger } from '@/game/saveData';
+import { LEVEL_COUNT } from '@/game/levels';
+import { challengeById } from '@/game/challenges';
+
 const KEY = 'gravity-switch-save-v1';
 
 export const FALLBACK = {
@@ -15,22 +19,16 @@ export const FALLBACK = {
 const clone = (o) => JSON.parse(JSON.stringify(o));
 
 export function loadProgress() {
+  let raw;
   try {
-    const raw = localStorage.getItem(KEY);
+    raw = localStorage.getItem(KEY);
     if (!raw) return clone(FALLBACK);
-    const p = JSON.parse(raw);
-    return {
-      levels: p.levels && typeof p.levels === 'object' ? p.levels : {},
-      unlocked: typeof p.unlocked === 'number' ? p.unlocked : 0,
-      endlessBest: typeof p.endlessBest === 'number' ? p.endlessBest : 0,
-      raceWins: typeof p.raceWins === 'number' ? p.raceWins : 0,
-      raceRewards: p.raceRewards && typeof p.raceRewards === 'object' && !Array.isArray(p.raceRewards) ? p.raceRewards : {},
-      totalGems: typeof p.totalGems === 'number' ? p.totalGems : 0,
-      levelGems: p.levelGems && typeof p.levelGems === 'object' ? p.levelGems : {},
-      challenges: p.challenges && typeof p.challenges === 'object' ? p.challenges : {},
-      settings: { ...FALLBACK.settings, ...(p.settings || {}) },
-    };
+    return normalizeProgress(JSON.parse(raw), FALLBACK, LEVEL_COUNT);
   } catch (e) {
+    // Keep an unreadable save recoverable instead of silently destroying it.
+    if (raw) {
+      try { if (!localStorage.getItem(`${KEY}-corrupt-backup`)) localStorage.setItem(`${KEY}-corrupt-backup`, raw); } catch (_) { /* storage unavailable */ }
+    }
     return clone(FALLBACK);
   }
 }
@@ -57,14 +55,14 @@ export function recordResult(progress, levelIndex, { stars, time }, totalLevels)
 
 export function commitLevelGems(progress, levelIndex, gems) {
   const next = clone(progress);
-  next.totalGems += gems || 0;
-  next.levelGems[levelIndex] = Math.max(next.levelGems[levelIndex] || 0, gems || 0);
+  next.totalGems = safeInteger(next.totalGems + safeInteger(gems));
+  next.levelGems[levelIndex] = Math.max(next.levelGems[levelIndex] || 0, safeInteger(gems));
   return next;
 }
 
 export function commitEndlessGems(progress, gems) {
   const next = clone(progress);
-  next.totalGems += gems;
+  next.totalGems = safeInteger(next.totalGems + safeInteger(gems));
   return next;
 }
 
@@ -78,11 +76,13 @@ export function completedCount(progress) {
 
 // Award a one-time challenge gem reward. Has a built-in guard so a challenge
 // can never be paid out twice, even if the completion event fires repeatedly.
-export function claimChallenge(progress, challengeId, reward) {
+export function claimChallenge(progress, challengeId) {
+  const challenge = challengeById(challengeId);
+  if (!challenge) return progress;
   const next = clone(progress);
   next.challenges = { ...(next.challenges || {}) };
   if (next.challenges[challengeId] && next.challenges[challengeId].completed) return next;
   next.challenges[challengeId] = { ...next.challenges[challengeId], completed: true, awardedAt: Date.now() };
-  next.totalGems = (next.totalGems || 0) + (reward || 0);
+  next.totalGems = safeInteger((next.totalGems || 0) + challenge.reward);
   return next;
 }

@@ -51,6 +51,8 @@ export class EndlessEngine extends Engine {
     this.sectionIndex = -1;
     this.sectionName = '';
     this._newBestFired = false;
+    this._lastCull = START_X;
+    this._lastChunkName = null;
 
     const startSpeed = 0.62;
     const step = startSpeed * BASE_SPEED * CROSS_TIME;
@@ -100,24 +102,22 @@ export class EndlessEngine extends Engine {
 
   _appendChunk() {
     const g = this._gen;
-    g.difficulty = clamp((g.x - START_X) / 22000, 0, 1);
-    g.speed = 0.62 + g.difficulty * 0.60;
-    g.gap = 3.0 - g.difficulty * 1.3;
+    // Space future obstacles for their upcoming difficulty, without speeding
+    // up the player merely because several chunks have been generated ahead.
+    const difficulty = clamp((g.x - START_X) / 22000, 0, 1);
+    const step = (0.62 + difficulty * 0.60) * BASE_SPEED * CROSS_TIME;
+    const ctx = { step, gap: 3.0 - difficulty * 1.3 };
 
-    const sectionIdx = this._sectionForDifficulty(g.difficulty);
-    this._level.theme = SECTIONS[sectionIdx].theme;
-    this._level.speed = g.speed * BASE_SPEED;
-    const step = g.speed * BASE_SPEED * CROSS_TIME;
-    this._level.step = step;
-    const ctx = { step, gap: g.gap };
-
-    const tier = g.difficulty < 0.25 ? 0 : g.difficulty < 0.55 ? 1 : g.difficulty < 0.85 ? 2 : 3;
+    const tier = difficulty < 0.25 ? 0 : difficulty < 0.55 ? 1 : difficulty < 0.85 ? 2 : 3;
     let pickTier = tier;
     const r = Math.random();
     if (r < 0.3 && tier > 0) pickTier = tier - 1;
     else if (r > 0.9 && tier < 3) pickTier = tier + 1;
     const pool = ENDLESS_CHUNKS[pickTier];
-    const chunk = pool[Math.floor(Math.random() * pool.length)];
+    let choice = Math.floor(Math.random() * pool.length);
+    if (pool[choice].name === this._lastChunkName) choice = (choice + 1) % pool.length;
+    const chunk = pool[choice];
+    this._lastChunkName = chunk.name;
 
     let x = g.x;
     for (const d of chunk.sections) x = emit(d, x, g.items, ctx);
@@ -177,6 +177,8 @@ export class EndlessEngine extends Engine {
   }
 
   _cull() {
+    if (this.px - this._lastCull < 400) return;
+    this._lastCull = this.px;
     const items = this._gen.items;
     if (items.length < 160) return;
     const cutX = this.px - 900;
@@ -191,8 +193,7 @@ export class EndlessEngine extends Engine {
   }
 
   maybeGenerate() {
-    const L = this._level;
-    if (L.length - this.px < 1600) this._appendChunk();
+    while (this._gen.x - this.px < 2200) this._appendChunk();
     this._cull();
   }
 
@@ -217,10 +218,15 @@ export class EndlessEngine extends Engine {
 
   _updateSection() {
     const diff = clamp((this.px - START_X) / 22000, 0, 1);
+    this._gen.difficulty = diff;
+    this._gen.speed = 0.62 + diff * 0.60;
+    this._level.speed = this._gen.speed * BASE_SPEED;
+    this._level.step = this._level.speed * CROSS_TIME;
     const idx = this._sectionForDifficulty(diff);
     if (this.sectionIndex !== idx) {
       this.sectionIndex = idx;
       this.sectionName = SECTIONS[idx].name;
+      this._level.theme = SECTIONS[idx].theme;
       if (idx > 0) this._fireMilestone(SECTIONS[idx].name.toUpperCase(), 'section');
     }
   }
@@ -246,6 +252,7 @@ export class EndlessEngine extends Engine {
   }
 
   collectGem(gem) {
+    if (gem.collected || (this.state !== 'playing' && this.state !== 'intro')) return;
     gem.collected = true;
     this.gems++;
     const value = 100 * (1 + (this._gen ? this._gen.difficulty : 0));

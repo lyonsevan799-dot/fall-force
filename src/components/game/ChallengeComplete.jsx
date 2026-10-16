@@ -18,8 +18,8 @@ export default function ChallengeComplete({ reward, challengeName, sound, onCont
   }, []);
 
   return (
-    <div className="absolute inset-0 z-40 flex items-center justify-center bg-black/70 p-4 backdrop-blur-md">
-      <Panel className="gs-pop w-full max-w-md text-center">
+    <div className="absolute inset-0 z-40 flex items-center justify-center overflow-y-auto bg-black/70 p-4 backdrop-blur-md">
+      <Panel className="gs-pop my-auto w-full max-w-md shrink-0 text-center">
         <div className="relative mx-auto flex h-20 w-20 items-center justify-center">
           <div className="absolute inset-0 rounded-full bg-fuchsia-400/25 blur-2xl" />
           <div className="relative flex h-20 w-20 items-center justify-center rounded-full border border-fuchsia-300/50 bg-fuchsia-400/15">
@@ -30,7 +30,7 @@ export default function ChallengeComplete({ reward, challengeName, sound, onCont
         <div className="mt-5 font-heading text-[10px] uppercase tracking-[0.5em] text-fuchsia-200/80">Challenge Complete</div>
         <h2 className="mt-2 font-heading text-2xl uppercase tracking-[0.18em] text-white">{challengeName}</h2>
 
-        <div className="mt-6 gs-milestone-pop">
+        <div className="mt-6 gs-pop">
           <div className="flex items-center justify-center gap-2">
             <Gem size={28} className="text-amber-300 drop-shadow-[0_0_14px_rgba(252,211,77,0.7)]" />
             <span className="font-heading text-4xl font-bold tracking-[0.04em] text-amber-200 drop-shadow-[0_0_18px_rgba(252,211,77,0.5)]">

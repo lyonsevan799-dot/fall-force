@@ -10,8 +10,8 @@ export default function LevelComplete({ levelIndex, stars, deaths, time, gems, t
   const showFinal = showGroupComplete && isFinalGroup;
 
   return (
-    <div className="absolute inset-0 z-30 flex items-center justify-center bg-black/55 p-4 backdrop-blur-sm">
-      <Panel className="gs-pop w-full max-w-md text-center">
+    <div className="absolute inset-0 z-30 flex items-center justify-center overflow-y-auto bg-black/55 p-4 backdrop-blur-sm">
+      <Panel className="gs-pop my-auto w-full max-w-md shrink-0 text-center">
         {showFinal ? (
           <>
             <div className="flex justify-center"><Trophy size={40} className="text-amber-300 drop-shadow-[0_0_18px_rgba(252,211,77,0.6)]" /></div>

@@ -8,6 +8,7 @@ import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import ScrollToTop from './components/ScrollToTop';
 // Add page imports here
 import Home from '@/pages/Home';
+import GameErrorBoundary from '@/components/game/GameErrorBoundary';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -36,7 +37,7 @@ const AuthenticatedApp = () => {
   return (
     <Routes>
       {/* Add your page Route elements here */}
-      <Route path="/" element={<Home />} />
+      <Route path="/" element={<GameErrorBoundary><Home /></GameErrorBoundary>} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );

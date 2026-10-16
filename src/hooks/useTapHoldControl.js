@@ -4,6 +4,7 @@ import { useCallback } from 'react';
 // a special trigger gem — no hold gesture is needed, so every tap just flips.
 export function useTapHoldControl({ engineRef, sound, onFlip, onDeadTap }) {
   const onPointerDown = useCallback((e) => {
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
     e.preventDefault();
     const eng = engineRef.current;
     if (!eng || eng.paused) return;

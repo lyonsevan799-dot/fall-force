@@ -235,7 +235,7 @@ export class Engine {
   }
 
   reachFinish() {
-    if (this.middleAttempt && this.state !== 'playing') return;
+    if (this.state !== 'playing' || this.finishReached) return;
     this.middleAttempt?.finish(this);
     this.finishReached = true;
     this.state = 'complete';
@@ -283,6 +283,7 @@ export class Engine {
   }
 
   collectGem(gem) {
+    if (gem.collected || (this.state !== 'playing' && this.state !== 'intro')) return;
     gem.collected = true;
     this.gems++;
     this.sound.sfx('gem');
@@ -326,6 +327,7 @@ export class Engine {
   }
 
   step(h) {
+    if (this.state !== 'playing' && this.state !== 'intro') return;
     this.middleAttempt?.sample(this);
     if (this.rush) { this.stepRush(h); return; }
     const L = this.level;
@@ -369,7 +371,7 @@ export class Engine {
     this.middleAttempt?.sample(this);
     this.checkHazards();
 
-    if (!this.finishReached && this.px >= L.length) this.reachFinish();
+    if (this.state === 'playing' && !this.finishReached && this.px >= L.length) this.reachFinish();
   }
 
   checkTriggers() {
@@ -434,14 +436,12 @@ export class Engine {
 
   resolveSurfaces(prevY) {
     const size = PLAYER_SIZE;
-    if (this.dir === 1) {
-      if (this.py + size >= FLOOR_Y) {
-        this.py = FLOOR_Y - size;
-        this.land(null);
-      }
+    if (this.py + size >= FLOOR_Y) {
+      this.py = FLOOR_Y - size;
+      if (this.dir === 1) this.land(null);
     } else if (this.py <= CEIL_Y) {
       this.py = CEIL_Y;
-      this.land(null);
+      if (this.dir === -1) this.land(null);
     }
 
     for (let i = 0; i < this.solids.length; i++) {
@@ -644,15 +644,16 @@ export class Engine {
     }
 
     const worldDt = dt * this.timeScale;
-    if (this.state === 'playing' || this.state === 'intro' || this.state === 'complete') {
-      this.t += worldDt;
-      if (this.state === 'playing') this.attemptTime += worldDt;
+    if (this.state === 'playing' || this.state === 'intro') {
       let rem = worldDt;
       let guard = 0;
       while (rem > 0.0005 && guard++ < 12) {
         const h = Math.min(rem, SUB);
+        this.t += h;
+        if (this.state === 'playing') this.attemptTime += h;
         this.step(h);
         rem -= h;
+        if (this.state !== 'playing' && this.state !== 'intro') break;
       }
     }
 

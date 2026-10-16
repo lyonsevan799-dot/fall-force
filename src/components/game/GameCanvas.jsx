@@ -10,6 +10,7 @@ import SettingsPanel from './SettingsPanel';
 import RotateOverlay from './RotateOverlay';
 import ChallengeComplete from './ChallengeComplete';
 import { useTapHoldControl } from '@/hooks/useTapHoldControl';
+import { useGameLifecycle } from '@/hooks/useGameLifecycle';
 import MiddleAttempt from '@/game/middleAttempt';
 import MiddleChallengeIntro from '@/components/game/MiddleChallengeIntro';
 import ChallengeRunStatus from '@/components/game/ChallengeRunStatus';
@@ -30,6 +31,7 @@ export default function GameCanvas({ levelIndex, totalLevels, settings, displayS
   const [rotateDismissed, setRotateDismissed] = useState(false);
 
   cbRef.current = { onExit, onComplete, onNext, onChallengeFailure };
+  useGameLifecycle(engineRef, setPaused);
 
   // ---- main loop -----------------------------------------------------------
   useEffect(() => {
@@ -49,19 +51,6 @@ export default function GameCanvas({ levelIndex, totalLevels, settings, displayS
     setPaused(false);
     setShowSettings(false);
 
-    // Read-only diagnostics handle (used by automated gameplay checks).
-    window.__GRAVITY_SWITCH__ = {
-      get state() { return eng.state; },
-      get dir() { return eng.dir; },
-      get deaths() { return eng.deaths; },
-      get progress() { return eng.ui.progress; },
-      get checkpoint() { return eng.cpIndex; },
-      get stars() { return eng.stars; },
-      get length() { return eng.level.length; },
-      get checkpoints() { return eng.level.checkpoints.map((c) => Math.round(c.x)); },
-      get x() { return Math.round(eng.px); },
-      warp: (x) => { eng.px = x; },
-    };
 
     let dpr = Math.min(2, window.devicePixelRatio || 1);
     let cssW = 800;
@@ -109,7 +98,7 @@ export default function GameCanvas({ levelIndex, totalLevels, settings, displayS
       // Auto-respawn shortly after death so the player is back in the action
       // almost immediately — no need to wait for a tap. Tapping still skips
       // the pause for impatient players.
-      if (eng.state === 'dead') {
+      if (eng.state === 'dead' && !eng.paused) {
         if (deadAt == null) deadAt = now;
         if (now - deadAt > 550) { deadAt = null; eng.respawn(); }
       } else if (eng.state !== 'dying') {
@@ -196,7 +185,7 @@ export default function GameCanvas({ levelIndex, totalLevels, settings, displayS
       if (e.repeat) return;
       const eng = engineRef.current;
       if (!eng) return;
-      if (eng.middleAttempt && e.target instanceof Element && e.target.closest('button, input, select, textarea')) return;
+      if (e.target instanceof Element && e.target.closest('button, input, select, textarea')) return;
       if (eng.middleAttempt && !eng.middleAttempt.started) return;
       sound.init();
       sound.resume();
@@ -220,20 +209,11 @@ export default function GameCanvas({ levelIndex, totalLevels, settings, displayS
       if (!eng) return;
       if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') eng.rushHeld = false;
     };
-    const onVis = () => {
-      const eng = engineRef.current;
-      if (document.hidden && eng && !eng.paused && eng.state === 'playing') {
-        eng.paused = true;
-        setPaused(true);
-      }
-    };
     window.addEventListener('keydown', onKey);
     window.addEventListener('keyup', onKeyUp);
-    document.addEventListener('visibilitychange', onVis);
     return () => {
       window.removeEventListener('keydown', onKey);
       window.removeEventListener('keyup', onKeyUp);
-      document.removeEventListener('visibilitychange', onVis);
     };
   }, [sound]);
 
@@ -378,7 +358,7 @@ export default function GameCanvas({ levelIndex, totalLevels, settings, displayS
           onDismiss={() => {
             setRotateDismissed(true);
             const el = document.documentElement;
-            if (el.requestFullscreen) el.requestFullscreen().catch(() => {});
+            if (!import.meta.env.CRAZYGAMES && el.requestFullscreen) el.requestFullscreen().catch(() => {});
           }}
         />
       ) : null}

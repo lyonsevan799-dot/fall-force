@@ -1,11 +1,12 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Sound } from '@/game/audio';
+import { useGameAudio } from '@/hooks/useGameAudio';
 import { LEVEL_COUNT } from '@/game/levels';
 import { commitRaceResult } from '@/game/raceRewards';
 import { recordMiddleFailure, middleChallengeEligible } from '@/game/middleProgress';
-import { groupForLevel, groupCompleted, nextGroupAfter, groupIndex } from '@/game/groups';
+import { groupForLevel, groupCompleted, nextGroupAfter, groupIndex, isLevelPlayable } from '@/game/groups';
 import { loadProgress, saveProgress, recordResult, clearProgress, commitLevelGems, commitEndlessGems, claimChallenge, FALLBACK } from '@/game/progress';
-import { challengeGroup, challengeGroupIndex, isChallengeDone } from '@/game/challenges';
+import { challengeGroupIndex, challengeUnlocked, isChallengeDone } from '@/game/challenges';
 import MainMenu from '@/components/game/MainMenu';
 import Challenges from '@/components/game/Challenges';
 import CareerGroups from '@/components/game/CareerGroups';
@@ -40,19 +41,14 @@ export default function Home() {
     sound.s = save.settings;
     sound.applySettings?.();
     saveProgress(save);
-    if (save.settings.music) { sound.init(); sound.resume(); sound.startMusic(); } else { sound.stopMusic(); }
+    if (save.settings.music && !document.hidden) { sound.startMusic(); } else { sound.stopMusic(); }
   }, [save, sound]);
 
   useEffect(() => {
     sound.setIntensity(screen === 'game' ? 1 + Math.floor(levelIndex / 5) * 0.6 : screen === 'endless' ? 2 : 1);
   }, [screen, levelIndex, sound]);
 
-  useEffect(() => {
-    const unlock = () => { sound.init(); sound.resume(); if (save.settings.music) sound.startMusic(); };
-    window.addEventListener('pointerdown', unlock);
-    window.addEventListener('keydown', unlock);
-    return () => { window.removeEventListener('pointerdown', unlock); window.removeEventListener('keydown', unlock); };
-  }, [sound, save.settings.music]);
+  useGameAudio(sound, settingsRef);
 
   const startLevel = (i) => { sound.init(); sound.resume(); setChallenge(null); setChallengeReward(null); setLevelIndex(i); setScreen('game'); };
   const startRace = (i) => { sound.init(); sound.resume(); setRaceIndex(i); setScreen('race'); };
@@ -80,7 +76,7 @@ export default function Home() {
     });
     let nextSave = commitLevelGems(withResult, i, result.gems || 0);
     let reward = null;
-    if (challenge && middleChallengeEligible(challenge, result) && group.id === challenge.groupId && !isChallengeDone(currentSave, challenge.id)) {
+    if (challenge && challengeUnlocked(currentSave, challenge) && middleChallengeEligible(challenge, result) && group.id === challenge.groupId && !isChallengeDone(currentSave, challenge.id)) {
       nextSave = claimChallenge(nextSave, challenge.id, challenge.reward);
       reward = { amount: challenge.reward, name: challenge.name };
     }
@@ -177,7 +173,11 @@ export default function Home() {
           onNewChallengeAttempt={() => { setChallengeReward(null); setScreen('challenge-levels'); }}
           onExit={() => (challenge ? exitChallenge() : setScreen('levels'))}
           onComplete={handleComplete}
-          onNext={() => setLevelIndex((i) => Math.min(LEVEL_COUNT - 1, i + 1))}
+          onNext={() => {
+            const next = Math.min(LEVEL_COUNT - 1, levelIndex + 1);
+            if (isLevelPlayable(saveRef.current, next)) setLevelIndex(next);
+            else { setCareerGroup(groupIndex(groupForLevel(levelIndex))); setScreen('levels'); }
+          }}
           onEnterNextGroup={handleEnterNextGroup}
           onUpdateSettings={handleUpdateSettings}
           onResetProgress={handleReset}

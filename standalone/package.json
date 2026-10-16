@@ -4,9 +4,9 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview"
+    "dev": "vite --config standalone/vite.config.js",
+    "build": "vite build --config standalone/vite.config.js",
+    "preview": "vite preview --config standalone/vite.config.js"
   },
   "dependencies": {
     "canvas-confetti": "^1.9.4",

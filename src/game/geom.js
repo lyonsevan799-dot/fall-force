@@ -18,7 +18,7 @@ export function sawGeom(it, t) {
 }
 
 export function bladeGeom(it, t) {
-  const a = wrap(t + (it.phase || 0), 1) * Math.PI * 2 * (it.spin || 0.8) + (it.a0 || 0);
+  const a = (t + (it.phase || 0)) * Math.PI * 2 * (it.spin || 0.8) + (it.a0 || 0);
   const dx = Math.cos(a), dy = Math.sin(a);
   const L = it.arm || 120;
   return {

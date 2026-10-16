@@ -74,7 +74,7 @@ export class RaceEngine {
       index: i,
       px: this.level.startX,
       py: FLOOR_Y - PLAYER_SIZE,
-      vy: 0, dir: 1, grounded: true, groundPlat: null,
+      vy: 0, dir: 1, grounded: true, groundPlat: null, groundY: null,
       sx: 1, sy: 1, rot: 0, rotV: 0,
       speedMult: 1, gateIndex: 0,
       alive: true, deadT: 0, invuln: 0,
@@ -121,11 +121,11 @@ export class RaceEngine {
     if (p.grounded && p.groundPlat) {
       const it = p.groundPlat;
       const g = it.type === 'vanish' ? vanishGeom(it, this.t) : platGeom(it, this.t);
-      const dy = g.y - (it._ly == null ? g.y : it._ly);
+      const dy = g.y - (p.groundY == null ? g.y : p.groundY);
       const ox = p.px + size - 6 > g.x && p.px + 6 < g.x + g.w;
       if (g.solid && ox) p.py += dy;
       else { p.grounded = false; p.groundPlat = null; p.vy = 0; }
-      it._ly = g.y;
+      p.groundY = g.y;
     }
     if (this._isActive()) p.px += L.speed * p.speedMult * h;
     const prevY = p.py;
@@ -178,7 +178,6 @@ export class RaceEngine {
     } else if (p.py <= CEIL_Y) { p.py = CEIL_Y; this.landPlayer(p, null); }
     for (const it of this.solids) {
       const g = it.type === 'vanish' ? vanishGeom(it, this.t) : platGeom(it, this.t);
-      if (it !== p.groundPlat) it._ly = g.y;
       if (!g.solid) continue;
       if (!(p.px + size - 6 > g.x && p.px + 6 < g.x + g.w)) continue;
       if (p.dir === 1) {
@@ -195,6 +194,7 @@ export class RaceEngine {
     const impact = Math.abs(p.vy);
     const wasAir = !p.grounded;
     p.grounded = true; p.groundPlat = plat || null; p.vy = 0; p.rotV = 0;
+    p.groundY = plat ? (plat.type === 'vanish' ? vanishGeom(plat, this.t) : platGeom(plat, this.t)).y : null;
     if (wasAir) {
       p.sx = 1.32; p.sy = 0.7;
       const cx = p.px + PLAYER_SIZE / 2;
@@ -211,6 +211,7 @@ export class RaceEngine {
     const size = PLAYER_SIZE;
     const bx = p.px + 5, by = p.py + 5, bw = size - 10, bh = size - 10;
     const t = this.t;
+    const triggerX = Math.max(this.players[0].px, this.players[1].px);
     for (const it of this.hazards) {
       switch (it.type) {
         case 'spike': { const g = spikeGeom(it); if (rectHit(bx, by, bw, bh, g.x, g.y, g.w, g.h)) return this.diePlayer(p); break; }
@@ -219,10 +220,10 @@ export class RaceEngine {
         case 'crusher': { const g = crusherGeom(it, t); if (rectHit(bx, by, bw, bh, g.x - g.w / 2 + 4, g.y + 4, g.w - 8, g.h - 8)) return this.diePlayer(p); break; }
         case 'laser': { const g = laserGeom(it, t); if (g.active && rectHit(bx, by, bw, bh, g.x + 3, g.y, g.w - 6, g.h)) return this.diePlayer(p); break; }
         case 'mspike': { const g = mspikeGeom(it, t); if (g.active && rectHit(bx, by, bw, bh, g.x, g.y, g.w, g.h)) return this.diePlayer(p); break; }
-        case 'drop': { const g = dropGeom(it, t, p.px); if (g.active && rectHit(bx, by, bw, bh, g.x + 3, g.y + 3, g.w - 6, g.h - 6)) return this.diePlayer(p); break; }
+        case 'drop': { const g = dropGeom(it, t, triggerX); if (g.active && rectHit(bx, by, bw, bh, g.x + 3, g.y + 3, g.w - 6, g.h - 6)) return this.diePlayer(p); break; }
         case 'wall': { const g = wallGeom(it, t); if (g.topH > 4 && rectHit(bx, by, bw, bh, g.x, CEIL_Y, g.w, g.topH)) return this.diePlayer(p); if (g.botH > 4 && rectHit(bx, by, bw, bh, g.x, FLOOR_Y - g.botH, g.w, g.botH)) return this.diePlayer(p); break; }
         case 'bounce': { const g = bounceGeom(it, t); if (circleHit(g.x, g.y, g.r - 3, bx, by, bw, bh)) return this.diePlayer(p); break; }
-        case 'trap': { const g = trapGeom(it, t, p.px); if (g.active && rectHit(bx, by, bw, bh, g.x, g.y, g.w, g.h)) return this.diePlayer(p); break; }
+        case 'trap': { const g = trapGeom(it, t, triggerX); if (g.active && rectHit(bx, by, bw, bh, g.x, g.y, g.w, g.h)) return this.diePlayer(p); break; }
         default: break;
       }
     }
@@ -307,12 +308,12 @@ export class RaceEngine {
     }
 
     if (this.state === 'racing' || this.state === 'finished') {
-      this.t += dt * this.timeScale;
       this.raceTime += dt * this.timeScale;
       let rem = dt * this.timeScale; let guard = 0;
       while (rem > 0.0005 && guard++ < 16) {
         const h = Math.min(rem, SUB);
         this._stepTime = this.raceTime - rem;
+        this.t += h;
         for (const p of this.players) { if (p.alive && !p.finished) this.stepPlayer(p, h); }
         this.resolveFinish();
         rem -= h;

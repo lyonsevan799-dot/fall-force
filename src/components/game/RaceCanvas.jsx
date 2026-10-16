@@ -7,6 +7,7 @@ import RaceResult from './RaceResult';
 import PauseMenu from './PauseMenu';
 import SettingsPanel from './SettingsPanel';
 import RotateOverlay from './RotateOverlay';
+import { useGameLifecycle } from '@/hooks/useGameLifecycle';
 
 export default function RaceCanvas({ levelIndex, settings, displaySettings, sound, totalGems, onRaceWin, onExit, onUpdateSettings, onResetProgress }) {
   const wrapRef = useRef(null);
@@ -22,6 +23,7 @@ export default function RaceCanvas({ levelIndex, settings, displaySettings, soun
   const reportedWinRef = useRef(false);
 
   cbRef.current = { onExit, onRaceWin };
+  useGameLifecycle(engineRef, setPaused);
 
   useEffect(() => {
     const wrap = wrapRef.current;
@@ -91,7 +93,7 @@ export default function RaceCanvas({ levelIndex, settings, displaySettings, soun
   const p2Switch = () => { const eng = engineRef.current; if (!eng) return; sound.init(); sound.resume(); eng.switchPlayer(eng.players[1]); };
 
   const restart = () => { const eng = engineRef.current; if (!eng) return; eng.paused = false; eng.load(levelIndex); reportedWinRef.current = false; setPaused(false); setShowSettings(false); };
-  const togglePause = () => { const eng = engineRef.current; if (!eng || eng.state === 'finished' || eng.state === 'raceover') return; const next = !eng.paused; eng.paused = next; setPaused(next); setShowSettings(false); };
+  const togglePause = () => { const eng = engineRef.current; if (!eng || eng.state === 'ready' || eng.state === 'raceover') return; const next = !eng.paused; eng.paused = next; setPaused(next); setShowSettings(false); };
 
   useEffect(() => {
     const onKey = (e) => {
@@ -117,10 +119,8 @@ export default function RaceCanvas({ levelIndex, settings, displaySettings, soun
         else togglePause();
       }
     };
-    const onVis = () => { const eng = engineRef.current; if (document.hidden && eng && !eng.paused && (eng.state === 'racing' || eng.state === 'finished')) { eng.paused = true; setPaused(true); } };
     window.addEventListener('keydown', onKey);
-    document.addEventListener('visibilitychange', onVis);
-    return () => { window.removeEventListener('keydown', onKey); document.removeEventListener('visibilitychange', onVis); };
+    return () => { window.removeEventListener('keydown', onKey); };
   }, [sound]);
 
   useEffect(() => {
@@ -207,7 +207,7 @@ export default function RaceCanvas({ levelIndex, settings, displaySettings, soun
       ) : null}
 
       {showRotate ? (
-        <RotateOverlay onDismiss={() => { setRotateDismissed(true); const el = document.documentElement; if (el.requestFullscreen) el.requestFullscreen().catch(() => {}); }} />
+        <RotateOverlay onDismiss={() => { setRotateDismissed(true); const el = document.documentElement; if (!import.meta.env.CRAZYGAMES && el.requestFullscreen) el.requestFullscreen().catch(() => {}); }} />
       ) : null}
     </div>
   );
