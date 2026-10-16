@@ -8,7 +8,7 @@ import PauseMenu from './PauseMenu';
 import SettingsPanel from './SettingsPanel';
 import RotateOverlay from './RotateOverlay';
 
-export default function RaceCanvas({ levelIndex, settings, displaySettings, sound, onRaceWin, onExit, onUpdateSettings, onResetProgress }) {
+export default function RaceCanvas({ levelIndex, settings, displaySettings, sound, totalGems, onRaceWin, onExit, onUpdateSettings, onResetProgress }) {
   const wrapRef = useRef(null);
   const canvasRef = useRef(null);
   const engineRef = useRef(null);
@@ -55,6 +55,7 @@ export default function RaceCanvas({ levelIndex, settings, displaySettings, soun
       p1Time: eng.players[0].finishTime, p2Time: eng.players[1].finishTime,
       p1Final: eng.players[0].finalProgress, p2Final: eng.players[1].finalProgress,
       p1Gems: eng.players[0].gems, p2Gems: eng.players[1].gems,
+      p1Rush: !!eng.players[0].rush, p2Rush: !!eng.players[1].rush,
     });
 
     const loop = (now) => {
@@ -67,7 +68,7 @@ export default function RaceCanvas({ levelIndex, settings, displaySettings, soun
         lastState = eng.state; push(); lastSync = now;
         if (eng.state === 'raceover' && !reportedWinRef.current) {
           reportedWinRef.current = true;
-          if (cbRef.current.onRaceWin) cbRef.current.onRaceWin(eng.winner);
+          if (cbRef.current.onRaceWin) cbRef.current.onRaceWin({ winner: eng.winner, p1Gems: eng.players[0].gems, p2Gems: eng.players[1].gems });
         }
       } else if (now - lastSync > 100) { lastSync = now; push(); }
     };
@@ -90,7 +91,7 @@ export default function RaceCanvas({ levelIndex, settings, displaySettings, soun
   const p1Switch = () => { const eng = engineRef.current; if (!eng) return; sound.init(); sound.resume(); eng.switchPlayer(eng.players[0]); };
   const p2Switch = () => { const eng = engineRef.current; if (!eng) return; sound.init(); sound.resume(); eng.switchPlayer(eng.players[1]); };
 
-  const restart = () => { const eng = engineRef.current; if (!eng) return; eng.paused = false; eng.load(levelIndex); setPaused(false); setShowSettings(false); };
+  const restart = () => { const eng = engineRef.current; if (!eng) return; eng.paused = false; eng.load(levelIndex); reportedWinRef.current = false; setPaused(false); setShowSettings(false); };
   const togglePause = () => { const eng = engineRef.current; if (!eng || eng.state === 'finished' || eng.state === 'raceover') return; const next = !eng.paused; eng.paused = next; setPaused(next); setShowSettings(false); };
 
   useEffect(() => {
@@ -98,6 +99,8 @@ export default function RaceCanvas({ levelIndex, settings, displaySettings, soun
       if (e.repeat) return;
       const eng = engineRef.current;
       if (!eng) return;
+      if (e.target instanceof Element && e.target.closest('button, input, select, textarea')) return;
+      if (eng.paused && e.code !== 'Escape' && e.code !== 'KeyP') return;
       sound.init(); sound.resume();
       if (e.code === 'KeyW' || e.code === 'Space') {
         e.preventDefault();
@@ -142,10 +145,18 @@ export default function RaceCanvas({ levelIndex, settings, displaySettings, soun
 
   return (
     <div ref={wrapRef} className="gs-screen-in fixed inset-0 touch-none select-none overflow-hidden bg-[#04050c]">
-      <canvas ref={canvasRef} className="absolute inset-0 block h-full w-full touch-none" onContextMenu={(e) => e.preventDefault()} />
+      <canvas ref={canvasRef} className="absolute inset-0 block h-full w-full touch-none"
+        onPointerDown={(e) => {
+          e.preventDefault();
+          if (e.pointerType === 'mouse' && e.button !== 0) return;
+          const eng = engineRef.current;
+          if (!eng || eng.paused) return;
+          const bounds = e.currentTarget.getBoundingClientRect();
+          if (e.clientX - bounds.left < bounds.width / 2) p1Switch(); else p2Switch();
+        }} onContextMenu={(e) => e.preventDefault()} />
 
       {ui.state === 'racing' || ui.state === 'countdown' || ui.state === 'finished' ? (
-        <RaceHud ui={ui} onPause={togglePause} sound={sound} />
+        <RaceHud ui={ui} totalGems={totalGems} onPause={togglePause} sound={sound} />
       ) : null}
 
       {ui.state === 'ready' ? (
@@ -178,20 +189,14 @@ export default function RaceCanvas({ levelIndex, settings, displaySettings, soun
       ) : null}
 
       {ui.state === 'raceover' ? (
-        <RaceResult ui={ui} sound={sound} onRestart={restart} onExit={() => cbRef.current.onExit()} />
+        <RaceResult ui={ui} totalGems={totalGems} sound={sound} onRestart={restart} onExit={() => cbRef.current.onExit()} />
       ) : null}
 
       {isTouch && (ui.state === 'racing' || ui.state === 'finished') ? (
-        <>
-          <button type="button" aria-label="Player 1 switch gravity"
-            className="pointer-events-auto absolute bottom-6 left-5 z-20 flex h-24 w-24 items-center justify-center rounded-full border border-cyan-200/35 bg-cyan-400/10 font-heading text-sm uppercase tracking-[0.16em] text-cyan-100 shadow-[0_0_50px_-12px_rgba(56,232,255,0.85)] backdrop-blur-md transition-transform duration-100 active:scale-90"
-            onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); p1Switch(); }}
-            onContextMenu={(e) => e.preventDefault()}>P1</button>
-          <button type="button" aria-label="Player 2 switch gravity"
-            className="pointer-events-auto absolute bottom-6 right-5 z-20 flex h-24 w-24 items-center justify-center rounded-full border border-pink-300/35 bg-pink-400/10 font-heading text-sm uppercase tracking-[0.16em] text-pink-100 shadow-[0_0_50px_-12px_rgba(255,62,165,0.85)] backdrop-blur-md transition-transform duration-100 active:scale-90"
-            onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); p2Switch(); }}
-            onContextMenu={(e) => e.preventDefault()}>P2</button>
-        </>
+        <div className="pointer-events-none absolute inset-x-0 bottom-4 z-20 flex justify-around font-heading text-[10px] uppercase tracking-widest">
+          <span className="text-cyan-200">P1 · Tap left half</span>
+          <span className="text-pink-200">P2 · Tap right half</span>
+        </div>
       ) : null}
 
       {paused && !showSettings ? (

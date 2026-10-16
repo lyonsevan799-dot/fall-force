@@ -1,8 +1,9 @@
 import React from 'react';
 import { Pause, Gem } from 'lucide-react';
 import { IconButton } from './ui';
+import GemCounter from '@/components/game/GemCounter';
 
-export default function RaceHud({ ui, onPause, sound }) {
+export default function RaceHud({ ui, totalGems, onPause, sound }) {
   const fmt = (t) => (t || 0).toFixed(2);
   return (
     <div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex flex-col items-center gap-2 p-3 sm:p-4">
@@ -14,8 +15,8 @@ export default function RaceHud({ ui, onPause, sound }) {
             <div className="absolute top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-cyan-300 shadow-[0_0_10px_rgba(56,232,255,0.9)] transition-[left] duration-100"
                  style={{ left: `${Math.max(2, Math.min(98, ui.p1 * 100))}%` }} />
           </div>
-          <span className="flex w-12 shrink-0 items-center justify-end gap-1 font-mono text-xs text-cyan-200">
-            <Gem size={11} className="text-cyan-300" />{ui.p1Gems || 0}
+          <span className="flex w-24 shrink-0 items-center justify-end gap-1 font-mono text-xs text-cyan-200">
+            {ui.p1Rush ? 'Rush' : null}<Gem size={11} className="text-cyan-300" />{ui.p1Gems || 0}
           </span>
         </div>
         <div className="flex items-center gap-2.5">
@@ -24,8 +25,8 @@ export default function RaceHud({ ui, onPause, sound }) {
             <div className="absolute top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-pink-300 shadow-[0_0_10px_rgba(255,62,165,0.9)] transition-[left] duration-100"
                  style={{ left: `${Math.max(2, Math.min(98, ui.p2 * 100))}%` }} />
           </div>
-          <span className="flex w-12 shrink-0 items-center justify-end gap-1 font-mono text-xs text-pink-200">
-            <Gem size={11} className="text-pink-300" />{ui.p2Gems || 0}
+          <span className="flex w-24 shrink-0 items-center justify-end gap-1 font-mono text-xs text-pink-200">
+            {ui.p2Rush ? 'Rush' : null}<Gem size={11} className="text-pink-300" />{ui.p2Gems || 0}
           </span>
         </div>
       </div>
@@ -35,6 +36,7 @@ export default function RaceHud({ ui, onPause, sound }) {
         <div className="rounded-xl border border-white/10 bg-black/40 px-4 py-1.5 text-center backdrop-blur">
           <span className="font-mono text-base leading-none text-white">{fmt(ui.raceTime)}<span className="ml-0.5 text-[10px] text-white/40">s</span></span>
         </div>
+        <GemCounter total={totalGems} count={(ui.p1Gems || 0) + (ui.p2Gems || 0)} size="md" />
         <IconButton label="Pause" onClick={onPause} sound={sound}><Pause size={16} /></IconButton>
       </div>
     </div>

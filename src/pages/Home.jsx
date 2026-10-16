@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Sound } from '@/game/audio';
 import { LEVEL_COUNT } from '@/game/levels';
+import { commitRaceResult } from '@/game/raceRewards';
 import { groupForLevel, groupCompleted, nextGroupAfter, groupIndex } from '@/game/groups';
 import { loadProgress, saveProgress, recordResult, clearProgress, commitLevelGems, commitEndlessGems, claimChallenge, FALLBACK } from '@/game/progress';
 import { challengeGroup, challengeGroupIndex, isChallengeDone } from '@/game/challenges';
@@ -94,8 +95,8 @@ export default function Home() {
     });
   };
 
-  const handleRaceWin = () => {
-    setSave((p) => ({ ...p, raceWins: (p.raceWins || 0) + 1 }));
+  const handleRaceWin = (result) => {
+    setSave((p) => commitRaceResult(p, result));
   };
 
   const handleUpdateSettings = (patch) => {
@@ -185,6 +186,7 @@ export default function Home() {
           settings={settingsRef.current}
           displaySettings={save.settings}
           sound={sound}
+          totalGems={save.totalGems || 0}
           onRaceWin={handleRaceWin}
           onExit={() => setScreen('race-levels')}
           onUpdateSettings={handleUpdateSettings}

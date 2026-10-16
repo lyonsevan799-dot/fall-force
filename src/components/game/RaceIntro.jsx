@@ -1,10 +1,11 @@
 import React from 'react';
 import { GameButton, Panel } from './ui';
+import { RACE_FINISH_BONUS } from '@/game/raceRewards';
 
 export default function RaceIntro({ sound, onStart, isTouch }) {
   return (
-    <div className="absolute inset-0 z-30 flex items-center justify-center bg-black/55 p-4 backdrop-blur-sm">
-      <Panel className="gs-pop w-full max-w-lg text-center">
+    <div className="absolute inset-0 z-30 flex items-center justify-center overflow-y-auto bg-black/55 p-4 backdrop-blur-sm">
+      <Panel className="gs-pop my-auto w-full max-w-lg shrink-0 text-center">
         <div className="font-heading text-[10px] uppercase tracking-[0.5em] text-cyan-200/80">Two Players</div>
         <h2 className="mt-2 font-heading text-2xl uppercase tracking-[0.2em] text-white">Race Mode</h2>
         <p className="mt-3 text-xs leading-relaxed text-white/50">First to the finish line wins. Flip gravity to dodge the obstacles.</p>
@@ -18,7 +19,7 @@ export default function RaceIntro({ sound, onStart, isTouch }) {
             <div className="mt-3 space-y-1.5">
               {isTouch ? (
                 <div className="flex items-center gap-2">
-                  <kbd className="rounded-md border border-cyan-300/30 bg-cyan-400/15 px-3 py-1 font-mono text-xs text-cyan-100">Left Button</kbd>
+                  <kbd className="rounded-md border border-cyan-300/30 bg-cyan-400/15 px-3 py-1 font-mono text-xs text-cyan-100">Tap left half</kbd>
                 </div>
               ) : (
                 <>
@@ -40,7 +41,7 @@ export default function RaceIntro({ sound, onStart, isTouch }) {
             <div className="mt-3 space-y-1.5">
               {isTouch ? (
                 <div className="flex items-center gap-2">
-                  <kbd className="rounded-md border border-pink-300/30 bg-pink-400/15 px-3 py-1 font-mono text-xs text-pink-100">Right Button</kbd>
+                  <kbd className="rounded-md border border-pink-300/30 bg-pink-400/15 px-3 py-1 font-mono text-xs text-pink-100">Tap right half</kbd>
                 </div>
               ) : (
                 <>
@@ -63,6 +64,7 @@ export default function RaceIntro({ sound, onStart, isTouch }) {
           </div>
         ) : null}
 
+        <p className="mt-3 text-xs leading-relaxed text-white/50">Both players’ gems go to the shared balance, plus {RACE_FINISH_BONUS} gems per completed race. Glowing trigger gems auto-start Gem Rush; tap to flip out.</p>
         <div className="mt-6">
           <GameButton variant="primary" size="lg" sound={sound} onClick={onStart}>Start Race</GameButton>
         </div>

@@ -2,8 +2,10 @@ import React, { useEffect } from 'react';
 import confetti from 'canvas-confetti';
 import { RotateCcw, Home, Gem } from 'lucide-react';
 import { GameButton, Panel } from './ui';
+import GemCounter from '@/components/game/GemCounter';
+import { RACE_FINISH_BONUS, raceReward } from '@/game/raceRewards';
 
-export default function RaceResult({ ui, sound, onRestart, onExit }) {
+export default function RaceResult({ ui, totalGems, sound, onRestart, onExit }) {
   const winnerNum = ui.winner === 0 ? 1 : 2;
   const loserNum = ui.winner === 0 ? 2 : 1;
   const isP1 = ui.winner === 0;
@@ -25,8 +27,8 @@ export default function RaceResult({ ui, sound, onRestart, onExit }) {
   }, [ui.winner]);
 
   return (
-    <div className="absolute inset-0 z-40 flex items-center justify-center bg-black/70 p-4 backdrop-blur-md">
-      <Panel className="gs-pop w-full max-w-md text-center">
+    <div className="absolute inset-0 z-40 flex items-center justify-center overflow-y-auto bg-black/70 p-4 backdrop-blur-md">
+      <Panel className="gs-pop my-auto w-full max-w-md shrink-0 text-center">
         <div className="font-heading text-[10px] uppercase tracking-[0.5em] text-white/40">Winner</div>
         <h2 className={`mt-2 font-heading text-4xl uppercase tracking-[0.18em] sm:text-5xl ${winnerText}`}
             style={{ textShadow: winnerGlow }}>
@@ -35,7 +37,7 @@ export default function RaceResult({ ui, sound, onRestart, onExit }) {
 
         <div className="mt-5 rounded-2xl border border-white/10 bg-white/5 px-6 py-3">
           <div className="font-heading text-[9px] uppercase tracking-[0.3em] text-white/40">Race Time</div>
-          <div className="mt-1 font-mono text-3xl text-white">{(ui.raceTime || 0).toFixed(2)}<span className="ml-1 text-base text-white/40">s</span></div>
+          <div className="mt-1 font-mono text-3xl text-white">{((isP1 ? ui.p1Time : ui.p2Time) || 0).toFixed(2)}<span className="ml-1 text-base text-white/40">s</span></div>
         </div>
 
         <div className="mt-3 text-sm text-white/50">
@@ -47,6 +49,11 @@ export default function RaceResult({ ui, sound, onRestart, onExit }) {
         <div className="mt-3 flex items-center justify-center gap-5 text-xs">
           <span className="flex items-center gap-1.5 text-cyan-200"><Gem size={13} className="text-cyan-300" />P1 {ui.p1Gems || 0}</span>
           <span className="flex items-center gap-1.5 text-pink-200"><Gem size={13} className="text-pink-300" />P2 {ui.p2Gems || 0}</span>
+        </div>
+
+        <div className="mt-3 space-y-1 text-xs text-cyan-200">
+          <div>+{RACE_FINISH_BONUS} finish bonus · +{raceReward(ui)} gems saved</div>
+          <div className="flex items-center justify-center gap-2"><span>Shared balance</span><GemCounter total={totalGems} size="md" /></div>
         </div>
 
         <div className="mt-6 space-y-3">
