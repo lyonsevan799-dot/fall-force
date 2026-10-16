@@ -1,10 +1,14 @@
 import { normalizeProgress, safeInteger } from '@/game/saveData';
 import { LEVEL_COUNT } from '@/game/levels';
 import { challengeById } from '@/game/challenges';
+import { tutorialSaveFields } from '@/game/tutorialProgress';
 
 const KEY = 'gravity-switch-save-v1';
 
 export const FALLBACK = {
+  tutorialCompleted: false,
+  tutorialSkipped: false,
+  tutorialGemsBanked: false,
   levels: {},          // { [index]: { stars, time, completed } }
   unlocked: 0,         // highest playable level index (0-based)
   endlessBest: 0,      // highest endless score
@@ -23,7 +27,9 @@ export function loadProgress() {
   try {
     raw = localStorage.getItem(KEY);
     if (!raw) return clone(FALLBACK);
-    return normalizeProgress(JSON.parse(raw), FALLBACK, LEVEL_COUNT);
+    const source = JSON.parse(raw);
+    const normalized = normalizeProgress(source, FALLBACK, LEVEL_COUNT);
+    return { ...normalized, ...tutorialSaveFields(source && typeof source === 'object' ? source : {}) };
   } catch (e) {
     // Keep an unreadable save recoverable instead of silently destroying it.
     if (raw) {

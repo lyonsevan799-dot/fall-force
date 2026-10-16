@@ -16,6 +16,8 @@ import SettingsPanel from '@/components/game/SettingsPanel';
 import GameCanvas from '@/components/game/GameCanvas';
 import EndlessCanvas from '@/components/game/EndlessCanvas';
 import RaceCanvas from '@/components/game/RaceCanvas';
+import TutorialCanvas from '@/components/game/tutorial/TutorialCanvas';
+import { tutorialAccessibleCareer, completeTutorial } from '@/game/tutorialProgress';
 
 export default function Home() {
   const initial = useMemo(() => loadProgress(), []);
@@ -50,7 +52,14 @@ export default function Home() {
 
   useGameAudio(sound, settingsRef);
 
-  const startLevel = (i) => { sound.init(); sound.resume(); setChallenge(null); setChallengeReward(null); setLevelIndex(i); setScreen('game'); };
+  const startTutorial = () => { sound.init(); sound.resume(); setChallenge(null); setChallengeReward(null); setScreen('tutorial'); };
+  const handleTutorialComplete = (gems) => {
+    const nextSave = completeTutorial(saveRef.current, gems);
+    saveRef.current = nextSave;
+    saveProgress(nextSave);
+    setSave(nextSave);
+  };
+  const startLevel = (i) => { if (!tutorialAccessibleCareer(saveRef.current)) { startTutorial(); return; } sound.init(); sound.resume(); setChallenge(null); setChallengeReward(null); setLevelIndex(i); setScreen('game'); };
   const startRace = (i) => { sound.init(); sound.resume(); setRaceIndex(i); setScreen('race'); };
 
   const enterGroup = (gi) => { sound.sfx('click'); setCareerGroup(gi); setScreen('levels'); };
@@ -125,6 +134,7 @@ export default function Home() {
   };
 
   const startChallenge = (ch) => {
+    if (!tutorialAccessibleCareer(saveRef.current)) { startTutorial(); return; }
     sound.sfx('click');
     setChallenge(ch);
     setChallengeReward(null);
@@ -145,7 +155,7 @@ export default function Home() {
     setScreen('challenges');
   };
 
-  const inGame = screen === 'game' || screen === 'endless' || screen === 'race';
+  const inGame = screen === 'tutorial' || screen === 'game' || screen === 'endless' || screen === 'race';
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-[#04050c] text-white">
@@ -153,6 +163,13 @@ export default function Home() {
       <div className="pointer-events-none absolute inset-0 gs-grid opacity-[0.35]" />
       <div className="pointer-events-none absolute -left-40 top-10 h-96 w-96 rounded-full bg-cyan-500/10 blur-[120px]" />
       <div className="pointer-events-none absolute -right-32 bottom-0 h-96 w-96 rounded-full bg-fuchsia-500/10 blur-[120px]" />
+
+      {screen === 'tutorial' ? (
+        <TutorialCanvas sound={sound} settings={save.settings} totalGems={save.totalGems || 0}
+          banked={save.tutorialGemsBanked} canSkip={tutorialAccessibleCareer(save)}
+          onComplete={handleTutorialComplete} onPlay={() => startLevel(0)} onExit={() => setScreen('menu')}
+          onSkip={() => { if (tutorialAccessibleCareer(saveRef.current)) setScreen('career'); }} />
+      ) : null}
 
       {screen === 'game' ? (
         <GameCanvas
@@ -220,7 +237,8 @@ export default function Home() {
               <MainMenu
                 save={save}
                 sound={sound}
-                onCareer={() => setScreen('career')}
+                onCareer={() => tutorialAccessibleCareer(saveRef.current) ? setScreen('career') : startTutorial()}
+                onTutorial={startTutorial}
                 onEndless={() => setScreen('endless')}
                 onRace={() => setScreen('race-levels')}
                 onChallenges={() => setScreen('challenges')}

@@ -91,6 +91,17 @@
   }
 }
 
+/* Tutorial-only semantic colors, isolated from all existing game screens. */
+.tutorial-shell {
+  --background: 233 50% 3%;
+  --foreground: 0 0% 100%;
+  --card: 230 48% 8%;
+  --primary: 186 100% 61%;
+  --primary-foreground: 233 50% 3%;
+  --muted-foreground: 210 24% 78%;
+  --border: 210 25% 30%;
+}
+
 /* ---- Fall Force game chrome ---- */
 html,
 body,

@@ -15,7 +15,7 @@ const ACCENT = {
   pink: 'border-pink-300/40 bg-pink-400/10 text-pink-200',
 };
 
-export default function MainMenu({ save, sound, onCareer, onEndless, onRace, onChallenges, onSettings }) {
+export default function MainMenu({ save, sound, onCareer, onTutorial, onEndless, onRace, onChallenges, onSettings }) {
   const stars = totalStars(save);
   const done = completedCount(save);
   const best = save.endlessBest || 0;
@@ -79,6 +79,11 @@ export default function MainMenu({ save, sound, onCareer, onEndless, onRace, onC
         <span className="text-cyan-200/70">{save.totalGems || 0} gems</span>
         <span className="text-pink-200/70">{save.raceWins || 0} wins</span>
       </div>
+
+      <button type="button" onClick={() => { sound.sfx('click'); onTutorial(); }}
+        className="min-h-11 font-heading text-[10px] uppercase tracking-[0.24em] text-cyan-200/80 transition-colors hover:text-cyan-100">
+        {save.tutorialCompleted ? 'Replay Tutorial' : 'Level 0: Tutorial'}
+      </button>
 
       <button type="button" onClick={() => { sound.sfx('click'); onSettings(); }}
         className="flex items-center gap-2 font-heading text-[10px] uppercase tracking-[0.24em] text-white/45 transition-colors hover:text-white">

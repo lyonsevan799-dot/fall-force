@@ -1,0 +1,18 @@
+export const LESSONS = [
+  { title: 'Level 0: Tutorial', text: 'A quick practice run. Your character runs right automatically: there are no left/right movement controls.', action: 'Start running', icon: 'right', step: 1 },
+  { title: 'Movement is automatic', text: 'Watch your character run right. The first practice area is completely safe. Wait for the next cue.', icon: 'right', step: 1 },
+  { title: 'Flip up to the ceiling', text: 'Tap or click the playfield, or press Space. One press reverses gravity. Try it now!', flip: true, icon: 'up', step: 2 },
+  { title: 'Nice flip!', text: 'Gravity carries you up while you keep running right. Let your character reach the ceiling.', icon: 'up', step: 2 },
+  { title: 'Now return to the floor', text: 'Tap or click the playfield, or press Space again. The same control flips you back down.', flip: true, icon: 'down', step: 2 },
+  { title: 'Floor and ceiling', text: 'You can run on either surface. Settle back onto the floor before the next lesson.', icon: 'down', step: 2 },
+  { title: 'Avoid the spikes', text: 'See the small pink spikes ahead? Action is paused. Flip up now to pass safely above them.', flip: true, icon: 'up', step: 3 },
+  { title: 'Safely over the spikes', text: 'Stay on the ceiling as you pass the spikes. You have plenty of room before the next cue.', icon: 'right', step: 3 },
+  { title: 'Line up with the gems', text: 'Flip down now. The next stretch of floor is safe, with three gems along your path.', flip: true, icon: 'down', step: 4 },
+  { title: 'A safe landing', text: 'Gravity brings you back down. Gems are collected by touching them, not by pressing a special button.', icon: 'down', step: 4 },
+  { title: 'Collecting gems', text: 'Run through the three gems on the floor. These tutorial gems are added to your saved balance on your first finish.', action: 'Collect the gems', icon: 'gem', step: 4 },
+  { title: 'Collecting gems', text: 'Stay on the floor and watch the gem counter. Your saved balance stays safe if you restart.', icon: 'gem', step: 4 },
+  { title: 'Meet Gem Rush', text: 'The oversized glowing gem starts a rush. Touch it and your character automatically follows and collects the row. No holding!', action: 'Try Gem Rush', icon: 'gem', step: 5 },
+  { title: 'Automatic Gem Rush', text: 'Watch your character collect the row. No button needs to be held. The rush ends on its own.', icon: 'gem', step: 5 },
+  { title: 'Reach the finish', text: 'Run into the glowing finish line ahead to complete the tutorial and unlock Level 1.', action: 'Run to the finish', icon: 'right', step: 6 },
+  { title: 'You are ready!', text: 'Keep running to the finish. In Career, tap, click or press Space whenever you need to flip gravity.', icon: 'right', step: 6 },
+];
