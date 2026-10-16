@@ -2,8 +2,8 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Gem } from 'lucide-react';
 
 // Displays the player's persistent total gem balance (gem icon + number).
-// `count` (gems collected this level/run) is only used to trigger the +1 pop
-// animation — it is not shown, since there is no per-level gem target.
+// `count` is unbanked run earnings, shown in the live total with pickup pops.
+// Callers pass zero once those earnings have been committed to the save.
 export default function GemCounter({ count, total, size = 'sm' }) {
   const prevCountRef = useRef(count || 0);
   const [popKey, setPopKey] = useState(0);
