@@ -6,7 +6,7 @@ import {
   rectHit, circleHit, segmentHit,
 } from './geom';
 import { RACE_LEVELS } from './raceLevels';
-import { activateRaceRush, stepRaceRush } from '@/game/raceRush';
+import { raceWinner } from '@/game/raceOutcome';
 
 const SUB = 1 / 120;
 const GRACE = 2.6; // seconds the loser keeps moving after the winner finishes
@@ -52,15 +52,8 @@ export class RaceEngine {
     this.zones = L.items.filter((i) => i.type === 'zone');
     this.portals = L.items.filter((i) => i.type === 'portal');
     this.gates = L.items.filter((i) => i.type === 'speed');
-    this.collectibles = L.items.filter((i) => i.type === 'gem');
-    this.gemGroups = new Map();
-    for (const gem of this.collectibles) {
-      gem.collected = false;
-      if (gem.groupId == null) continue;
-      if (!this.gemGroups.has(gem.groupId)) this.gemGroups.set(gem.groupId, []);
-      this.gemGroups.get(gem.groupId).push(gem);
-    }
-    for (const row of this.gemGroups.values()) row.sort((a, b) => a.x - b.x);
+    this.runId = crypto.randomUUID();
+    this.result = null;
     this.players = [this._mkPlayer(0), this._mkPlayer(1)];
     this.particles.clear();
     this.state = 'ready';
@@ -87,7 +80,6 @@ export class RaceEngine {
       alive: true, deadT: 0, invuln: 0,
       finished: false, finishTime: null, finalProgress: 0,
       portalsUsed: this.portals.map(() => false),
-      gems: 0, gemSet: new Set(), rush: null,
       trail: [],
     };
   }
@@ -102,7 +94,6 @@ export class RaceEngine {
 
   switchPlayer(p) {
     if (this.paused || !this._isActive() || !p.alive || p.finished) return;
-    p.rush = null;
     p.dir = -p.dir;
     p.vy = p.dir * LAUNCH_V;
     p.grounded = false; p.groundPlat = null;
@@ -120,13 +111,13 @@ export class RaceEngine {
   _isActive() { return this.state === 'racing' || this.state === 'finished'; }
 
   stepPlayer(p, h) {
+    const prevX = p.px;
     const L = this.level;
     const size = PLAYER_SIZE;
     if (p.gateIndex < this.gates.length && p.px >= this.gates[p.gateIndex].x) {
       p.speedMult = this.gates[p.gateIndex].mult;
       p.gateIndex++;
     }
-    if (p.rush) { stepRaceRush(this, p, h); return; }
     if (p.grounded && p.groundPlat) {
       const it = p.groundPlat;
       const g = it.type === 'vanish' ? vanishGeom(it, this.t) : platGeom(it, this.t);
@@ -147,7 +138,10 @@ export class RaceEngine {
     this.resolveSurfacesPlayer(p, prevY);
     if (p.invuln > 0) p.invuln -= h;
     if (p.alive && p.invuln <= 0 && !p.finished) this.checkHazardsPlayer(p);
-    if (p.alive && !p.finished && p.px >= L.length) this.playerFinish(p);
+    if (p.alive && !p.finished && p.px >= L.length) {
+      const crossing = clamp((L.length - prevX) / (p.px - prevX || 1), 0, 1);
+      this.playerFinish(p, this._stepTime + crossing * h);
+    }
   }
 
   checkTriggersPlayer(p) {
@@ -174,29 +168,7 @@ export class RaceEngine {
         this.particles.ring(cx, cy, { r: 14, rv: 400, life: 0.7, color: this.theme.accent, w: 3 });
       }
     }
-    // Gems — collected per player without consuming the shared gem, so both
-    // players have equal access to the same pickups. Never affects winning
-    // (the race is still first to the finish); just a fun side reward.
-    if (this.collectibles.length) {
-      const pcx = p.px + size / 2, pcy = p.py + size / 2;
-      for (let gi = 0; gi < this.collectibles.length; gi++) {
-        if (p.gemSet.has(gi)) continue;
-        const gem = this.collectibles[gi];
-        const rr = (gem.r || 13) + size * 0.4;
-        const dx = pcx - gem.x, dy = pcy - gem.y;
-        if (dx * dx + dy * dy < rr * rr) {
-          p.gemSet.add(gi);
-          gem.collected = this.players.every((racer) => racer.gemSet.has(gi));
-          p.gems++;
-          if (gem.trigger && gem.groupId != null && !p.rush) activateRaceRush(this, p, gem);
-          this.sound.sfx('gem');
-          const theme = this.theme;
-          this.particles.burst(gem.x, gem.y, 10, { color: [theme.accent, '#ffffff', theme.accent2], speed: 190, size: 3.4, life: 0.5, drag: 2.5, shape: 'spark' });
-          this.particles.ring(gem.x, gem.y, { r: 5, rv: 280, life: 0.35, color: theme.accent, w: 3 });
-          this.flash = Math.min(1, this.flash + 0.08);
-        }
-      }
-    }
+
   }
 
   resolveSurfacesPlayer(p, prevY) {
@@ -258,7 +230,7 @@ export class RaceEngine {
 
   diePlayer(p) {
     if (!this._isActive() || !p.alive || p.finished) return;
-    p.alive = false; p.deadT = 0; p.rush = null;
+    p.alive = false; p.deadT = 0;
     this.hitstop = 0.06; this.flash = 0.8;
     this.addShake(13, 0.45);
     this.sound.sfx('death');
@@ -280,7 +252,7 @@ export class RaceEngine {
     p.px = Math.max(this.level.startX, p.px - 600);
     p.py = FLOOR_Y - PLAYER_SIZE; p.vy = 0; p.dir = 1;
     p.grounded = true; p.groundPlat = null;
-    p.sx = 0.6; p.sy = 0.6; p.rot = 0; p.rotV = 0; p.rush = null;
+    p.sx = 0.6; p.sy = 0.6; p.rot = 0; p.rotV = 0;
     p.speedMult = 1; p.gateIndex = 0;
     while (p.gateIndex < this.gates.length && this.gates[p.gateIndex].x <= p.px) {
       p.speedMult = this.gates[p.gateIndex++].mult;
@@ -293,15 +265,22 @@ export class RaceEngine {
     this.sound.sfx('spawn');
   }
 
-  playerFinish(p) {
+  playerFinish(p, time) {
+    if (!this._isActive() || !p.alive || p.finished || p.px < this.level.length || !Number.isFinite(time)) return;
     p.finished = true;
-    p.finishTime = this.raceTime;
-    if (this.winner < 0) {
-      this.winner = p.index;
+    p.finishTime = time;
+  }
+
+  resolveFinish() {
+    const [p1, p2] = this.players;
+    if (!p1.finished && !p2.finished) return;
+    this.winner = raceWinner({ p1Finished: p1.finished, p2Finished: p2.finished, p1Time: p1.finishTime, p2Time: p2.finishTime });
+    if (this.state === 'racing') {
+      const p = this.players[this.winner] || p1;
       this.state = 'finished';
       this.finishT = 0;
       this.flash = 0.7; this.addShake(12, 0.5);
-      this.sound.sfx('victory');
+      this.sound.sfx(this.winner === -1 ? 'complete' : 'victory');
       const cx = p.px + PLAYER_SIZE / 2, cy = p.py + PLAYER_SIZE / 2;
       const theme = this.theme;
       for (let i = 0; i < (this.settings.reduced ? 24 : 60); i++) {
@@ -333,7 +312,9 @@ export class RaceEngine {
       let rem = dt * this.timeScale; let guard = 0;
       while (rem > 0.0005 && guard++ < 16) {
         const h = Math.min(rem, SUB);
+        this._stepTime = this.raceTime - rem;
         for (const p of this.players) { if (p.alive && !p.finished) this.stepPlayer(p, h); }
+        this.resolveFinish();
         rem -= h;
       }
       for (const p of this.players) {
@@ -345,9 +326,15 @@ export class RaceEngine {
       this.finishT += dt;
       if (this.finishT >= GRACE) {
         for (const p of this.players) {
-          if (!p.finished) p.finalProgress = this.getProgress(p);
+          p.finalProgress = p.finished ? 1 : this.getProgress(p);
         }
         this.state = 'raceover';
+        this.result = Object.freeze({
+          runId: this.runId, status: 'raceover', winner: this.winner,
+          p1Finished: this.players[0].finished, p2Finished: this.players[1].finished,
+          p1Time: this.players[0].finishTime, p2Time: this.players[1].finishTime,
+          p1Final: this.players[0].finalProgress, p2Final: this.players[1].finalProgress,
+        });
       }
     }
 

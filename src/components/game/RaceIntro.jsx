@@ -1,6 +1,6 @@
 import React from 'react';
 import { GameButton, Panel } from './ui';
-import { RACE_FINISH_BONUS } from '@/game/raceRewards';
+import { RACE_WIN_REWARD } from '@/game/raceRewards';
 
 export default function RaceIntro({ sound, onStart, isTouch }) {
   return (
@@ -64,7 +64,7 @@ export default function RaceIntro({ sound, onStart, isTouch }) {
           </div>
         ) : null}
 
-        <p className="mt-3 text-xs leading-relaxed text-white/50">Both players’ gems go to the shared balance, plus {RACE_FINISH_BONUS} gems per completed race. Glowing trigger gems auto-start Gem Rush; tap to flip out.</p>
+        <p className="mt-3 text-xs leading-relaxed text-white/50">Winner earns {RACE_WIN_REWARD} gems, credited once to the shared balance after the race ends. The loser and tied racers earn 0 gems. No pickups or Gem Rush.</p>
         <div className="mt-6">
           <GameButton variant="primary" size="lg" sound={sound} onClick={onStart}>Start Race</GameButton>
         </div>

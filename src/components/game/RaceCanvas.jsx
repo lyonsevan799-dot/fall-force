@@ -13,7 +13,7 @@ export default function RaceCanvas({ levelIndex, settings, displaySettings, soun
   const canvasRef = useRef(null);
   const engineRef = useRef(null);
   const cbRef = useRef({});
-  const [ui, setUi] = useState({ state: 'ready', countdown: 3, raceTime: 0, winner: -1, p1: 0, p2: 0, p1Finished: false, p2Finished: false, p1Time: null, p2Time: null, p1Final: 0, p2Final: 0, p1Gems: 0, p2Gems: 0 });
+  const [ui, setUi] = useState({ state: 'ready', countdown: 3, raceTime: 0, winner: -1, p1: 0, p2: 0, p1Finished: false, p2Finished: false, p1Time: null, p2Time: null, p1Final: 0, p2Final: 0 });
   const [paused, setPaused] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [isTouch, setIsTouch] = useState(false);
@@ -54,8 +54,7 @@ export default function RaceCanvas({ levelIndex, settings, displaySettings, soun
       p1Finished: eng.players[0].finished, p2Finished: eng.players[1].finished,
       p1Time: eng.players[0].finishTime, p2Time: eng.players[1].finishTime,
       p1Final: eng.players[0].finalProgress, p2Final: eng.players[1].finalProgress,
-      p1Gems: eng.players[0].gems, p2Gems: eng.players[1].gems,
-      p1Rush: !!eng.players[0].rush, p2Rush: !!eng.players[1].rush,
+      ...eng.result,
     });
 
     const loop = (now) => {
@@ -68,7 +67,7 @@ export default function RaceCanvas({ levelIndex, settings, displaySettings, soun
         lastState = eng.state; push(); lastSync = now;
         if (eng.state === 'raceover' && !reportedWinRef.current) {
           reportedWinRef.current = true;
-          if (cbRef.current.onRaceWin) cbRef.current.onRaceWin({ winner: eng.winner, p1Gems: eng.players[0].gems, p2Gems: eng.players[1].gems });
+          if (cbRef.current.onRaceWin && eng.result) cbRef.current.onRaceWin(eng.result);
         }
       } else if (now - lastSync > 100) { lastSync = now; push(); }
     };
@@ -183,7 +182,7 @@ export default function RaceCanvas({ levelIndex, settings, displaySettings, soun
         <div className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center">
           <div className="gs-winner-banner font-heading text-5xl uppercase tracking-[0.15em] sm:text-6xl"
                style={{ color: winnerColor, textShadow: winnerGlow }}>
-            Player {ui.winner + 1} Wins!
+            {ui.winner === -1 ? 'Tie! No winner' : `Player ${ui.winner + 1} Wins!`}
           </div>
         </div>
       ) : null}

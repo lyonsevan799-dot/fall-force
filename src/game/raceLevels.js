@@ -181,5 +181,9 @@ const SPECS = [
   },
 ];
 
-export const RACE_LEVELS = SPECS.map((s, i) => buildLevel(s, i));
+// Strip pickups only from race copies; Career's composer and layouts stay intact.
+export const RACE_LEVELS = SPECS.map((s, i) => {
+  const level = buildLevel(s, i);
+  return { ...level, items: level.items.filter((item) => item.type !== 'gem') };
+});
 export const RACE_COUNT = RACE_LEVELS.length;

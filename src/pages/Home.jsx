@@ -109,7 +109,11 @@ export default function Home() {
   };
 
   const handleRaceWin = (result) => {
-    setSave((p) => commitRaceResult(p, result));
+    const nextSave = commitRaceResult(saveRef.current, result);
+    if (nextSave === saveRef.current) return;
+    saveRef.current = nextSave;
+    saveProgress(nextSave);
+    setSave(nextSave);
   };
 
   const handleUpdateSettings = (patch) => {

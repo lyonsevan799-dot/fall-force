@@ -5,6 +5,7 @@ export const FALLBACK = {
   unlocked: 0,         // highest playable level index (0-based)
   endlessBest: 0,      // highest endless score
   raceWins: 0,         // total race victories
+  raceRewards: {},     // credited race IDs, actual winner, and one shared-wallet reward
   totalGems: 0,        // persistent gems across all modes
   levelGems: {},       // { [levelIndex]: bestGemsCollected }
   challenges: {},      // { [challengeId]: { completed, awardedAt } }
@@ -23,6 +24,7 @@ export function loadProgress() {
       unlocked: typeof p.unlocked === 'number' ? p.unlocked : 0,
       endlessBest: typeof p.endlessBest === 'number' ? p.endlessBest : 0,
       raceWins: typeof p.raceWins === 'number' ? p.raceWins : 0,
+      raceRewards: p.raceRewards && typeof p.raceRewards === 'object' && !Array.isArray(p.raceRewards) ? p.raceRewards : {},
       totalGems: typeof p.totalGems === 'number' ? p.totalGems : 0,
       levelGems: p.levelGems && typeof p.levelGems === 'object' ? p.levelGems : {},
       challenges: p.challenges && typeof p.challenges === 'object' ? p.challenges : {},

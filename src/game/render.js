@@ -945,15 +945,11 @@ export function renderRace(ctx, eng, w, h, dpr = 1) {
   ctx.save();
   ctx.setTransform(s * dpr, 0, 0, s * dpr, tx * dpr, ty * dpr);
   drawTerrain(ctx, eng, camLeft, viewW);
-  drawGemRows(ctx, eng);
   if (!eng.level.noFinish) drawFinish(ctx, eng);
   drawHazards(ctx, eng);
   drawParticles(ctx, eng);
   drawRaceTrail(ctx, p1, RACE_P1);
   drawRaceTrail(ctx, p2, RACE_P2);
-  for (const p of eng.players) {
-    if (p.alive && p.rush) drawRushGuide(ctx, { rush: p.rush, px: p.px, py: p.py, theme });
-  }
   if (p1.alive) drawRacePlayer(ctx, p1, RACE_P1, RACE_P1_ACCENT, '1');
   if (p2.alive) drawRacePlayer(ctx, p2, RACE_P2, RACE_P2_ACCENT, '2');
   ctx.restore();
