@@ -7,6 +7,7 @@ export const FALLBACK = {
   raceWins: 0,         // total race victories
   totalGems: 0,        // persistent gems across all modes
   levelGems: {},       // { [levelIndex]: bestGemsCollected }
+  challenges: {},      // { [challengeId]: { completed, awardedAt } }
   settings: { music: true, sfx: true, shake: true, reduced: false, musicVolume: 0.5, sfxVolume: 0.7 },
 };
 
@@ -24,6 +25,7 @@ export function loadProgress() {
       raceWins: typeof p.raceWins === 'number' ? p.raceWins : 0,
       totalGems: typeof p.totalGems === 'number' ? p.totalGems : 0,
       levelGems: p.levelGems && typeof p.levelGems === 'object' ? p.levelGems : {},
+      challenges: p.challenges && typeof p.challenges === 'object' ? p.challenges : {},
       settings: { ...FALLBACK.settings, ...(p.settings || {}) },
     };
   } catch (e) {
@@ -70,4 +72,15 @@ export function totalStars(progress) {
 
 export function completedCount(progress) {
   return Object.values(progress.levels || {}).filter((l) => l.completed).length;
+}
+
+// Award a one-time challenge gem reward. Has a built-in guard so a challenge
+// can never be paid out twice, even if the completion event fires repeatedly.
+export function claimChallenge(progress, challengeId, reward) {
+  const next = clone(progress);
+  next.challenges = { ...(next.challenges || {}) };
+  if (next.challenges[challengeId] && next.challenges[challengeId].completed) return next;
+  next.challenges[challengeId] = { completed: true, awardedAt: Date.now() };
+  next.totalGems = (next.totalGems || 0) + (reward || 0);
+  return next;
 }

@@ -4,9 +4,9 @@ import { GameButton, Panel, Stars } from './ui';
 import { LEVELS } from '@/game/levels';
 import { groupForLevel } from '@/game/groups';
 
-export default function LevelComplete({ levelIndex, stars, deaths, time, gems, totalGems, isLast, groupJustCompleted, nextGroupName, isFinalGroup, onNext, onRetry, onExit, onEnterNextGroup, sound }) {
+export default function LevelComplete({ levelIndex, stars, deaths, time, gems, totalGems, isLast, groupJustCompleted, nextGroupName, isFinalGroup, onNext, onRetry, onExit, onEnterNextGroup, sound, challengeMode = false, exitLabel = 'Levels' }) {
   const isLastInGroup = levelIndex === groupForLevel(levelIndex).end;
-  const showGroupComplete = isLastInGroup && groupJustCompleted;
+  const showGroupComplete = isLastInGroup && groupJustCompleted && !challengeMode;
   const showFinal = showGroupComplete && isFinalGroup;
 
   return (
@@ -50,7 +50,12 @@ export default function LevelComplete({ levelIndex, stars, deaths, time, gems, t
         </div>
 
         <div className="mt-6 grid grid-cols-2 gap-3">
-          {showFinal ? (
+          {challengeMode ? (
+            <>
+              <GameButton variant="ghost" sound={sound} onClick={onRetry}>Retry</GameButton>
+              <GameButton variant="primary" sound={sound} onClick={onExit}>{exitLabel}</GameButton>
+            </>
+          ) : showFinal ? (
             <GameButton variant="primary" className="col-span-2" sound={sound} onClick={onExit}>Finish</GameButton>
           ) : showGroupComplete ? (
             <GameButton variant="primary" className="col-span-2" sound={sound} onClick={onEnterNextGroup}>
@@ -61,8 +66,12 @@ export default function LevelComplete({ levelIndex, stars, deaths, time, gems, t
           ) : (
             <GameButton variant="primary" className="col-span-2" sound={sound} onClick={onNext}>Next Level</GameButton>
           )}
-          <GameButton variant="ghost" sound={sound} onClick={onRetry}>Retry</GameButton>
-          <GameButton variant="ghost" sound={sound} onClick={onExit}>Levels</GameButton>
+          {!challengeMode ? (
+            <>
+              <GameButton variant="ghost" sound={sound} onClick={onRetry}>Retry</GameButton>
+              <GameButton variant="ghost" sound={sound} onClick={onExit}>Levels</GameButton>
+            </>
+          ) : null}
         </div>
       </Panel>
     </div>

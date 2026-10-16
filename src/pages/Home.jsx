@@ -2,8 +2,10 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Sound } from '@/game/audio';
 import { LEVEL_COUNT } from '@/game/levels';
 import { groupForLevel, groupCompleted, nextGroupAfter, groupIndex } from '@/game/groups';
-import { loadProgress, saveProgress, recordResult, clearProgress, commitLevelGems, commitEndlessGems, FALLBACK } from '@/game/progress';
+import { loadProgress, saveProgress, recordResult, clearProgress, commitLevelGems, commitEndlessGems, claimChallenge, FALLBACK } from '@/game/progress';
+import { challengeGroup, challengeGroupIndex, isChallengeDone } from '@/game/challenges';
 import MainMenu from '@/components/game/MainMenu';
+import Challenges from '@/components/game/Challenges';
 import CareerGroups from '@/components/game/CareerGroups';
 import LevelSelect from '@/components/game/LevelSelect';
 import RaceLevelSelect from '@/components/game/RaceLevelSelect';
@@ -26,6 +28,8 @@ export default function Home() {
   const [raceIndex, setRaceIndex] = useState(0);
   const [careerGroup, setCareerGroup] = useState(0);
   const [completedInfo, setCompletedInfo] = useState({ groupJustCompleted: false, nextGroupName: null, isFinalGroup: false });
+  const [challenge, setChallenge] = useState(null);
+  const [challengeReward, setChallengeReward] = useState(null);
 
   useEffect(() => {
     settingsRef.current = save.settings;
@@ -62,7 +66,14 @@ export default function Home() {
       nextGroupName: nextGrp ? nextGrp.name : null,
       isFinalGroup: !nextGrp,
     });
-    setSave(commitLevelGems(withResult, i, result.gems || 0));
+    let nextSave = commitLevelGems(withResult, i, result.gems || 0);
+    let reward = null;
+    if (challenge && result.deaths === 0 && group.id === challenge.groupId && !isChallengeDone(save, challenge.id)) {
+      nextSave = claimChallenge(nextSave, challenge.id, challenge.reward);
+      reward = { amount: challenge.reward, name: challenge.name };
+    }
+    setChallengeReward(reward);
+    setSave(nextSave);
   };
 
   const handleEnterNextGroup = () => {
@@ -95,6 +106,29 @@ export default function Home() {
     clearProgress();
     setSave((p) => ({ ...FALLBACK, settings: p.settings }));
     setLevelIndex(0);
+    setChallenge(null);
+    setChallengeReward(null);
+  };
+
+  const startChallenge = (ch) => {
+    sound.sfx('click');
+    setChallenge(ch);
+    setChallengeReward(null);
+    setCareerGroup(challengeGroupIndex(ch));
+    setScreen('challenge-levels');
+  };
+
+  const startChallengeLevel = (i) => {
+    sound.init(); sound.resume();
+    setLevelIndex(i);
+    setChallengeReward(null);
+    setScreen('game');
+  };
+
+  const exitChallenge = () => {
+    setChallenge(null);
+    setChallengeReward(null);
+    setScreen('challenges');
   };
 
   const inGame = screen === 'game' || screen === 'endless' || screen === 'race';
@@ -118,7 +152,10 @@ export default function Home() {
           groupJustCompleted={completedInfo.groupJustCompleted}
           nextGroupName={completedInfo.nextGroupName}
           isFinalGroup={completedInfo.isFinalGroup}
-          onExit={() => setScreen('levels')}
+          challenge={challenge}
+          challengeReward={challengeReward}
+          onClearReward={() => setChallengeReward(null)}
+          onExit={() => (challenge ? exitChallenge() : setScreen('levels'))}
           onComplete={handleComplete}
           onNext={() => setLevelIndex((i) => Math.min(LEVEL_COUNT - 1, i + 1))}
           onEnterNextGroup={handleEnterNextGroup}
@@ -165,6 +202,7 @@ export default function Home() {
                 onCareer={() => setScreen('career')}
                 onEndless={() => setScreen('endless')}
                 onRace={() => setScreen('race-levels')}
+                onChallenges={() => setScreen('challenges')}
                 onSettings={() => setScreen('settings')}
               />
             </div>
@@ -176,6 +214,22 @@ export default function Home() {
 
           {screen === 'levels' ? (
             <LevelSelect save={save} groupIndex={careerGroup} sound={sound} onSelect={startLevel} onBack={() => setScreen('career')} />
+          ) : null}
+
+          {screen === 'challenges' ? (
+            <Challenges save={save} sound={sound} onStart={startChallenge} onBack={() => setScreen('menu')} />
+          ) : null}
+
+          {screen === 'challenge-levels' ? (
+            <LevelSelect
+              save={save}
+              groupIndex={careerGroup}
+              sound={sound}
+              onSelect={startChallengeLevel}
+              onBack={() => setScreen('challenges')}
+              backLabel="Challenges"
+              banner={challenge ? { name: challenge.name, reward: challenge.reward } : null}
+            />
           ) : null}
 
           {screen === 'race-levels' ? (

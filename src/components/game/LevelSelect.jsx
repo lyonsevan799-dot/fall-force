@@ -1,10 +1,10 @@
 import React from 'react';
-import { Lock, ChevronLeft, Play } from 'lucide-react';
+import { Lock, ChevronLeft, Play, Target, Gem } from 'lucide-react';
 import { Stars } from './ui';
 import { LEVELS } from '@/game/levels';
 import { GROUPS, isLevelPlayable } from '@/game/groups';
 
-export default function LevelSelect({ save, groupIndex, onSelect, onBack, sound }) {
+export default function LevelSelect({ save, groupIndex, onSelect, onBack, sound, backLabel = 'Groups', banner = null }) {
   const group = GROUPS[groupIndex] || GROUPS[0];
   const levels = LEVELS.slice(group.start, group.end + 1);
   const current = save.unlocked || 0;
@@ -17,7 +17,7 @@ export default function LevelSelect({ save, groupIndex, onSelect, onBack, sound 
           onClick={() => { sound.sfx('click'); onBack(); }}
           className="flex items-center gap-2 font-heading text-[10px] uppercase tracking-[0.28em] text-white/50 transition-colors hover:text-white"
         >
-          <ChevronLeft size={14} /> Groups
+          <ChevronLeft size={14} /> {backLabel}
         </button>
         <div className="text-center">
           <div className="font-heading text-xs uppercase tracking-[0.4em] text-white/80">{group.name}</div>
@@ -25,6 +25,17 @@ export default function LevelSelect({ save, groupIndex, onSelect, onBack, sound 
         </div>
         <div className="w-16" />
       </div>
+
+      {banner ? (
+        <div className="flex items-center justify-center gap-3 rounded-2xl border border-fuchsia-300/30 bg-fuchsia-500/10 px-5 py-3">
+          <Target size={16} className="text-fuchsia-200" />
+          <span className="font-heading text-[11px] uppercase tracking-[0.2em] text-white/90">{banner.name}</span>
+          <span className="text-white/30">·</span>
+          <span className="flex items-center gap-1 font-heading text-[11px] uppercase tracking-[0.16em] text-fuchsia-200">
+            <Gem size={12} /> +{banner.reward}
+          </span>
+        </div>
+      ) : null}
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
         {levels.map((lv, k) => {

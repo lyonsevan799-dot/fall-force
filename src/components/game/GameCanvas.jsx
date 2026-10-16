@@ -8,9 +8,10 @@ import LevelComplete from './LevelComplete';
 import PauseMenu from './PauseMenu';
 import SettingsPanel from './SettingsPanel';
 import RotateOverlay from './RotateOverlay';
+import ChallengeComplete from './ChallengeComplete';
 import { useTapHoldControl } from '@/hooks/useTapHoldControl';
 
-export default function GameCanvas({ levelIndex, totalLevels, settings, displaySettings, sound, totalGems, groupJustCompleted, nextGroupName, isFinalGroup, onExit, onComplete, onNext, onEnterNextGroup, onUpdateSettings, onResetProgress }) {
+export default function GameCanvas({ levelIndex, totalLevels, settings, displaySettings, sound, totalGems, groupJustCompleted, nextGroupName, isFinalGroup, onExit, onComplete, onNext, onEnterNextGroup, onUpdateSettings, onResetProgress, challenge, challengeReward, onClearReward }) {
   const wrapRef = useRef(null);
   const canvasRef = useRef(null);
   const engineRef = useRef(null);
@@ -255,6 +256,14 @@ export default function GameCanvas({ levelIndex, totalLevels, settings, displayS
 
       <Hud levelIndex={levelIndex} ui={ui} totalGems={totalGems} onPause={togglePause} sound={sound} />
 
+      {challenge && (ui.state === 'playing' || ui.state === 'intro') ? (
+        <div className="pointer-events-none absolute inset-x-0 top-16 z-20 flex justify-center">
+          <div className="gs-pop rounded-full border border-fuchsia-300/40 bg-black/50 px-4 py-1.5 font-heading text-[10px] uppercase tracking-[0.24em] text-fuchsia-100 backdrop-blur">
+            No-Death · {challenge.name} · +{challenge.reward} Gems
+          </div>
+        </div>
+      ) : null}
+
       {ui.rushAvailable && !ui.rush && ui.state === 'playing' ? (
         <div className="pointer-events-none absolute bottom-6 left-1/2 z-20 -translate-x-1/2">
           <div className="gs-pop rounded-full border border-fuchsia-300/40 bg-black/50 px-4 py-2 font-heading text-[10px] uppercase tracking-[0.28em] text-fuchsia-100/90 backdrop-blur">
@@ -292,23 +301,35 @@ export default function GameCanvas({ levelIndex, totalLevels, settings, displayS
       ) : null}
 
       {ui.state === 'complete' ? (
-        <LevelComplete
-          levelIndex={levelIndex}
-          stars={ui.stars}
-          deaths={ui.deaths}
-          time={ui.time}
-          gems={ui.gems}
-          totalGems={totalGems}
-          isLast={levelIndex >= totalLevels - 1}
-          groupJustCompleted={groupJustCompleted}
-          nextGroupName={nextGroupName}
-          isFinalGroup={isFinalGroup}
-          sound={sound}
-          onNext={() => cbRef.current.onNext()}
-          onRetry={restart}
-          onExit={onExit}
-          onEnterNextGroup={onEnterNextGroup}
-        />
+        challengeReward ? (
+          <ChallengeComplete
+            reward={challengeReward.amount}
+            challengeName={challengeReward.name}
+            sound={sound}
+            onContinue={onExit}
+            onPlayAgain={() => { if (onClearReward) onClearReward(); restart(); }}
+          />
+        ) : (
+          <LevelComplete
+            levelIndex={levelIndex}
+            stars={ui.stars}
+            deaths={ui.deaths}
+            time={ui.time}
+            gems={ui.gems}
+            totalGems={totalGems}
+            isLast={levelIndex >= totalLevels - 1}
+            groupJustCompleted={groupJustCompleted}
+            nextGroupName={nextGroupName}
+            isFinalGroup={isFinalGroup}
+            sound={sound}
+            challengeMode={!!challenge}
+            exitLabel={challenge ? 'Challenges' : 'Levels'}
+            onNext={() => cbRef.current.onNext()}
+            onRetry={restart}
+            onExit={onExit}
+            onEnterNextGroup={onEnterNextGroup}
+          />
+        )
       ) : null}
 
       {paused && !showSettings ? (

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Trophy, Infinity as InfinityIcon, Swords, Settings2 } from 'lucide-react';
+import { Trophy, Infinity as InfinityIcon, Swords, Settings2, Target, Gem, ChevronRight } from 'lucide-react';
 import { LEVELS } from '@/game/levels';
 import { totalStars, completedCount } from '@/game/progress';
 
@@ -15,7 +15,7 @@ const ACCENT = {
   pink: 'border-pink-300/40 bg-pink-400/10 text-pink-200',
 };
 
-export default function MainMenu({ save, sound, onCareer, onEndless, onRace, onSettings }) {
+export default function MainMenu({ save, sound, onCareer, onEndless, onRace, onChallenges, onSettings }) {
   const stars = totalStars(save);
   const done = completedCount(save);
   const best = save.endlessBest || 0;
@@ -53,6 +53,24 @@ export default function MainMenu({ save, sound, onCareer, onEndless, onRace, onS
           );
         })}
       </div>
+
+      <button
+        type="button"
+        onClick={() => { sound.sfx('click'); onChallenges(); }}
+        className="group relative flex w-full max-w-3xl items-center gap-4 overflow-hidden rounded-2xl border border-fuchsia-300/30 bg-gradient-to-r from-fuchsia-500/10 via-purple-500/10 to-cyan-500/10 px-6 py-4 text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-fuchsia-300/50 hover:shadow-[0_0_50px_-15px_rgba(255,62,165,0.5)] active:scale-[0.99]"
+      >
+        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-fuchsia-300/40 bg-fuchsia-400/15 text-fuchsia-200 transition-transform duration-200 group-hover:scale-110">
+          <Target size={22} strokeWidth={2} />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block font-heading text-sm uppercase tracking-[0.2em] text-white">Challenges</span>
+          <span className="mt-0.5 block text-[11px] text-white/45">Complete no-death runs to earn bonus gems</span>
+        </span>
+        <span className="flex items-center gap-1.5 font-heading text-[10px] uppercase tracking-[0.2em] text-fuchsia-200/80">
+          <Gem size={13} />
+          <ChevronRight size={16} className="text-white/40 transition-transform duration-200 group-hover:translate-x-0.5" />
+        </span>
+      </button>
 
       <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-1 font-heading text-[10px] uppercase tracking-[0.24em] text-white/40">
         <span>{done} / {LEVELS.length} cleared</span>
