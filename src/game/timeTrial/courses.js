@@ -9,7 +9,7 @@ const hash = (text) => {
   return (value >>> 0).toString(16);
 };
 // Ignore mutable gameplay flags and generated row IDs, never collision geometry.
-export const COURSE_SIGNATURES = LEVELS.map((level) => hash(JSON.stringify({ version: 'trial-fixed120-v1',
+export const COURSE_SIGNATURES = LEVELS.map((level) => hash(JSON.stringify({ version: 'trial-fixed120-v2-surfaces-rush',
   physics: [GRAVITY, LAUNCH_V, MAX_VY, PLAYER_SIZE, CEIL_Y, FLOOR_Y],
   length: level.length, speed: level.speed, startX: level.startX, items: level.items }, clean)));
 export function cloneTrialCourse(index) {

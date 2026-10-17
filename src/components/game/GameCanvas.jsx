@@ -190,7 +190,7 @@ export default function GameCanvas({ skinId = 'classic', levelIndex, totalLevels
       if (e.repeat) return;
       const eng = engineRef.current;
       if (!eng) return;
-      if (e.target instanceof Element && e.target.closest('button, input, select, textarea')) return;
+      if (e.target instanceof Element && e.target.closest('button, input, select, textarea, a, [role="button"], [contenteditable="true"]')) return;
       if (eng.middleAttempt && !eng.middleAttempt.started) return;
       sound.init();
       sound.resume();

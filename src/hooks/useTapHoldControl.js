@@ -5,6 +5,7 @@ import { useCallback } from 'react';
 export function useTapHoldControl({ engineRef, sound, onFlip, onDeadTap }) {
   const onPointerDown = useCallback((e) => {
     if (e.pointerType === 'mouse' && e.button !== 0) return;
+    if (e.target instanceof Element && e.target.closest('button, input, select, textarea, a, [role="button"]')) return;
     e.preventDefault();
     const eng = engineRef.current;
     if (!eng || eng.paused) return;

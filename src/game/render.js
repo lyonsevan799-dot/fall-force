@@ -508,14 +508,14 @@ function drawHazards(ctx, eng) {
         const dir = it.dir || -1;
         ctx.fillStyle = hexA(theme.accent, 0.35);
         for (let x = it.x + 26; x < it.x + it.w - 10; x += 44) {
-          const y = (CEIL_Y + FLOOR_Y) / 2 + ((x * 0.05 + t * 90) % 220) - 110;
+          const y = (CEIL_Y + FLOOR_Y) / 2 + dir * (((x * 0.05 + t * 90) % 220) - 110);
           ctx.save();
           ctx.translate(x, y);
           ctx.beginPath();
-          ctx.moveTo(-9, dir * 8);
-          ctx.lineTo(0, dir * -6);
-          ctx.lineTo(9, dir * 8);
-          ctx.lineTo(0, dir * 1);
+          ctx.moveTo(-9, -dir * 8);
+          ctx.lineTo(0, dir * 6);
+          ctx.lineTo(9, -dir * 8);
+          ctx.lineTo(0, -dir);
           ctx.closePath();
           ctx.fill();
           ctx.restore();
@@ -584,6 +584,13 @@ function drawHazards(ctx, eng) {
         rr(ctx, g.x + 3, g.y + 3, g.w - 6, 4, 2);
         ctx.fill();
         ctx.globalAlpha = 1;
+        if (g.fading) {
+          ctx.save(); ctx.fillStyle = theme.hazard;
+          ctx.fillRect(g.x, g.y + g.h - 4, g.w * Math.min(1, g.remaining / 0.65), 4);
+          ctx.font = 'bold 14px monospace'; ctx.textAlign = 'center';
+          ctx.fillText(`${g.remaining.toFixed(1)}s`, g.x + g.w / 2, g.y - 10);
+          ctx.restore();
+        }
         break;
       }
       case 'speed': {

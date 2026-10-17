@@ -95,10 +95,12 @@ export function vanishGeom(it, t) {
   const cycle = on + off;
   const u = wrap(t + (it.phase || 0), cycle);
   const solid = u < on;
+  const fading = solid && u > on - Math.min(0.65, on * 0.45);
   const warning = !solid && u > cycle - 0.45;
   return {
     x: it.x, y: it.y, w: it.w || 150, h: PLAT_H,
-    solid, warning, warnK: warning ? 1 - (cycle - u) / 0.45 : 0,
+    solid, warning, fading, remaining: solid ? on - u : cycle - u,
+    warnK: warning ? 1 - (cycle - u) / 0.45 : 0,
   };
 }
 
@@ -165,7 +167,7 @@ export function dropGeom(it, t, px) {
     return { x: it.x, y: y1, w: it.w, h: it.h, phase: 'landed', active: true, fromCeil };
   }
   it._phase = 'fall';
-  return { x: it.x, y, w: it.w, h: it.h, phase: 'fall', active: false, fromCeil };
+  return { x: it.x, y, w: it.w, h: it.h, phase: 'fall', active: true, fromCeil };
 }
 
 // Crushing walls: two walls slide in from the top and bottom, leaving a timed
@@ -237,12 +239,16 @@ export function circleHit(cx, cy, r, bx, by, bw, bh) {
 }
 
 export function segmentHit(x1, y1, x2, y2, bx, by, bw, bh, r) {
-  const steps = 8;
-  for (let i = 0; i <= steps; i++) {
-    const k = i / steps;
-    const px = x1 + (x2 - x1) * k;
-    const py = y1 + (y2 - y1) * k;
-    if (px > bx - r && px < bx + bw + r && py > by - r && py < by + bh + r) return true;
+  let entry = 0, exit = 1;
+  for (let axis = 0; axis < 2; axis++) {
+    const start = axis === 0 ? x1 : y1;
+    const delta = axis === 0 ? x2 - x1 : y2 - y1;
+    const low = (axis === 0 ? bx : by) - r;
+    const high = (axis === 0 ? bx + bw : by + bh) + r;
+    if (Math.abs(delta) < 1e-9) { if (start < low || start > high) return false; continue; }
+    const a = (low - start) / delta, b = (high - start) / delta;
+    entry = Math.max(entry, Math.min(a, b)); exit = Math.min(exit, Math.max(a, b));
+    if (entry > exit) return false;
   }
-  return false;
+  return true;
 }

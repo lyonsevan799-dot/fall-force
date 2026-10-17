@@ -1,6 +1,9 @@
 import { BASE_SPEED, CROSS_TIME, START_X, FLOOR_Y, CEIL_Y, MID_Y } from './config';
 import { SPIKE_W } from './geom';
 import { enrichGems } from './gemPlace';
+import careerExpansion from '@/game/careerExpansion';
+import continueCareer from '@/game/careerContinuity';
+import validateCareerGems from '@/game/careerGems';
 
 // ---- Level composer -------------------------------------------------------
 // Levels are described as a list of sections. Every gap is expressed in
@@ -245,6 +248,7 @@ export function buildLevel(spec, index) {
   // periodic clusters, a gem above every platform, and a trail through every
   // gravity tunnel. Integrated into the level's own item list so it shares
   // the same spacing and collision system as the hand-authored obstacles.
+  validateCareerGems(items);
   enrichGems(items, x0, length, step);
 
   return {
@@ -1181,5 +1185,6 @@ const SPECS = [
   },
 ];
 
-export const LEVELS = SPECS.map((s, i) => buildLevel(s, i));
+// Append only: original IDs, names and completion-record keys stay unchanged.
+export const LEVELS = [...SPECS.map(continueCareer), ...careerExpansion].map((s, i) => buildLevel(s, i));
 export const LEVEL_COUNT = LEVELS.length;

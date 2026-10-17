@@ -103,7 +103,7 @@ export default function RaceCanvas({ skinIds, levelIndex, settings, displaySetti
       if (e.repeat) return;
       const eng = engineRef.current;
       if (!eng) return;
-      if (e.target instanceof Element && e.target.closest('button, input, select, textarea')) return;
+      if (e.target instanceof Element && e.target.closest('button, input, select, textarea, a, [role="button"], [contenteditable="true"]')) return;
       if (eng.paused && e.code !== 'Escape' && e.code !== 'KeyP') return;
       sound.init(); sound.resume();
       if (e.code === 'KeyW' || e.code === 'Space') {

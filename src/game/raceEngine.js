@@ -7,6 +7,7 @@ import {
 } from './geom';
 import { RACE_LEVELS } from './raceLevels';
 import { raceWinner } from '@/game/raceOutcome';
+import resolveSurfaceCollision, { carryPlatform } from '@/game/surfaceCollision';
 
 const SUB = 1 / 120;
 const GRACE = 2.6; // seconds the loser keeps moving after the winner finishes
@@ -94,6 +95,7 @@ export class RaceEngine {
 
   switchPlayer(p) {
     if (this.paused || !this._isActive() || !p.alive || p.finished) return;
+    if (this.zones.some((zone) => p.px + PLAYER_SIZE > zone.x && p.px < zone.x + zone.w && -p.dir !== zone.dir)) return;
     p.dir = -p.dir;
     p.vy = p.dir * LAUNCH_V;
     p.grounded = false; p.groundPlat = null;
@@ -111,31 +113,22 @@ export class RaceEngine {
   _isActive() { return this.state === 'racing' || this.state === 'finished'; }
 
   stepPlayer(p, h) {
-    const prevX = p.px;
+    const prevX = p.px, prevY = p.py;
     const L = this.level;
-    const size = PLAYER_SIZE;
+    this.physicsStep = h;
     if (p.gateIndex < this.gates.length && p.px >= this.gates[p.gateIndex].x) {
       p.speedMult = this.gates[p.gateIndex].mult;
       p.gateIndex++;
     }
-    if (p.grounded && p.groundPlat) {
-      const it = p.groundPlat;
-      const g = it.type === 'vanish' ? vanishGeom(it, this.t) : platGeom(it, this.t);
-      const dy = g.y - (p.groundY == null ? g.y : p.groundY);
-      const ox = p.px + size - 6 > g.x && p.px + 6 < g.x + g.w;
-      if (g.solid && ox) p.py += dy;
-      else { p.grounded = false; p.groundPlat = null; p.vy = 0; }
-      p.groundY = g.y;
-    }
+    carryPlatform(p, h, this.t);
     if (this._isActive()) p.px += L.speed * p.speedMult * h;
-    const prevY = p.py;
     if (!p.grounded) {
       p.vy += GRAVITY * p.dir * h;
       p.vy = clamp(p.vy, -MAX_VY, MAX_VY);
       p.py += p.vy * h;
     }
     this.checkTriggersPlayer(p);
-    this.resolveSurfacesPlayer(p, prevY);
+    this.resolveSurfacesPlayer(p, prevY, prevX);
     if (p.invuln > 0) p.invuln -= h;
     if (p.alive && p.invuln <= 0 && !p.finished) this.checkHazardsPlayer(p);
     if (p.alive && !p.finished && p.px >= L.length) {
@@ -171,23 +164,8 @@ export class RaceEngine {
 
   }
 
-  resolveSurfacesPlayer(p, prevY) {
-    const size = PLAYER_SIZE;
-    if (p.dir === 1) {
-      if (p.py + size >= FLOOR_Y) { p.py = FLOOR_Y - size; this.landPlayer(p, null); }
-    } else if (p.py <= CEIL_Y) { p.py = CEIL_Y; this.landPlayer(p, null); }
-    for (const it of this.solids) {
-      const g = it.type === 'vanish' ? vanishGeom(it, this.t) : platGeom(it, this.t);
-      if (!g.solid) continue;
-      if (!(p.px + size - 6 > g.x && p.px + 6 < g.x + g.w)) continue;
-      if (p.dir === 1) {
-        const pb = prevY + size, nb = p.py + size;
-        if (nb >= g.y && pb <= g.y + 8) { p.py = g.y - size; this.landPlayer(p, it); }
-      } else {
-        const bottom = g.y + g.h;
-        if (p.py <= bottom && prevY >= bottom - 8) { p.py = bottom; this.landPlayer(p, it); }
-      }
-    }
+  resolveSurfacesPlayer(p, prevY, prevX) {
+    return resolveSurfaceCollision(p, prevY, prevX, this, (item) => this.landPlayer(p, item));
   }
 
   landPlayer(p, plat) {

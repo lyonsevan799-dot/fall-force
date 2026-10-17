@@ -4,6 +4,8 @@ import {
 } from './config';
 import { LEVELS } from './levels';
 import { Particles } from './particles';
+import resolveSurfaceCollision, { carryPlatform } from '@/game/surfaceCollision';
+import createRush, { nextRushSegment } from '@/game/rushMotion';
 import { startProgressRun, recordGemPickup, recordRunOutcome } from '@/game/meta/events';
 import {
   sawGeom, bladeGeom, crusherGeom, laserGeom, platGeom, vanishGeom, spikeGeom,
@@ -72,7 +74,10 @@ export class Engine {
   restart(full = true) {
     this.middleAttempt?.fail(full ? 'Restarted the level' : 'Respawned during this attempt');
     if (full || this.cpIndex < 0) {
-      if (full) { this.deaths = 0; this.cpIndex = -1; this.gems = 0; }
+      if (full) {
+        this.deaths = 0; this.cpIndex = -1; this.gems = 0;
+        this.level.checkpoints.forEach((cp) => { cp.done = false; cp.collected = null; });
+      }
       this.px = this.level.startX;
       this.dir = 1;
     } else {
@@ -80,7 +85,7 @@ export class Engine {
       this.px = cp.x - 34;
       this.dir = cp.dir || 1;
       this.gems = cp.gems || 0;
-      this.collectibles.forEach((g) => { if (g.x >= cp.x) g.collected = false; });
+      this.collectibles.forEach((g, index) => { g.collected = cp.collected ? cp.collected[index] === true : g.x < cp.x; });
     }
     if (this.cpIndex < 0) this.deaths = full ? 0 : this.deaths;
     this.py = this.dir === 1 ? FLOOR_Y - PLAYER_SIZE : CEIL_Y;
@@ -170,7 +175,9 @@ export class Engine {
   }
 
   switchGravity() {
-    if (this.state !== 'playing' && this.state !== 'intro') return;
+    if (this.paused || this.rush || (this.state !== 'playing' && this.state !== 'intro')) return;
+    // A forced field owns gravity until the body fully exits its marked bounds.
+    if (this.zones?.some((zone) => this.px + PLAYER_SIZE > zone.x && this.px < zone.x + zone.w && -this.dir !== zone.dir)) return;
     this.middleAttempt?.sample(this);
     this.dir = -this.dir;
     this.vy = this.dir * LAUNCH_V;
@@ -273,6 +280,7 @@ export class Engine {
     cp.done = true;
     cp.dir = this.dir;
     cp.gems = this.gems;
+    cp.collected = this.collectibles.map((gem) => gem.collected === true);
     this.cpIndex = i;
     this.sound.sfx('checkpoint');
     this.flash = Math.min(1, this.flash + 0.25);
@@ -342,27 +350,13 @@ export class Engine {
       this.gateIndex++;
     }
 
-    // carried by a platform that is moving vertically
-    if (this.grounded && this.groundPlat) {
-      const it = this.groundPlat;
-      const g = it.type === 'vanish' ? vanishGeom(it, this.t) : platGeom(it, this.t);
-      const dy = g.y - (it._ly == null ? g.y : it._ly);
-      const ox = this.px + size - 6 > g.x && this.px + 6 < g.x + g.w;
-      if (g.solid && ox) {
-        this.py += dy;
-        this.middleAttempt?.sample(this);
-      } else {
-        this.grounded = false;
-        this.groundPlat = null;
-        this.vy = 0;
-      }
-      it._ly = g.y;
-    }
+    const prevX = this.px, prevY = this.py;
+    this.physicsStep = h;
+    carryPlatform(this, h);
 
     // the player holds position during the level intro and launches on go
     if (this.state !== 'intro') this.px += L.speed * this.speedMult * h;
 
-    const prevY = this.py;
     if (!this.grounded) {
       this.vy += GRAVITY * this.dir * h;
       this.vy = clamp(this.vy, -MAX_VY, MAX_VY);
@@ -371,7 +365,7 @@ export class Engine {
 
     this.middleAttempt?.sample(this);
     this.checkTriggers();
-    this.resolveSurfaces(prevY);
+    this.resolveSurfaces(prevY, prevX);
     this.middleAttempt?.sample(this);
     this.checkHazards();
 
@@ -417,11 +411,11 @@ export class Engine {
         }
       }
     }
+    this.collectGems();
     for (let i = 0; i < this.level.checkpoints.length; i++) {
       const cp = this.level.checkpoints[i];
       if (!cp.done && this.px + size > cp.x) this.triggerCheckpoint(i);
     }
-    this.collectGems();
   }
 
   collectGems() {
@@ -438,32 +432,8 @@ export class Engine {
     }
   }
 
-  resolveSurfaces(prevY) {
-    const size = PLAYER_SIZE;
-    if (this.py + size >= FLOOR_Y) {
-      this.py = FLOOR_Y - size;
-      if (this.dir === 1) this.land(null);
-    } else if (this.py <= CEIL_Y) {
-      this.py = CEIL_Y;
-      if (this.dir === -1) this.land(null);
-    }
-
-    for (let i = 0; i < this.solids.length; i++) {
-      const it = this.solids[i];
-      const g = it.type === 'vanish' ? vanishGeom(it, this.t) : platGeom(it, this.t);
-      it._last = g;
-      if (it !== this.groundPlat) it._ly = g.y;
-      if (!g.solid) continue;
-      if (!(this.px + size - 6 > g.x && this.px + 6 < g.x + g.w)) continue;
-      if (this.dir === 1) {
-        const pb = prevY + size;
-        const nb = this.py + size;
-        if (nb >= g.y && pb <= g.y + 8) { this.py = g.y - size; this.land(it); }
-      } else {
-        const bottom = g.y + g.h;
-        if (this.py <= bottom && prevY >= bottom - 8) { this.py = bottom; this.land(it); }
-      }
-    }
+  resolveSurfaces(prevY, prevX = this.px) {
+    return resolveSurfaceCollision(this, prevY, prevX);
   }
 
   checkHazards() {
@@ -544,24 +514,13 @@ export class Engine {
     return null;
   }
 
-  // ---- Gem Rush: hold to glide along a straight row of 4+ gems ----
+  // ---- Gem Rush: oversized trigger automatically follows every row gem ----
   activateRush(groupId) {
-    const group = this.gemGroups[groupId];
-    if (!group || group.length < 4) return;
-    const dir0 = group[0].rowDir || { x: 1, y: 0 };
-    const len = Math.hypot(dir0.x, dir0.y) || 1;
-    const nx = dir0.x / len, ny = dir0.y / len;
-    const sorted = group.slice().sort((a, b) => (a.x * nx + a.y * ny) - (b.x * nx + b.y * ny));
-    let startGem = null;
-    for (const g of sorted) { if (!g.collected) { startGem = g; break; } }
-    if (!startGem) return;
     const size = PLAYER_SIZE;
     const cx = this.px + size / 2, cy = this.py + size / 2;
-    let s = (cx - startGem.x) * nx + (cy - startGem.y) * ny;
-    if (s < 0) s = 0;
-    const last = sorted[sorted.length - 1];
-    const totalLen = Math.max(1, (last.x - startGem.x) * nx + (last.y - startGem.y) * ny);
-    this.rush = { dir: { x: nx, y: ny }, startX: startGem.x, startY: startGem.y, s, totalLen };
+    const rush = createRush(this.gemGroups[groupId], cx, cy);
+    if (!rush) return;
+    this.rush = rush;
     this.rushCandidate = null;
     this.grounded = false; this.groundPlat = null; this.vy = 0;
     this.sx = 0.8; this.sy = 1.2;
@@ -598,7 +557,9 @@ export class Engine {
     const dirX = r.dir.x;
     let rushSpeed = dirX > 0.05 ? baseSpeed / dirX : baseSpeed * 2;
     rushSpeed = Math.min(rushSpeed, baseSpeed * 2.4);
-    r.s += rushSpeed * h;
+    const prevX = this.px, prevY = this.py;
+    this.physicsStep = h;
+    r.s = Math.min(r.totalLen, r.s + rushSpeed * h);
     const ncx = r.startX + r.dir.x * r.s;
     const ncy = r.startY + r.dir.y * r.s;
     this.px = ncx - size / 2;
@@ -608,12 +569,13 @@ export class Engine {
       this.speedMult = this.gates[this.gateIndex].mult;
       this.gateIndex++;
     }
-    this.collectGems();
+    this.checkTriggers();
+    const blocked = this.resolveSurfaces(prevY, prevX);
     this.checkHazards();
     if (!this.rush || this.state !== 'playing') return;
-    if (this.solidBlocksRush()) { this.endRush(); return; }
-    if (r.s >= r.totalLen) { this.endRush(); return; }
-    if (!this.finishReached && this.px >= this.level.length) this.reachFinish();
+    if (blocked) { this.endRush(); return; }
+    if (!this.finishReached && this.px >= this.level.length) { this.reachFinish(); return; }
+    if (r.s >= r.totalLen && !nextRushSegment(r)) this.endRush();
   }
 
   update(dtRaw) {

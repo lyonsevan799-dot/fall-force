@@ -1,9 +1,7 @@
-// Career-mode difficulty groups. All 35 existing levels are distributed across
-// three groups (Easy / Medium / Hard) by their index in the LEVELS array. The
-// split follows the existing continuous difficulty curve (speed + fScale), so
-// the transition between groups stays fair and Hard holds the most demanding
-// levels. No level layouts are changed — this only governs grouping, unlocking
-// and progression display.
+import { LEVEL_COUNT } from '@/game/levels';
+
+// Preserve all original memberships. Appended mastery courses extend Hard only;
+// no existing completion record is moved to a different group.
 
 export const GROUPS = [
   {
@@ -13,7 +11,7 @@ export const GROUPS = [
     end: 11,
     accent: 'cyan',
     tagline: 'Learn the flip',
-    desc: 'Gravity switching, basic spikes and simple gaps. Your introduction to Fall Force.',
+    desc: 'Gravity switching, readable spike gaps, and early obstacle lessons.',
     lockHint: '',
   },
   {
@@ -30,7 +28,7 @@ export const GROUPS = [
     id: 'hard',
     name: 'Hard',
     start: 23,
-    end: 34,
+    end: LEVEL_COUNT - 1,
     accent: 'pink',
     tagline: 'Master the chaos',
     desc: 'Every obstacle at once. Precise timing, quick reactions and rapid switches.',

@@ -6,7 +6,7 @@
 // by the player's normal movement, so every gem can be collected.
 //
 // Large rows (4+ gems) are tagged with a shared groupId + rowLen + rowDir so
-// the engine can offer the Gem Rush hold-to-follow mechanic on them.
+// the engine automatically follows them after touching the oversized trigger.
 
 import { CEIL_Y, FLOOR_Y, MID_Y, PLAYER_SIZE } from './config';
 
@@ -63,7 +63,8 @@ function boxOf(it) {
       return { x: it.x, y: CEIL_Y, w: it.w, h: FLOOR_Y - CEIL_Y };
     case 'bounce': {
       const r = it.r || 22;
-      const y0 = Math.min(it.y0, it.y1), y1 = Math.max(it.y0, it.y1);
+      const y0 = Math.min(it.y0 ?? CEIL_Y + 50, it.y1 ?? FLOOR_Y - 50);
+      const y1 = Math.max(it.y0 ?? CEIL_Y + 50, it.y1 ?? FLOOR_Y - 50);
       return { x: it.x - r, y: y0 - r, w: r * 2, h: (y1 - y0) + r * 2 };
     }
     case 'trap': {
@@ -72,8 +73,11 @@ function boxOf(it) {
       return { x: it.x, y: FLOOR_Y - h, w: it.w, h };
     }
     case 'plat':
-    case 'vanish':
-      return { x: it.x, y: it.y - 8, w: it.w, h: 16 };
+    case 'vanish': {
+      const ax = it.type === 'plat' && it.axis === 'x' ? Math.abs(it.amp || 0) : 0;
+      const ay = it.type === 'plat' && it.axis !== 'x' ? Math.abs(it.amp || 0) : 0;
+      return { x: it.x - ax, y: it.y - ay, w: it.w + ax * 2, h: 20 + ay * 2 };
+    }
     default:
       return null;
   }
@@ -127,12 +131,12 @@ function hazardsClear(items, x, y, r) {
 // Sample a segment between two points and ensure no hazard/solid blocks the
 // path, so a gem row never crosses an obstacle the player would clip through.
 function pathClear(items, x1, y1, x2, y2) {
-  const steps = 6;
-  for (let i = 1; i <= steps; i++) {
+  const steps = Math.max(1, Math.ceil(Math.hypot(x2 - x1, y2 - y1) / 12));
+  for (let i = 0; i <= steps; i++) {
     const k = i / steps;
     const px = x1 + (x2 - x1) * k;
     const py = y1 + (y2 - y1) * k;
-    if (!hazardsClear(items, px, py, 10)) return false;
+    if (!hazardsClear(items, px, py, PLAYER_SIZE / 2)) return false;
   }
   return true;
 }
@@ -146,7 +150,7 @@ function rollback(items, gems) {
 
 // Place a straight row of `count` gems starting at (x, y) moving in direction
 // (dirX, dirY) with `spacing` between each gem. All gems share a groupId so
-// the engine can offer Gem Rush on rows of 4+. Returns the placed gems, or
+// the engine can auto-rush on rows of 4+. Returns the placed gems, or
 // null (and removes any partial row) if any position or path segment is blocked.
 export function placeRow(items, x, y, count, dirX, dirY, spacing) {
   const len = Math.hypot(dirX, dirY) || 1;
@@ -166,7 +170,7 @@ export function placeRow(items, x, y, count, dirX, dirY, spacing) {
     items.push(trigger);
     prevX = x; prevY = y;
   }
-  for (let i = 0; i < count; i++) {
+  for (let i = 0; i < count - (hasTrigger ? 1 : 0); i++) {
     const off = hasTrigger ? i + 1 : i;
     const gx = x + nx * spacing * off;
     const gy = y + ny * spacing * off;
@@ -177,6 +181,19 @@ export function placeRow(items, x, y, count, dirX, dirY, spacing) {
     gems.push(gem);
     items.push(gem);
     prevX = gx; prevY = gy;
+  }
+  // A full crossing of hazard-free recovery space after automatic control ends.
+  if (hasTrigger) {
+    for (const item of items) {
+      if (item.type === 'checkpoint' && item.x >= Math.min(x, prevX) - PLAYER_SIZE && item.x <= Math.max(x, prevX) + PLAYER_SIZE) {
+        rollback(items, gems); return null;
+      }
+      if (!HAZARD.has(item.type) && !SOLID.has(item.type)) continue;
+      const box = boxOf(item);
+      if (box && box.x < prevX + spacing * 3 + PLAYER_SIZE && box.x + box.w > prevX - PLAYER_SIZE) {
+        rollback(items, gems); return null;
+      }
+    }
   }
   return gems;
 }
