@@ -821,7 +821,7 @@ export function render(ctx, eng, w, h, dpr = 1, drawWorldOverlay = null) {
   if (leftWorld < -70) tx = 70 * s;
   const rightWorld = (w - tx) / s;
   const maxRight = eng.level.length + 460;
-  if (rightWorld > maxRight) tx = w - maxRight * s;
+  if (!eng.level.noFinish && rightWorld > maxRight) tx = w - maxRight * s;
 
   const camLeft = -tx / s;
   const camTop = -ty / s;

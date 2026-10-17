@@ -5,11 +5,13 @@ import { totalStars, completedCount } from '@/game/progress';
 import LeaderboardEntry from '@/components/game/leaderboard/LeaderboardEntry';
 import MetaMenuEntries from '@/components/game/meta/MetaMenuEntries';
 import TimeTrialEntry from '@/components/game/timeTrial/TimeTrialEntry';
+import { Shield } from 'lucide-react';
 
 const MODES = [
   { key: 'career', label: 'Career', desc: 'Master the levels and conquer Fall Force.', icon: Trophy, accent: 'cyan' },
   { key: 'endless', label: 'Endless', desc: 'How long can you survive?', icon: InfinityIcon, accent: 'amber' },
   { key: 'race', label: 'Race', desc: 'Race your opponent to the finish!', icon: Swords, accent: 'pink' },
+  { key: 'survival', label: 'Survival', desc: 'One life. 100 points per second. Separate personal records.', icon: Shield, accent: 'cyan' },
 ];
 
 const ACCENT = {
@@ -18,7 +20,7 @@ const ACCENT = {
   pink: 'border-pink-300/40 bg-pink-400/10 text-pink-200',
 };
 
-export default function MainMenu({ save, sound, onCareer, onTutorial, onShop, onEndless, onRace, onChallenges, onSettings, onLeaderboard, onDaily, onAchievements, onTimeTrial }) {
+export default function MainMenu({ save, sound, onCareer, onTutorial, onShop, onEndless, onRace, onChallenges, onSettings, onLeaderboard, onDaily, onAchievements, onTimeTrial, onSurvival }) {
   const stars = totalStars(save);
   const done = completedCount(save);
   const best = save.endlessBest || 0;
@@ -27,6 +29,7 @@ export default function MainMenu({ save, sound, onCareer, onTutorial, onShop, on
     sound.sfx('click');
     if (key === 'career') onCareer();
     else if (key === 'endless') onEndless();
+    else if (key === 'survival') onSurvival();
     else onRace();
   };
 
@@ -41,7 +44,7 @@ export default function MainMenu({ save, sound, onCareer, onTutorial, onShop, on
         <div className="h-[2px] w-40 bg-gradient-to-r from-transparent via-cyan-300/80 to-transparent" />
       </div>
 
-      <div className="grid w-full max-w-3xl gap-3 sm:grid-cols-3">
+      <div className="grid w-full max-w-3xl gap-3 sm:grid-cols-4">
         {MODES.map((m) => {
           const Icon = m.icon;
           return (

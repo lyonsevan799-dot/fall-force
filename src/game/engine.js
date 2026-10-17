@@ -369,7 +369,7 @@ export class Engine {
     this.middleAttempt?.sample(this);
     this.checkHazards();
 
-    if (this.state === 'playing' && !this.finishReached && this.px >= L.length) this.reachFinish();
+    if (!L.noFinish && this.state === 'playing' && !this.finishReached && this.px >= L.length) this.reachFinish();
   }
 
   checkTriggers() {
@@ -574,7 +574,7 @@ export class Engine {
     this.checkHazards();
     if (!this.rush || this.state !== 'playing') return;
     if (blocked) { this.endRush(); return; }
-    if (!this.finishReached && this.px >= this.level.length) { this.reachFinish(); return; }
+    if (!this.level.noFinish && !this.finishReached && this.px >= this.level.length) { this.reachFinish(); return; }
     if (r.s >= r.totalLen && !nextRushSegment(r)) this.endRush();
   }
 

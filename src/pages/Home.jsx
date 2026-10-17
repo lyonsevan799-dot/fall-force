@@ -31,6 +31,8 @@ import EndlessCanvas from '@/components/game/EndlessCanvas';
 import RaceCanvas from '@/components/game/RaceCanvas';
 import TutorialCanvas from '@/components/game/tutorial/TutorialCanvas';
 import { tutorialAccessibleCareer, completeTutorial } from '@/game/tutorialProgress';
+import SurvivalCanvas from '@/components/game/survival/SurvivalCanvas';
+import commitSurvivalResult from '@/game/survivalRecords';
 
 export default function Home() {
   const initial = useMemo(() => loadProgress(), []);
@@ -131,6 +133,8 @@ export default function Home() {
   });
 
   const handleRaceWin = (result) => commitGame((latest) => commitRaceResult(latest, result));
+  const handleSurvivalResult = (score, gems, records) => commitGame((latest) =>
+    commitSurvivalResult(latest, { ...records, score, gems }));
 
   const startTrial = (index) => {
     if (!isLevelPlayable(saveRef.current, index)) return;
@@ -181,7 +185,7 @@ export default function Home() {
     setScreen('challenges');
   };
 
-  const inGame = screen === 'tutorial' || screen === 'game' || screen === 'endless' || screen === 'race' || screen === 'time-trial';
+  const inGame = screen === 'tutorial' || screen === 'game' || screen === 'endless' || screen === 'survival' || screen === 'race' || screen === 'time-trial';
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-[#04050c] text-white">
@@ -248,6 +252,11 @@ export default function Home() {
         />
       ) : null}
 
+      {screen === 'survival' ? <SurvivalCanvas skinId={soloSkin} settings={settingsRef.current}
+        displaySettings={save.settings} sound={sound} records={save.survivalRecords}
+        totalGems={save.totalGems || 0} onResult={handleSurvivalResult} onExit={() => setScreen('menu')}
+        onUpdateSettings={handleUpdateSettings} onResetProgress={handleReset} /> : null}
+
       {screen === 'time-trial' ? <TimeTrialCanvas key={trialIndex} levelIndex={trialIndex}
         records={save.timeTrialRecords} settings={save.settings} skinId={soloSkin} sound={sound}
         ghostEnabled={save.timeTrialGhostEnabled !== false}
@@ -285,6 +294,7 @@ export default function Home() {
                 onAchievements={() => setScreen('achievements')}
                 onTimeTrial={() => setScreen('time-trial-levels')}
                 onEndless={() => setScreen('endless')}
+                onSurvival={() => setScreen('survival')}
                 onRace={() => setScreen('race-levels')}
                 onChallenges={() => setScreen('challenges')}
                 onSettings={() => setScreen('settings')}

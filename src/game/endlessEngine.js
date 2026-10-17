@@ -1,289 +1,151 @@
-import { Engine } from './engine';
-import { emit } from './levels';
-import { BASE_SPEED, CROSS_TIME, START_X, clamp } from './config';
-import { ENDLESS_CHUNKS } from './endlessChunks';
-import { gemClear, LANE, placeRow } from './gemPlace';
-import { recordGemPickup } from '@/game/meta/events';
+import { Engine } from '@/game/engine';
+import { START_X, BASE_SPEED } from '@/game/config';
+import buildRunSection, { difficultyAt, speedAt, validRunSection } from '@/game/procedural/runPatterns';
+import hitRunHazard from '@/game/procedural/runCollision';
+import { cullRunWorld, rebaseRunWorld } from '@/game/procedural/runWorld';
+import { retireProgressRows } from '@/game/meta/events';
 
-// Visual sections — theme and name are driven by difficulty so transitions
-// happen smoothly as the player survives longer.
 const SECTIONS = [
-  { name: 'Training', theme: 'neon', diffMax: 0.15 },
-  { name: 'Factory', theme: 'industrial', diffMax: 0.35 },
-  { name: 'Neon', theme: 'cyber', diffMax: 0.55 },
-  { name: 'Space', theme: 'space', diffMax: 0.75 },
-  { name: 'Extreme', theme: 'energy', diffMax: 1.01 },
+  { name: 'Training', theme: 'neon' }, { name: 'Factory', theme: 'industrial' },
+  { name: 'Neon', theme: 'cyber' }, { name: 'Space', theme: 'space' }, { name: 'Extreme', theme: 'energy' },
 ];
 
-const DISTANCE_MILESTONES = [100, 250, 500, 750, 1000, 1500, 2000, 3000, 5000, 7500, 10000, 15000, 20000, 30000];
-const PX_PER_METER = 10;
-
+// A rolling world, not a finite Career course. Score is NEVER a termination condition.
 export class EndlessEngine extends Engine {
-  constructor({ sound, settings }) {
+  constructor({ sound, settings, mode = 'endless' }) {
     super({ sound, settings });
-    this.mode = 'endless';
-    this.levelIndex = -1;
-    this.score = 0;
-    this.best = 0;
-    this.gems = 0;
-    this.streakTime = 0;
-    this.streak = 1;
-    this.maxStreak = 1;
-    this._gen = null;
+    this.mode = mode;
     this._level = null;
-    this.milestonesHit = new Set();
-    this.milestoneEvent = null;
-    this.sectionIndex = -1;
-    this.sectionName = '';
-    this._newBestFired = false;
+    this._gen = null;
+    this.lookAhead = 4000;
   }
-
   get level() { return this._level; }
 
   loadEndless(best = 0, skipIntro = false) {
-    this.best = best || 0;
-    this.score = 0;
-    this.gems = 0;
-    this.streakTime = 0;
-    this.streak = 1;
-    this.maxStreak = 1;
-    this.milestonesHit = new Set();
-    this.milestoneEvent = null;
-    this.sectionIndex = -1;
-    this.sectionName = '';
-    this._newBestFired = false;
-    this._lastCull = START_X;
-    this._lastChunkName = null;
-
-    const startSpeed = 0.62;
-    const step = startSpeed * BASE_SPEED * CROSS_TIME;
-    this._gen = {
-      x: START_X + step * 3,
-      speed: startSpeed,
-      gap: 3.0,
-      difficulty: 0,
-      items: [],
-      chunkCount: 0,
-    };
-    this._level = {
-      index: -1,
-      name: 'Endless',
-      theme: SECTIONS[0].theme,
-      speed: startSpeed * BASE_SPEED,
-      step,
-      items: this._gen.items,
-      checkpoints: [],
-      length: this._gen.x + step * 4,
-      startX: START_X,
-      noFinish: true,
-      hints: 0,
-      tip: null,
-    };
-    for (let i = 0; i < 5; i++) this._appendChunk();
+    this.best = Number.isFinite(best) ? best : 0;
+    this.score = 0; this.distanceTravelled = 0;
+    this.streakTime = 0; this.streak = 1; this.maxStreak = 1;
+    this.sectionIndex = -1; this.sectionName = 'Training'; this.milestoneEvent = null;
+    this._newBestFired = false; this._nextDistanceMilestone = 100;
+    this._lastCull = START_X; this.paused = false; this.px = START_X;
+    const speed = speedAt(0);
+    this._gen = { x: START_X + speed * 1.5, items: [], chunkCount: 0, difficulty: 0, speed: speed / BASE_SPEED };
+    this._level = { index: -1, name: this.mode === 'survival' ? 'Survival' : 'Endless',
+      theme: 'neon', speed, step: speed * 0.44, items: this._gen.items,
+      checkpoints: [], length: this._gen.x + 4000, startX: START_X, noFinish: true, hints: 0, tip: null };
     this.load(-1);
-    if (skipIntro) {
-      this.state = 'playing';
-      this.introT = 1.5;
-      this.timeScale = 1;
-      this.attemptTime = 0;
-    } else {
-      this.state = 'intro';
-      this.introT = 0;
-      this.timeScale = 0.3;
-    }
-    this._updateSection();
-  }
-
-  _sectionForDifficulty(d) {
-    for (let i = 0; i < SECTIONS.length; i++) {
-      if (d < SECTIONS[i].diffMax) return i;
-    }
-    return SECTIONS.length - 1;
+    this.maybeGenerate();
+    this.state = skipIntro ? 'playing' : 'intro';
+    this.introT = skipIntro ? 1.5 : 0; this.timeScale = skipIntro ? 1 : 0.3;
+    this.syncUi();
   }
 
   _appendChunk() {
     const g = this._gen;
-    // Space future obstacles for their upcoming difficulty, without speeding
-    // up the player merely because several chunks have been generated ahead.
-    const difficulty = clamp((g.x - START_X) / 22000, 0, 1);
-    const step = (0.62 + difficulty * 0.60) * BASE_SPEED * CROSS_TIME;
-    const ctx = { step, gap: 3.0 - difficulty * 1.3 };
-
-    const tier = difficulty < 0.25 ? 0 : difficulty < 0.55 ? 1 : difficulty < 0.85 ? 2 : 3;
-    let pickTier = tier;
-    const r = Math.random();
-    if (r < 0.3 && tier > 0) pickTier = tier - 1;
-    else if (r > 0.9 && tier < 3) pickTier = tier + 1;
-    const pool = ENDLESS_CHUNKS[pickTier];
-    let choice = Math.floor(Math.random() * pool.length);
-    if (pool[choice].name === this._lastChunkName) choice = (choice + 1) % pool.length;
-    const chunk = pool[choice];
-    this._lastChunkName = chunk.name;
-
-    let x = g.x;
-    for (const d of chunk.sections) x = emit(d, x, g.items, ctx);
-    this._scatterGems(g.x, x, g.items, step);
-    g.x = x;
-    g.chunkCount++;
-    this._level.length = g.x + step * 4;
+    const difficulty = difficultyAt(this.distanceTravelled + Math.max(0, g.x - this.px));
+    let section = buildRunSection(g.x, difficulty, this.mode, g.chunkCount);
+    // Reject non-advancing/invalid output before it enters render or collision lists.
+    // This fallback is a real, escapable spike encounter, not a reset or empty level.
+    if (!validRunSection(section, g.x)) section = {
+      items: [{ type: 'spike', side: 'floor', x: g.x + 700, w: 68 }], end: g.x + 2000,
+    };
+    g.items.push(...section.items);
+    g.x = section.end; g.chunkCount++;
+    this._level.length = g.x + 1000;
     this._rebuild();
   }
-
-  _scatterGems(x0, x1, items, step) {
-    // Dense, varied gem scatter: a frequent alternating stream across
-    // floor/ceiling/mid lanes plus occasional 3-gem clusters. Uses the shared
-    // bounding-box clearance check so gems never land inside hazards, and
-    // every lane is reachable by the player's normal movement.
-    const spacing = step * 1.5;
-    const lanes = [LANE.floor, LANE.ceil, LANE.mid, LANE.midLow, LANE.midHigh];
-    let i = 0;
-    for (let cx = x0 + step; cx < x1 - step; cx += spacing, i++) {
-      const y = lanes[i % lanes.length];
-      if (gemClear(items, cx, y)) items.push({ type: 'gem', x: cx, y, r: 13 });
-    }
-    // Occasional cluster — a short line of 3 gems in a safe lane.
-    for (let cx = x0 + step * 3; cx < x1 - step; cx += step * 6) {
-      if (Math.random() > 0.5) continue;
-      const ly = lanes[Math.floor(Math.random() * 3)];
-      if (!gemClear(items, cx, ly)) continue;
-      for (let k = -1; k <= 1; k++) {
-        const gx = cx + k * step * 0.34;
-        if (gemClear(items, gx, ly)) items.push({ type: 'gem', x: gx, y: ly, r: 13 });
-      }
-    }
-    // Large gem rows (4-6) — straight lines that enable Gem Rush. Alternates
-    // horizontal floor/ceiling and diagonal floor-to-mid / ceiling-to-mid
-    // paths, each checked against hazards so it never crosses an obstacle.
-    for (let cx = x0 + step * 5; cx < x1 - step * 3; cx += step * 6) {
-      if (Math.random() > 0.3) continue;
-      const count = 4 + Math.floor(Math.random() * 3);
-      const spacing = step * 0.5;
-      const m = Math.floor(cx / step) % 4;
-      if (m === 0) placeRow(items, cx, LANE.floor, count, 1, 0, spacing);
-      else if (m === 1) placeRow(items, cx, LANE.ceil, count, 1, 0, spacing);
-      else if (m === 2) placeRow(items, cx, LANE.floor, count, 1, -1, spacing);
-      else placeRow(items, cx, LANE.ceil, count, 1, 1, spacing);
-    }
-  }
-
   _rebuild() {
-    const L = this._level;
-    this.hazards = L.items.filter((i) => i.type === 'spike' || i.type === 'saw' || i.type === 'blade' || i.type === 'crusher' || i.type === 'laser' || i.type === 'mspike' || i.type === 'drop' || i.type === 'wall' || i.type === 'bounce' || i.type === 'trap');
-    this.solids = L.items.filter((i) => i.type === 'plat' || i.type === 'vanish');
-    this.zones = L.items.filter((i) => i.type === 'zone');
-    this.portals = L.items.filter((i) => i.type === 'portal');
-    this.gates = L.items.filter((i) => i.type === 'speed');
-    this.collectibles = L.items.filter((i) => i.type === 'gem');
+    const items = this._level.items;
+    this.hazards = items.filter((item) => ['spike', 'saw', 'mspike', 'laser', 'blade', 'bounce'].includes(item.type));
+    this.solids = []; this.zones = []; this.portals = []; this.gates = [];
+    this.collectibles = items.filter((item) => item.type === 'gem');
     this.buildGemGroups();
+    retireProgressRows(this, new Set(Object.keys(this.gemGroups)));
   }
-
-  _cull() {
-    if (this.px - this._lastCull < 400) return;
-    this._lastCull = this.px;
-    const items = this._gen.items;
-    if (items.length < 160) return;
-    const cutX = this.px - 900;
-    let changed = false;
-    for (let i = 0; i < items.length; i++) {
-      if ((items[i].x || 0) < cutX && items[i].type !== 'speed') { changed = true; break; }
-    }
-    if (!changed) return;
-    this._gen.items = items.filter((i) => (i.x || 0) >= cutX || i.type === 'speed');
-    this._level.items = this._gen.items;
-    this._rebuild();
-  }
-
   maybeGenerate() {
-    while (this._gen.x - this.px < 2200) this._appendChunk();
-    this._cull();
+    // Bounded work per physics call, with generation BEFORE movement.
+    for (let budget = 0; this._gen.x - this.px < this.lookAhead && budget < 8; budget++) this._appendChunk();
+    cullRunWorld(this);
   }
-
-  step(h) {
-    const prevPx = this.px;
-    super.step(h);
-    this.maybeGenerate();
-    if (this.state === 'playing') {
-      const distDelta = this.px - prevPx;
-      if (distDelta > 0) {
-        const diffBonus = 1 + (this._gen ? this._gen.difficulty : 0) * 1.5;
-        this.score += distDelta * diffBonus * this.streak * 0.15;
-      }
-      this.streakTime += h;
-      this.streak = 1 + Math.min(this.streakTime / 15, 3);
-      this.maxStreak = Math.max(this.maxStreak, this.streak);
-    }
-    this._checkMilestones();
-  }
-
-  reachFinish() {}
-
   _updateSection() {
-    const diff = clamp((this.px - START_X) / 22000, 0, 1);
-    this._gen.difficulty = diff;
-    this._gen.speed = 0.62 + diff * 0.60;
-    this._level.speed = this._gen.speed * BASE_SPEED;
-    this._level.step = this._level.speed * CROSS_TIME;
-    const idx = this._sectionForDifficulty(diff);
-    if (this.sectionIndex !== idx) {
-      this.sectionIndex = idx;
-      this.sectionName = SECTIONS[idx].name;
-      this._level.theme = SECTIONS[idx].theme;
-      if (idx > 0) this._fireMilestone(SECTIONS[idx].name.toUpperCase(), 'section');
+    const difficulty = difficultyAt(this.distanceTravelled);
+    this._gen.difficulty = difficulty;
+    this._level.speed = speedAt(difficulty);
+    this._level.step = this._level.speed * 0.44;
+    this._gen.speed = this._level.speed / BASE_SPEED;
+    const index = Math.min(SECTIONS.length - 1, Math.floor(difficulty * SECTIONS.length));
+    if (this.sectionIndex !== index) {
+      this.sectionIndex = index; this.sectionName = SECTIONS[index].name;
+      this._level.theme = SECTIONS[index].theme;
+      if (index > 0) this.milestoneEvent = { text: this.sectionName.toUpperCase(), type: 'section', id: this.runId + index };
     }
   }
-
-  _checkMilestones() {
-    const distM = Math.floor(this.px / PX_PER_METER);
-    for (const m of DISTANCE_MILESTONES) {
-      if (!this.milestonesHit.has(m) && distM >= m) {
-        this.milestonesHit.add(m);
-        this._fireMilestone(m.toLocaleString() + ' M', 'distance');
+  step(h) {
+    if (!['playing', 'intro'].includes(this.state)) return;
+    this.maybeGenerate();
+    this.speedMult = 1; // No infinitely accumulating portal boosts in a rolling course.
+    const endTime = this.t;
+    const pieces = Math.max(1, Math.ceil(h / Math.min(1 / 240, 5 / (this.level.speed * 2.4))));
+    const dt = h / pieces;
+    for (let i = 0; i < pieces; i++) {
+      this.t = endTime - h + (i + 1) * dt;
+      const before = this.px, wasPlaying = this.state === 'playing';
+      super.step(dt);
+      const distance = Math.max(0, this.px - before);
+      this.distanceTravelled += distance;
+      if (wasPlaying) {
+        this.streakTime += dt;
+        if (this.mode === 'survival') this.score = Math.floor(this.attemptTime * 100);
+        else this.score += distance * (1 + this._gen.difficulty * 1.5) * this.streak * 0.15;
+        this.streak = 1 + Math.min(this.streakTime / 15, 3);
+        this.maxStreak = Math.max(this.maxStreak, this.streak);
       }
+      if (!['playing', 'intro'].includes(this.state)) break;
     }
     this._updateSection();
-    if (!this._newBestFired && this.best > 0 && this.score > this.best) {
+    const meters = Math.floor(this.distanceTravelled / 10);
+    if (meters >= this._nextDistanceMilestone) {
+      this.milestoneEvent = { text: `${meters.toLocaleString()} M`, type: 'distance', id: this.runId + meters };
+      this._nextDistanceMilestone = (Math.floor(meters / 500) + 1) * 500;
+    }
+    if (this.mode === 'endless' && !this._newBestFired && this.best > 0 && this.score > this.best) {
       this._newBestFired = true;
-      this._fireMilestone('NEW BEST!', 'best');
+      this.milestoneEvent = { text: 'NEW BEST!', type: 'best', id: this.runId + 'best' };
       this.sound.sfx('unlock');
     }
+    rebaseRunWorld(this);
   }
-
-  _fireMilestone(text, type) {
-    this.milestoneEvent = { text, type, id: Date.now() + Math.random() };
-  }
-
-  collectGem(gem) {
-    if (gem.collected || (this.state !== 'playing' && this.state !== 'intro')) return;
-    gem.collected = true;
-    this.gems++;
-    recordGemPickup(this, gem);
-    const value = 100 * (1 + (this._gen ? this._gen.difficulty : 0));
-    this.score += value;
-    this.sound.sfx('gem');
-    const theme = this.theme;
-    this.particles.burst(gem.x, gem.y, 12, {
-      color: [theme.accent, '#ffffff', theme.accent2],
-      speed: 200, size: 3.5, life: 0.5, drag: 2.5, shape: 'spark',
-    });
-    this.particles.ring(gem.x, gem.y, { r: 5, rv: 300, life: 0.35, color: theme.accent, w: 3 });
-    this.flash = Math.min(1, this.flash + 0.12);
-    // Special trigger gem: auto-engage Gem Rush along its row (no hold).
-    if (gem.trigger && gem.groupId != null && !this.rush && this.state === 'playing') {
-      this.activateRush(gem.groupId);
+  checkHazards() {
+    for (const item of this.hazards) {
+      if (item.x < this.px - 250 || item.x > this.px + 250) continue;
+      if (hitRunHazard(item, this.t, this.px, this.py)) { this.die(); return; }
     }
   }
-
+  reachFinish() {} // A rolling world has no finish line.
+  collectGem(gem) {
+    if (gem.collected || !['playing', 'intro'].includes(this.state)) return;
+    if (this.mode === 'endless') this.score += 100 * (1 + this._gen.difficulty);
+    super.collectGem(gem);
+  }
+  update(dt) {
+    if (!Number.isFinite(dt) || dt <= 0 || this.state === 'dead' || this.paused) return;
+    // Catch up ordinary slow frames using bounded fixed-step batches, never
+    // one huge movement that could skip a spike or an unbounded catch-up loop.
+    let remaining = Math.min(0.25, dt);
+    while (remaining > 0.000001 && this.state !== 'dead') {
+      const slice = Math.min(0.05, remaining);
+      super.update(slice); remaining -= slice;
+    }
+  }
   syncUi() {
     super.syncUi();
-    this.ui.score = Math.floor(this.score);
-    this.ui.distance = Math.floor(this.px / PX_PER_METER);
-    this.ui.best = this.best;
-    this.ui.gems = this.gems;
-    this.ui.streak = this.streak;
-    this.ui.maxStreak = this.maxStreak;
-    this.ui.sectionName = this.sectionName;
-    this.ui.difficulty = this._gen ? this._gen.difficulty : 0;
-    this.ui.speed = this._gen ? this._gen.speed : 0.62;
-    this.ui.progress = this._gen ? this._gen.difficulty : 0;
+    this.ui.score = Math.floor(this.score || 0);
+    this.ui.distance = Math.floor((this.distanceTravelled || 0) / 10);
+    this.ui.best = this.best || 0; this.ui.streak = this.streak || 1;
+    this.ui.maxStreak = this.maxStreak || 1; this.ui.sectionName = this.sectionName;
+    this.ui.speed = this._gen?.speed || 0.62;
+    this.ui.progress = this._gen?.difficulty || 0;
+    this.ui.wave = (this._gen?.chunkCount || 1);
+    this.ui.milestoneEvent = this.milestoneEvent;
   }
 }

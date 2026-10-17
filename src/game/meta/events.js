@@ -5,7 +5,7 @@ let sequence = 0;
 const dayOf = (at) => new Date(at).toISOString().slice(0, 10);
 export function subscribeProgressEvents(listener) { listeners.add(listener); return () => listeners.delete(listener); }
 function publish(engine, data, at = Date.now()) {
-  if (!['career', 'tutorial', 'endless'].includes(engine.mode)) return;
+  if (!['career', 'tutorial', 'endless', 'survival'].includes(engine.mode)) return;
   const event = Object.freeze({ session, sequence: ++sequence, at, date: dayOf(at), mode: engine.mode, levelIndex: engine.levelIndex, ...data });
   listeners.forEach((listener) => listener(event));
 }
@@ -20,6 +20,10 @@ export function startProgressRun(engine, full) {
   flushProgressEvents(engine);
   engine.runId = crypto.randomUUID();
   runs.set(engine, { pending: new Map(), dayGems: new Map(), rows: new Set(), finished: false, deaths: 0 });
+}
+export function retireProgressRows(engine, activeGroups) {
+  const run = runs.get(engine);
+  if (run) for (const group of run.rows) if (!activeGroups.has(group)) run.rows.delete(group);
 }
 export function recordGemPickup(engine, gem) {
   const run = runs.get(engine);
@@ -39,7 +43,7 @@ export function recordRunOutcome(engine, outcome) {
   const run = runs.get(engine);
   if (!run || run.finished || (outcome === 'death' && run.deaths === engine.deaths)) return;
   flushProgressEvents(engine);
-  if (outcome === 'complete' || engine.mode === 'endless') run.finished = true;
+  if (outcome === 'complete' || ['endless', 'survival'].includes(engine.mode)) run.finished = true;
   run.deaths = engine.deaths;
   publish(engine, { kind: outcome, deaths: engine.deaths, time: engine.attemptTime,
     score: typeof engine.score === 'number' && Number.isFinite(engine.score) ? Math.max(0, Math.floor(engine.score)) : 0 });

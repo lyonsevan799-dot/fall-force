@@ -23,6 +23,7 @@ export const FALLBACK = {
   timeTrialRecords: {},
   timeTrialGhostEnabled: true,
   endlessRecords: {},
+  survivalRecords: { bestScore: 0, bestTime: 0, bestDistance: 0, runs: 0 },
   ownedSkins: ['classic'],
   equippedSkins: { solo: 'classic', p1: 'classic', p2: 'classic' },
   skinPurchases: {},
