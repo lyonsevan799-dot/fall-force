@@ -1,5 +1,5 @@
 import React from 'react';
-import { Trophy, Infinity as InfinityIcon, Swords, Settings2, Target, Gem, ChevronRight } from 'lucide-react';
+import { Trophy, Infinity as InfinityIcon, Swords, Settings2, Target, Gem, ChevronRight, ShoppingBag } from 'lucide-react';
 import { LEVELS } from '@/game/levels';
 import { totalStars, completedCount } from '@/game/progress';
 
@@ -15,7 +15,7 @@ const ACCENT = {
   pink: 'border-pink-300/40 bg-pink-400/10 text-pink-200',
 };
 
-export default function MainMenu({ save, sound, onCareer, onTutorial, onEndless, onRace, onChallenges, onSettings }) {
+export default function MainMenu({ save, sound, onCareer, onTutorial, onShop, onEndless, onRace, onChallenges, onSettings }) {
   const stars = totalStars(save);
   const done = completedCount(save);
   const best = save.endlessBest || 0;
@@ -53,6 +53,12 @@ export default function MainMenu({ save, sound, onCareer, onTutorial, onEndless,
           );
         })}
       </div>
+
+      <button type="button" onClick={() => { sound.init(); sound.resume(); sound.sfx('click'); onShop(); }} className="flex min-h-14 w-full max-w-3xl items-center gap-4 rounded-2xl border border-cyan-300/40 bg-cyan-400/10 px-6 py-4 text-left transition-colors hover:bg-cyan-400/20">
+        <ShoppingBag size={26} className="text-cyan-200" />
+        <span className="flex-1"><span className="block font-heading text-sm uppercase tracking-[0.2em]">Shop</span><span className="mt-1 block text-[11px] text-white/55">Spend gems · collect skins · make it yours</span></span>
+        <span className="flex items-center gap-1 text-xs text-cyan-200"><Gem size={15} />{(save.totalGems || 0).toLocaleString()}<ChevronRight size={16} /></span>
+      </button>
 
       <button
         type="button"

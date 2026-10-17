@@ -15,7 +15,7 @@ import MiddleAttempt from '@/game/middleAttempt';
 import MiddleChallengeIntro from '@/components/game/MiddleChallengeIntro';
 import ChallengeRunStatus from '@/components/game/ChallengeRunStatus';
 
-export default function GameCanvas({ levelIndex, totalLevels, settings, displaySettings, sound, totalGems, groupJustCompleted, nextGroupName, isFinalGroup, onExit, onComplete, onNext, onEnterNextGroup, onUpdateSettings, onResetProgress, challenge, challengeReward, onClearReward, onChallengeFailure, onNewChallengeAttempt }) {
+export default function GameCanvas({ skinId = 'classic', levelIndex, totalLevels, settings, displaySettings, sound, totalGems, groupJustCompleted, nextGroupName, isFinalGroup, onExit, onComplete, onNext, onEnterNextGroup, onUpdateSettings, onResetProgress, challenge, challengeReward, onClearReward, onChallengeFailure, onNewChallengeAttempt }) {
   const wrapRef = useRef(null);
   const canvasRef = useRef(null);
   const engineRef = useRef(null);
@@ -39,6 +39,7 @@ export default function GameCanvas({ levelIndex, totalLevels, settings, displayS
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d', { alpha: false });
     const eng = new Engine({ sound, settings });
+    eng.skinId = skinId;
     eng.load(levelIndex);
     if (challenge?.type === 'middle') {
       eng.middleAttempt = new MiddleAttempt((reason) => cbRef.current.onChallengeFailure?.(challenge.id, reason));
@@ -140,6 +141,8 @@ export default function GameCanvas({ levelIndex, totalLevels, settings, displayS
     const eng = engineRef.current;
     if (eng) eng.settings = displaySettings;
   }, [displaySettings]);
+
+  useEffect(() => { if (engineRef.current) engineRef.current.skinId = skinId; }, [skinId]);
 
   // ---- actions -------------------------------------------------------------
   const startMiddle = () => {

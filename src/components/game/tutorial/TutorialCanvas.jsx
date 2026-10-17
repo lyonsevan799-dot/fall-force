@@ -4,8 +4,8 @@ import TutorialPrompt from '@/components/game/tutorial/TutorialPrompt';
 import TutorialHud from '@/components/game/tutorial/TutorialHud';
 import TutorialComplete from '@/components/game/tutorial/TutorialComplete';
 
-export default function TutorialCanvas({ sound, settings, totalGems, banked, canSkip, onComplete, onPlay, onExit, onSkip }) {
-  const game = useTutorialGame({ sound, settings, onComplete });
+export default function TutorialCanvas({ sound, settings, skinId, totalGems, banked, canSkip, onComplete, onPlay, onExit, onSkip }) {
+  const game = useTutorialGame({ sound, settings, skinId, onComplete });
   const complete = game.ui.state === 'complete';
   return (
     <div ref={game.wrapRef} className="tutorial-shell fixed inset-0 overflow-hidden bg-background text-foreground">

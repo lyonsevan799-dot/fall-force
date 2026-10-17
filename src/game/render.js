@@ -5,6 +5,9 @@ import {
   SPIKE_W, SPIKE_H, LASER_W, PLAT_H,
 } from './geom';
 
+import drawSkin from '@/game/skins/drawSkin';
+import { getSkin } from '@/game/skins/catalog';
+
 // ---------- helpers ----------
 function rr(ctx, x, y, w, h, r) {
   const rad = Math.min(r, w / 2, h / 2);
@@ -752,7 +755,7 @@ function drawTrail(ctx, eng) {
   for (let i = 0; i < eng.trail.length; i++) {
     const tr = eng.trail[i];
     const k = tr.life / tr.max;
-    ctx.fillStyle = hexA(eng.rush ? theme.accent : theme.player, 0.13 * k * boost);
+    ctx.fillStyle = hexA(eng.rush ? theme.accent : getSkin(eng.skinId).colors[1], 0.13 * k * boost);
     rr(ctx, tr.x + 4, tr.y + 4, PLAYER_SIZE - 8, PLAYER_SIZE - 8, 6);
     ctx.fill();
   }
@@ -775,24 +778,7 @@ function drawPlayer(ctx, eng) {
   }
   ctx.scale(eng.sx * spawnK, eng.sy * spawnK);
   ctx.globalAlpha = spawnAlpha;
-  ctx.fillStyle = hexA(theme.accent, 0.22);
-  rr(ctx, -size / 2 - 5, -size / 2 - 5, size + 10, size + 10, 12);
-  ctx.fill();
-  const grad = ctx.createLinearGradient(0, -size / 2, 0, size / 2);
-  grad.addColorStop(0, '#ffffff');
-  grad.addColorStop(0.45, theme.player);
-  grad.addColorStop(1, theme.accent);
-  ctx.fillStyle = grad;
-  rr(ctx, -size / 2, -size / 2, size, size, 9);
-  ctx.fill();
-  ctx.fillStyle = hexA('#040510', 0.72);
-  rr(ctx, -6, -2, 12, 8, 4);
-  ctx.fill();
-  ctx.fillStyle = '#ffffff';
-  ctx.globalAlpha = 0.9 * spawnAlpha;
-  rr(ctx, -size / 2 + 5, -size / 2 + 4, size - 10, 4, 2);
-  ctx.fill();
-  ctx.globalAlpha = 1;
+  drawSkin(ctx, eng.skinId, { time: eng.t, reduced: eng.settings.reduced });
   ctx.restore();
 }
 
@@ -875,7 +861,7 @@ function drawRaceTrail(ctx, p, color) {
   }
 }
 
-function drawRacePlayer(ctx, p, color, accent, label) {
+function drawRacePlayer(ctx, p, color, accent, label, skinId, time, reduced) {
   const size = PLAYER_SIZE;
   const cx = p.px + size / 2, cy = p.py + size / 2;
   const blink = p.invuln > 0 ? (0.4 + 0.6 * Math.abs(Math.sin(p.invuln * 24))) : 1;
@@ -884,24 +870,7 @@ function drawRacePlayer(ctx, p, color, accent, label) {
   ctx.translate(cx, cy);
   ctx.rotate(p.rot);
   ctx.scale(p.sx, p.sy);
-  ctx.fillStyle = hexA(accent, 0.22);
-  rr(ctx, -size / 2 - 5, -size / 2 - 5, size + 10, size + 10, 12);
-  ctx.fill();
-  const grad = ctx.createLinearGradient(0, -size / 2, 0, size / 2);
-  grad.addColorStop(0, '#ffffff');
-  grad.addColorStop(0.45, color);
-  grad.addColorStop(1, accent);
-  ctx.fillStyle = grad;
-  rr(ctx, -size / 2, -size / 2, size, size, 9);
-  ctx.fill();
-  ctx.fillStyle = hexA('#040510', 0.72);
-  rr(ctx, -6, -2, 12, 8, 4);
-  ctx.fill();
-  ctx.fillStyle = '#ffffff';
-  ctx.globalAlpha = 0.9 * blink;
-  rr(ctx, -size / 2 + 5, -size / 2 + 4, size - 10, 4, 2);
-  ctx.fill();
-  ctx.globalAlpha = 1;
+  drawSkin(ctx, skinId, { time, reduced });
   ctx.restore();
   ctx.save();
   ctx.translate(cx, cy - size / 2 - 14);
@@ -948,10 +917,11 @@ export function renderRace(ctx, eng, w, h, dpr = 1) {
   if (!eng.level.noFinish) drawFinish(ctx, eng);
   drawHazards(ctx, eng);
   drawParticles(ctx, eng);
-  drawRaceTrail(ctx, p1, RACE_P1);
-  drawRaceTrail(ctx, p2, RACE_P2);
-  if (p1.alive) drawRacePlayer(ctx, p1, RACE_P1, RACE_P1_ACCENT, '1');
-  if (p2.alive) drawRacePlayer(ctx, p2, RACE_P2, RACE_P2_ACCENT, '2');
+  const skins = eng.skinIds || ['classic', 'classic'];
+  drawRaceTrail(ctx, p1, getSkin(skins[0]).colors[1]);
+  drawRaceTrail(ctx, p2, getSkin(skins[1]).colors[1]);
+  if (p1.alive) drawRacePlayer(ctx, p1, RACE_P1, RACE_P1_ACCENT, '1', skins[0], eng.t, eng.settings.reduced);
+  if (p2.alive) drawRacePlayer(ctx, p2, RACE_P2, RACE_P2_ACCENT, '2', skins[1], eng.t, eng.settings.reduced);
   ctx.restore();
 
   drawScreenFx(ctx, eng, w, h, dpr);

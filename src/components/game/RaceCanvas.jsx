@@ -9,7 +9,7 @@ import SettingsPanel from './SettingsPanel';
 import RotateOverlay from './RotateOverlay';
 import { useGameLifecycle } from '@/hooks/useGameLifecycle';
 
-export default function RaceCanvas({ levelIndex, settings, displaySettings, sound, totalGems, onRaceWin, onExit, onUpdateSettings, onResetProgress }) {
+export default function RaceCanvas({ skinIds, levelIndex, settings, displaySettings, sound, totalGems, onRaceWin, onExit, onUpdateSettings, onResetProgress }) {
   const wrapRef = useRef(null);
   const canvasRef = useRef(null);
   const engineRef = useRef(null);
@@ -30,6 +30,7 @@ export default function RaceCanvas({ levelIndex, settings, displaySettings, soun
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d', { alpha: false });
     const eng = new RaceEngine({ sound, settings, levelIndex });
+    eng.skinIds = skinIds;
     engineRef.current = eng;
     setPaused(false);
     setShowSettings(false);
@@ -87,6 +88,8 @@ export default function RaceCanvas({ levelIndex, settings, displaySettings, soun
     const eng = engineRef.current;
     if (eng) eng.settings = displaySettings;
   }, [displaySettings]);
+
+  useEffect(() => { if (engineRef.current) engineRef.current.skinIds = skinIds; }, [skinIds]);
 
   const startRace = () => { const eng = engineRef.current; if (!eng) return; sound.init(); sound.resume(); eng.start(); };
   const p1Switch = () => { const eng = engineRef.current; if (!eng) return; sound.init(); sound.resume(); eng.switchPlayer(eng.players[0]); };

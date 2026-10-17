@@ -10,7 +10,7 @@ import RotateOverlay from './RotateOverlay';
 import { useTapHoldControl } from '@/hooks/useTapHoldControl';
 import { useGameLifecycle } from '@/hooks/useGameLifecycle';
 
-export default function EndlessCanvas({ settings, displaySettings, sound, best, totalGems, onResult, onExit, onUpdateSettings, onResetProgress }) {
+export default function EndlessCanvas({ skinId = 'classic', settings, displaySettings, sound, best, totalGems, onResult, onExit, onUpdateSettings, onResetProgress }) {
   const wrapRef = useRef(null);
   const canvasRef = useRef(null);
   const engineRef = useRef(null);
@@ -35,6 +35,7 @@ export default function EndlessCanvas({ settings, displaySettings, sound, best, 
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d', { alpha: false });
     const eng = new EndlessEngine({ sound, settings });
+    eng.skinId = skinId;
     eng.loadEndless(bestRef.current);
     runStartBestRef.current = bestRef.current;
     engineRef.current = eng;
@@ -106,6 +107,8 @@ export default function EndlessCanvas({ settings, displaySettings, sound, best, 
     const eng = engineRef.current;
     if (eng) eng.settings = displaySettings;
   }, [displaySettings]);
+
+  useEffect(() => { if (engineRef.current) engineRef.current.skinId = skinId; }, [skinId]);
 
   const primary = () => {
     const eng = engineRef.current;

@@ -3,7 +3,7 @@ import TutorialEngine from '@/game/tutorialEngine';
 import { render } from '@/game/render';
 import { useGameLifecycle } from '@/hooks/useGameLifecycle';
 
-export default function useTutorialGame({ sound, settings, onComplete }) {
+export default function useTutorialGame({ sound, settings, skinId = 'classic', onComplete }) {
   const canvasRef = useRef(null), wrapRef = useRef(null), engineRef = useRef(null), completeRef = useRef(onComplete);
   completeRef.current = onComplete;
   const [ui, setUi] = useState({ state: 'playing', phase: 0, gems: 0, paused: false });
@@ -16,7 +16,7 @@ export default function useTutorialGame({ sound, settings, onComplete }) {
   useGameLifecycle(engineRef, setPaused);
   useEffect(() => {
     const engine = new TutorialEngine({ sound, settings });
-    engine.loadTutorial(); engineRef.current = engine;
+    engine.loadTutorial(); engine.skinId = skinId; engineRef.current = engine;
     const canvas = canvasRef.current, context = canvas.getContext('2d', { alpha: false });
     let width, height, dpr, raf, last = performance.now(), lastSync = 0, reported = false;
     const resize = () => {
@@ -38,6 +38,7 @@ export default function useTutorialGame({ sound, settings, onComplete }) {
     return () => { cancelAnimationFrame(raf); observer.disconnect(); engineRef.current = null; };
   }, [sound]);
   useEffect(() => { if (engineRef.current) engineRef.current.settings = settings; }, [settings]);
+  useEffect(() => { if (engineRef.current) engineRef.current.skinId = skinId; }, [skinId]);
   const act = (method) => {
     const e = engineRef.current; if (!e) return;
     sound.init(); sound.resume(); e[method](); sync();

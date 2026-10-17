@@ -2,13 +2,18 @@ import { normalizeProgress, safeInteger } from '@/game/saveData';
 import { LEVEL_COUNT } from '@/game/levels';
 import { challengeById } from '@/game/challenges';
 import { tutorialSaveFields } from '@/game/tutorialProgress';
+import { skinSaveFields } from '@/game/skins/inventory';
 
-const KEY = 'gravity-switch-save-v1';
+export const PROGRESS_KEY = 'gravity-switch-save-v1';
+const KEY = PROGRESS_KEY;
 
 export const FALLBACK = {
   tutorialCompleted: false,
   tutorialSkipped: false,
   tutorialGemsBanked: false,
+  ownedSkins: [],
+  equippedSkins: { solo: 'classic', p1: null, p2: 'classic' },
+  skinPurchases: {},
   levels: {},          // { [index]: { stars, time, completed } }
   unlocked: 0,         // highest playable level index (0-based)
   endlessBest: 0,      // highest endless score
@@ -29,7 +34,8 @@ export function loadProgress() {
     if (!raw) return clone(FALLBACK);
     const source = JSON.parse(raw);
     const normalized = normalizeProgress(source, FALLBACK, LEVEL_COUNT);
-    return { ...normalized, ...tutorialSaveFields(source && typeof source === 'object' ? source : {}) };
+    const fields = source && typeof source === 'object' ? source : {};
+    return { ...normalized, ...tutorialSaveFields(fields), ...skinSaveFields(fields) };
   } catch (e) {
     // Keep an unreadable save recoverable instead of silently destroying it.
     if (raw) {

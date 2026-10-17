@@ -11,6 +11,10 @@ module.exports = {
   			sm: 'calc(var(--radius) - 4px)'
   		},
   		colors: {
+        'skin-basic': 'hsl(var(--skin-basic))',
+        'skin-rare': 'hsl(var(--skin-rare))',
+        'skin-epic': 'hsl(var(--skin-epic))',
+        'skin-legendary': 'hsl(var(--skin-legendary))',
   			background: 'hsl(var(--background))',
   			foreground: 'hsl(var(--foreground))',
   			card: {

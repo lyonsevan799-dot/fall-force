@@ -92,7 +92,8 @@
 }
 
 /* Tutorial-only semantic colors, isolated from all existing game screens. */
-.tutorial-shell {
+.tutorial-shell,
+.shop-shell {
   --background: 233 50% 3%;
   --foreground: 0 0% 100%;
   --card: 230 48% 8%;
@@ -100,6 +101,13 @@
   --primary-foreground: 233 50% 3%;
   --muted-foreground: 210 24% 78%;
   --border: 210 25% 30%;
+}
+
+:root, .dark {
+  --skin-basic: 187 76% 78%;
+  --skin-rare: 210 100% 73%;
+  --skin-epic: 275 100% 78%;
+  --skin-legendary: 43 96% 67%;
 }
 
 /* ---- Fall Force game chrome ---- */

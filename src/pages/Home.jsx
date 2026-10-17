@@ -5,7 +5,10 @@ import { LEVEL_COUNT } from '@/game/levels';
 import { commitRaceResult } from '@/game/raceRewards';
 import { recordMiddleFailure, middleChallengeEligible } from '@/game/middleProgress';
 import { groupForLevel, groupCompleted, nextGroupAfter, groupIndex, isLevelPlayable } from '@/game/groups';
-import { loadProgress, saveProgress, recordResult, clearProgress, commitLevelGems, commitEndlessGems, claimChallenge, FALLBACK } from '@/game/progress';
+import { loadProgress, recordResult, commitLevelGems, commitEndlessGems, claimChallenge, FALLBACK } from '@/game/progress';
+import useGameProgress from '@/hooks/useGameProgress';
+import SkinShop from '@/components/game/shop/SkinShop';
+import { skinForTarget } from '@/game/skins/inventory';
 import { challengeGroupIndex, challengeUnlocked, isChallengeDone } from '@/game/challenges';
 import MainMenu from '@/components/game/MainMenu';
 import Challenges from '@/components/game/Challenges';
@@ -27,9 +30,9 @@ export default function Home() {
 
   const settingsRef = useRef({ ...initial.settings });
 
-  const [save, setSave] = useState(initial);
-  const saveRef = useRef(initial);
-  saveRef.current = save;
+  const { save, saveRef, updateSave, commitGame, saveError } = useGameProgress(initial);
+  const soloSkin = skinForTarget(save);
+  const raceSkins = [skinForTarget(save, 'p1'), skinForTarget(save, 'p2')];
   const [screen, setScreen] = useState('menu');
   const [levelIndex, setLevelIndex] = useState(Math.min(initial.unlocked || 0, LEVEL_COUNT - 1));
   const [raceIndex, setRaceIndex] = useState(0);
@@ -42,7 +45,6 @@ export default function Home() {
     settingsRef.current = save.settings;
     sound.s = save.settings;
     sound.applySettings?.();
-    saveProgress(save);
     if (save.settings.music && !document.hidden) { sound.startMusic(); } else { sound.stopMusic(); }
   }, [save, sound]);
 
@@ -53,46 +55,38 @@ export default function Home() {
   useGameAudio(sound, settingsRef);
 
   const startTutorial = () => { sound.init(); sound.resume(); setChallenge(null); setChallengeReward(null); setScreen('tutorial'); };
-  const handleTutorialComplete = (gems) => {
-    const nextSave = completeTutorial(saveRef.current, gems);
-    saveRef.current = nextSave;
-    saveProgress(nextSave);
-    setSave(nextSave);
-  };
+  const handleTutorialComplete = (gems) => commitGame((latest) => completeTutorial(latest, gems));
   const startLevel = (i) => { if (!tutorialAccessibleCareer(saveRef.current)) { startTutorial(); return; } sound.init(); sound.resume(); setChallenge(null); setChallengeReward(null); setLevelIndex(i); setScreen('game'); };
   const startRace = (i) => { sound.init(); sound.resume(); setRaceIndex(i); setScreen('race'); };
 
   const enterGroup = (gi) => { sound.sfx('click'); setCareerGroup(gi); setScreen('levels'); };
 
-  const handleMiddleFailure = (id, reason) => {
-    const nextSave = recordMiddleFailure(saveRef.current, id, reason);
-    saveRef.current = nextSave;
-    saveProgress(nextSave);
-    setSave(nextSave);
-  };
+  const handleMiddleFailure = (id, reason) => commitGame((latest) => recordMiddleFailure(latest, id, reason));
 
   const handleComplete = (i, result) => {
-    const currentSave = saveRef.current;
+    let completion;
+    return commitGame((currentSave) => {
     const group = groupForLevel(i);
     const before = groupCompleted(currentSave, group);
     const withResult = recordResult(currentSave, i, { stars: result.stars, time: result.time }, LEVEL_COUNT);
     const after = groupCompleted(withResult, group);
     const nextGrp = nextGroupAfter(group);
-    setCompletedInfo({
+    const info = {
       groupJustCompleted: !before && after,
       nextGroupName: nextGrp ? nextGrp.name : null,
       isFinalGroup: !nextGrp,
-    });
+    };
     let nextSave = commitLevelGems(withResult, i, result.gems || 0);
     let reward = null;
     if (challenge && challengeUnlocked(currentSave, challenge) && middleChallengeEligible(challenge, result) && group.id === challenge.groupId && !isChallengeDone(currentSave, challenge.id)) {
       nextSave = claimChallenge(nextSave, challenge.id, challenge.reward);
       reward = { amount: challenge.reward, name: challenge.name };
     }
-    setChallengeReward(reward);
-    saveRef.current = nextSave;
-    saveProgress(nextSave);
-    setSave(nextSave);
+    completion = { info, reward };
+    return nextSave;
+    }).then((saved) => {
+      if (saved) { setCompletedInfo(completion.info); setChallengeReward(completion.reward); }
+    });
   };
 
   const handleEnterNextGroup = () => {
@@ -106,28 +100,17 @@ export default function Home() {
     }
   };
 
-  const handleEndlessResult = (score, gems) => {
-    setSave((p) => {
-      const withBest = { ...p, endlessBest: Math.max(p.endlessBest || 0, score) };
-      return commitEndlessGems(withBest, gems || 0);
-    });
-  };
+  const handleEndlessResult = (score, gems) => commitGame((p) => {
+    const withBest = { ...p, endlessBest: Math.max(p.endlessBest || 0, score) };
+    return commitEndlessGems(withBest, gems || 0);
+  });
 
-  const handleRaceWin = (result) => {
-    const nextSave = commitRaceResult(saveRef.current, result);
-    if (nextSave === saveRef.current) return;
-    saveRef.current = nextSave;
-    saveProgress(nextSave);
-    setSave(nextSave);
-  };
+  const handleRaceWin = (result) => commitGame((latest) => commitRaceResult(latest, result));
 
-  const handleUpdateSettings = (patch) => {
-    setSave((p) => ({ ...p, settings: { ...p.settings, ...patch } }));
-  };
+  const handleUpdateSettings = (patch) => commitGame((p) => ({ ...p, settings: { ...p.settings, ...patch } }));
 
   const handleReset = () => {
-    clearProgress();
-    setSave((p) => ({ ...FALLBACK, settings: p.settings }));
+    commitGame((p) => ({ ...JSON.parse(JSON.stringify(FALLBACK)), settings: p.settings }));
     setLevelIndex(0);
     setChallenge(null);
     setChallengeReward(null);
@@ -159,13 +142,14 @@ export default function Home() {
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-[#04050c] text-white">
+      {saveError && screen !== 'shop' ? <div role="alert" className="fixed inset-x-4 bottom-4 z-50 rounded-xl border border-amber-300/50 bg-black/90 p-3 text-center text-xs text-amber-100">{saveError}</div> : null}
       <div className="pointer-events-none absolute inset-0 gs-bg" />
       <div className="pointer-events-none absolute inset-0 gs-grid opacity-[0.35]" />
       <div className="pointer-events-none absolute -left-40 top-10 h-96 w-96 rounded-full bg-cyan-500/10 blur-[120px]" />
       <div className="pointer-events-none absolute -right-32 bottom-0 h-96 w-96 rounded-full bg-fuchsia-500/10 blur-[120px]" />
 
       {screen === 'tutorial' ? (
-        <TutorialCanvas sound={sound} settings={save.settings} totalGems={save.totalGems || 0}
+        <TutorialCanvas sound={sound} settings={save.settings} skinId={soloSkin} totalGems={save.totalGems || 0}
           banked={save.tutorialGemsBanked} canSkip={tutorialAccessibleCareer(save)}
           onComplete={handleTutorialComplete} onPlay={() => startLevel(0)} onExit={() => setScreen('menu')}
           onSkip={() => { if (tutorialAccessibleCareer(saveRef.current)) setScreen('career'); }} />
@@ -174,6 +158,7 @@ export default function Home() {
       {screen === 'game' ? (
         <GameCanvas
           key={levelIndex}
+          skinId={soloSkin}
           levelIndex={levelIndex}
           totalLevels={LEVEL_COUNT}
           settings={settingsRef.current}
@@ -203,6 +188,7 @@ export default function Home() {
 
       {screen === 'endless' ? (
         <EndlessCanvas
+          skinId={soloSkin}
           settings={settingsRef.current}
           displaySettings={save.settings}
           sound={sound}
@@ -218,6 +204,7 @@ export default function Home() {
       {screen === 'race' ? (
         <RaceCanvas
           key={raceIndex}
+          skinIds={raceSkins}
           levelIndex={raceIndex}
           settings={settingsRef.current}
           displaySettings={save.settings}
@@ -239,6 +226,7 @@ export default function Home() {
                 sound={sound}
                 onCareer={() => tutorialAccessibleCareer(saveRef.current) ? setScreen('career') : startTutorial()}
                 onTutorial={startTutorial}
+                onShop={() => setScreen('shop')}
                 onEndless={() => setScreen('endless')}
                 onRace={() => setScreen('race-levels')}
                 onChallenges={() => setScreen('challenges')}
@@ -246,6 +234,8 @@ export default function Home() {
               />
             </div>
           ) : null}
+
+          {screen === 'shop' ? <SkinShop save={save} updateSave={updateSave} sound={sound} onBack={() => setScreen('menu')} /> : null}
 
           {screen === 'career' ? (
             <CareerGroups save={save} sound={sound} onEnter={enterGroup} onBack={() => setScreen('menu')} />
