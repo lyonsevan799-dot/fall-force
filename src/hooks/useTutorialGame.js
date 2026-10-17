@@ -13,7 +13,7 @@ export default function useTutorialGame({ sound, settings, skinId = 'classic', o
       ? u : { state: e.state, phase: e.phase, gems: e.gems, paused: e.paused });
   };
   const setPaused = useCallback((paused) => setUi((u) => ({ ...u, paused })), []);
-  useGameLifecycle(engineRef, setPaused);
+  useGameLifecycle(engineRef, setPaused, 0);
   useEffect(() => {
     const engine = new TutorialEngine({ sound, settings });
     engine.loadTutorial(); engine.skinId = skinId; engineRef.current = engine;

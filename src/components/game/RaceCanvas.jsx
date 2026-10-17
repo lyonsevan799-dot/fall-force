@@ -23,7 +23,7 @@ export default function RaceCanvas({ skinIds, levelIndex, settings, displaySetti
   const reportedWinRef = useRef(false);
 
   cbRef.current = { onExit, onRaceWin };
-  useGameLifecycle(engineRef, setPaused);
+  useGameLifecycle(engineRef, setPaused, levelIndex + 1);
 
   useEffect(() => {
     const wrap = wrapRef.current;

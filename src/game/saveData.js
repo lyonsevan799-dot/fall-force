@@ -26,5 +26,7 @@ export function normalizeProgress(value, defaults, levelCount) {
   }
   const levelGems = Object.fromEntries(Object.entries(object(source.levelGems)).map(([key, gems]) => [key, safeInteger(gems)]));
   return { ...defaults, ...source, levels, unlocked, settings, challenges, levelGems,
-    totalGems: safeInteger(source.totalGems), endlessBest: safeInteger(source.endlessBest), raceWins: safeInteger(source.raceWins), raceRewards: object(source.raceRewards) };
+    totalGems: safeInteger(source.totalGems), endlessBest: safeInteger(source.endlessBest), raceWins: safeInteger(source.raceWins), raceRewards: object(source.raceRewards),
+    endlessRecords: object(source.endlessRecords), achievements: object(source.achievements),
+    dailyChallenges: object(source.dailyChallenges), timeTrialRecords: object(source.timeTrialRecords) };
 }

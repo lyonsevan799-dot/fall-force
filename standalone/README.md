@@ -12,7 +12,7 @@ To run the built game locally use `npx vite preview --config standalone/vite.con
 
 ## Dependency isolation
 
-The standalone configuration selects `standalone/src/App.jsx` instead of the hosted auth/router entry and does not load the Base44 Vite plugin. It retains all game hooks and UI. The game itself uses Canvas, procedural WebAudio, and localStorage, with React, ReactDOM, lucide-react and canvas-confetti. No Base44 SDK, auth, database, analytics, or backend endpoints are needed by this build's reachable game code.
+The standalone configuration selects `standalone/src/App.jsx` instead of the hosted auth/router entry and does not load the Base44 Vite plugin. It retains all game hooks and UI. The game itself uses Canvas, procedural WebAudio, and CrazyGames Data Module saves (browser fallback off-platform), with React, ReactDOM, lucide-react and canvas-confetti. No Base44 SDK, auth, database, analytics, or backend endpoints are needed by this build's reachable game code.
 
 Fonts are bundled locally with their SIL Open Font License notices; paths are relative. No Google Fonts request is necessary for this build. No advertisements, SDK mocks, third-party trackers, or account screens are added. Custom fullscreen requests are disabled for the CrazyGames build, since the portal supplies fullscreen.
 
@@ -20,12 +20,14 @@ The downloadable source kit uses the slim manifest from `standalone/package.json
 
 ## Saves
 
-The original `gravity-switch-save-v1` key and progress format are retained and repaired field-by-field when needed. Unreadable JSON is copied to `gravity-switch-save-v1-corrupt-backup` before fallback. Data is local to a browser and origin. CrazyGames cannot automatically read saves from base44.app, other domains or private-browser sessions. Keep the same CrazyGames game ID/origin for future updates. No player data is bundled in either ZIP.
+The original `gravity-switch-save-v1` key and progress format are retained. Startup awaits the official CrazyGames v3 SDK and save preload before mounting the game. On supported `local`/`crazygames` environments the Data Module is the only persistent player store; ordinary browser saves are used when the SDK is unavailable or its environment is `disabled`. A valid legacy browser save migrates once only if the Data Module has no save. Existing SDK saves always win; wallets and claim histories are never merged. Unreadable originals are protected from overwriting, and browser originals additionally receive a recovery copy when possible. Save failures retain gameplay progress in memory with a visible warning; failed purchases do not debit the accepted wallet.
 
-There is no server-authoritative economy in this offline game. Local saves can be edited by their owner. Rewards must not be used for cash or competitive leaderboards without a separate trusted service. Cloud saves/account synchronization would be later SDK work.
+CrazyGames cannot read saves from base44.app or another origin. Migration can access only the browser storage on the current game origin; keep the same CrazyGames game ID/origin for future updates. No player data is bundled in the export.
+
+The Data Module integration is implemented, but real guest/account/cross-device sync is NOT verified. Enable **Progress Save → Yes, using the Data Module from the CrazyGames SDK** in the Developer Portal submission. The SDK handles guest/account transitions and its own approximately one-second debounce (sometimes up to 30 seconds). Do not force-reload immediately after a save when checking cloud sync. No undocumented flush/ack method is used. This remains a client-authoritative economy, not a trusted source for cash or competitive leaderboards.
 
 ## Submission status
 
 This is a Basic Launch candidate, NOT a claim of CrazyGames acceptance or completed gameplay QA. Under the official requirements reviewed on 2026-10-16, SDK integration is optional for Basic Launch and ads are not allowed; Full Launch requires the official SDK gameplay lifecycle and applicable account/progress integrations. None is faked here.
 
-Before submission, run the included QA checklist through Testing Agent and the CrazyGames Developer Portal preview, confirm desktop/mobile/iframe behavior, and supply real cover assets and gameplay videos. See `src/standalone/PUBLISHING_REPORT.md` for findings, measured build results and remaining checks.
+Before submission, run the QA checklist through Testing Agent and the CrazyGames Developer Portal preview, confirm desktop/mobile/iframe behavior, and supply real cover assets and gameplay videos. For this integration, read `src/standalone/CRAZYGAMES_INTEGRATION_REPORT.md`; `src/standalone/PUBLISHING_REPORT.md` is the earlier historical stability report. To test the real SDK locally use localhost/127.0.0.1, or append `?useLocalSdk=true` on another domain; `&muteAudio=true` and `&disableChat=true` exercise platform settings. The SDK determines its own environment.

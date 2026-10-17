@@ -4,7 +4,7 @@ import TutorialPrompt from '@/components/game/tutorial/TutorialPrompt';
 import TutorialHud from '@/components/game/tutorial/TutorialHud';
 import TutorialComplete from '@/components/game/tutorial/TutorialComplete';
 
-export default function TutorialCanvas({ sound, settings, skinId, totalGems, banked, canSkip, onComplete, onPlay, onExit, onSkip }) {
+export default function TutorialCanvas({ sound, settings, skinId, totalGems, banked, canSkip, onComplete, onReplay, onPlay, onExit, onSkip }) {
   const game = useTutorialGame({ sound, settings, skinId, onComplete });
   const complete = game.ui.state === 'complete';
   return (
@@ -16,7 +16,7 @@ export default function TutorialCanvas({ sound, settings, skinId, totalGems, ban
         {!game.ui.paused && game.ui.state === 'playing' && <TutorialPrompt phase={game.ui.phase} onContinue={game.proceed} onFlip={game.flip} />}
         <div className="pointer-events-none absolute bottom-2 left-3 text-[10px] text-primary">Tap / Click / Space = flip · P = pause · R = restart</div>
       </>}
-      {complete && <TutorialComplete totalGems={totalGems} onPlay={onPlay} onReplay={game.restart} onExit={onExit} />}
+      {complete && <TutorialComplete totalGems={totalGems} onPlay={onPlay} onReplay={() => { onReplay?.(); game.restart(); }} onExit={onExit} />}
     </div>
   );
 }

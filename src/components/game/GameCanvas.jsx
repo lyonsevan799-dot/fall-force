@@ -31,7 +31,7 @@ export default function GameCanvas({ skinId = 'classic', levelIndex, totalLevels
   const [rotateDismissed, setRotateDismissed] = useState(false);
 
   cbRef.current = { onExit, onComplete, onNext, onChallengeFailure };
-  useGameLifecycle(engineRef, setPaused);
+  useGameLifecycle(engineRef, setPaused, levelIndex + 1);
 
   // ---- main loop -----------------------------------------------------------
   useEffect(() => {

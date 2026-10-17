@@ -1,5 +1,7 @@
 # Gravity Switch / Fall Force: stability and publishing report
 
+> Historical stability report. The subsequent SDK v3 and save integration is described in `CRAZYGAMES_INTEGRATION_REPORT.md`; its status supersedes the SDK/cloud-save notes below.
+
 Date: 2026-10-16
 
 ## Status

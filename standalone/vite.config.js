@@ -4,7 +4,7 @@ import { fileURLToPath, URL } from 'node:url';
 import { readFileSync } from 'node:fs';
 
 // Build a separate game-only entry. Never overwrite the hosted app or remove
-// game hooks. No Base44 plugin, authentication, analytics, or network APIs.
+// game hooks. No Base44 plugin/auth/backend; official CrazyGames SDK is loaded in HTML.
 export default defineConfig({
   root: fileURLToPath(new URL('..', import.meta.url)),
   base: './',

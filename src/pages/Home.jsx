@@ -5,7 +5,8 @@ import { LEVEL_COUNT } from '@/game/levels';
 import { commitRaceResult } from '@/game/raceRewards';
 import { recordMiddleFailure, middleChallengeEligible } from '@/game/middleProgress';
 import { groupForLevel, groupCompleted, nextGroupAfter, groupIndex, isLevelPlayable } from '@/game/groups';
-import { loadProgress, recordResult, commitLevelGems, commitEndlessGems, claimChallenge, FALLBACK } from '@/game/progress';
+import { loadProgress, recordResult, commitLevelGems, commitEndlessGems, claimChallenge, completedCount, FALLBACK } from '@/game/progress';
+import { stopLoading, reportCompletion } from '@/game/platform/gameEvents';
 import useGameProgress from '@/hooks/useGameProgress';
 import SkinShop from '@/components/game/shop/SkinShop';
 import { skinForTarget } from '@/game/skins/inventory';
@@ -31,6 +32,10 @@ export default function Home() {
   const settingsRef = useRef({ ...initial.settings });
 
   const { save, saveRef, updateSave, commitGame, saveError } = useGameProgress(initial);
+  useEffect(() => {
+    stopLoading();
+    reportCompletion(completedCount(save) * 100 / LEVEL_COUNT);
+  }, [save]);
   const soloSkin = skinForTarget(save);
   const raceSkins = [skinForTarget(save, 'p1'), skinForTarget(save, 'p2')];
   const [screen, setScreen] = useState('menu');
@@ -54,7 +59,12 @@ export default function Home() {
 
   useGameAudio(sound, settingsRef);
 
-  const startTutorial = () => { sound.init(); sound.resume(); setChallenge(null); setChallengeReward(null); setScreen('tutorial'); };
+  const recordTutorialReplay = () => commitGame((latest) => ({ ...latest, tutorialReplays: (latest.tutorialReplays || 0) + 1 }));
+  const startTutorial = () => {
+    sound.init(); sound.resume();
+    if (tutorialAccessibleCareer(saveRef.current)) recordTutorialReplay();
+    setChallenge(null); setChallengeReward(null); setScreen('tutorial');
+  };
   const handleTutorialComplete = (gems) => commitGame((latest) => completeTutorial(latest, gems));
   const startLevel = (i) => { if (!tutorialAccessibleCareer(saveRef.current)) { startTutorial(); return; } sound.init(); sound.resume(); setChallenge(null); setChallengeReward(null); setLevelIndex(i); setScreen('game'); };
   const startRace = (i) => { sound.init(); sound.resume(); setRaceIndex(i); setScreen('race'); };
@@ -100,8 +110,12 @@ export default function Home() {
     }
   };
 
-  const handleEndlessResult = (score, gems) => commitGame((p) => {
-    const withBest = { ...p, endlessBest: Math.max(p.endlessBest || 0, score) };
+  const handleEndlessResult = (score, gems, records) => commitGame((p) => {
+    const withBest = { ...p, endlessBest: Math.max(p.endlessBest || 0, score), endlessRecords: {
+      ...p.endlessRecords,
+      distance: Math.max(p.endlessRecords?.distance || 0, records.distance),
+      maxStreak: Math.max(p.endlessRecords?.maxStreak || 0, records.maxStreak),
+    } };
     return commitEndlessGems(withBest, gems || 0);
   });
 
@@ -151,7 +165,7 @@ export default function Home() {
       {screen === 'tutorial' ? (
         <TutorialCanvas sound={sound} settings={save.settings} skinId={soloSkin} totalGems={save.totalGems || 0}
           banked={save.tutorialGemsBanked} canSkip
-          onComplete={handleTutorialComplete} onPlay={() => startLevel(0)} onExit={() => setScreen('menu')}
+          onComplete={handleTutorialComplete} onReplay={recordTutorialReplay} onPlay={() => startLevel(0)} onExit={() => setScreen('menu')}
           onSkip={async () => {
             const saved = await commitGame((latest) => ({ ...latest, tutorialSkipped: true }));
             if (saved) setScreen('career');

@@ -10,7 +10,7 @@ export function tutorialSaveFields(source) {
     Object.values(source.challenges || {}).some((r) => r === true || r?.completed)
   );
   return { tutorialCompleted: source.tutorialCompleted === true, tutorialSkipped: source.tutorialSkipped === true || legacy,
-    tutorialGemsBanked: source.tutorialGemsBanked === true };
+    tutorialGemsBanked: source.tutorialGemsBanked === true, tutorialReplays: safeInteger(source.tutorialReplays) };
 }
 
 export function completeTutorial(save, gems) {

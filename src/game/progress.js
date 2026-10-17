@@ -4,13 +4,19 @@ import { challengeById } from '@/game/challenges';
 import { tutorialSaveFields } from '@/game/tutorialProgress';
 import { skinSaveFields } from '@/game/skins/inventory';
 
-export const PROGRESS_KEY = 'gravity-switch-save-v1';
-const KEY = PROGRESS_KEY;
+import { PROGRESS_KEY } from '@/game/platform/saveConstants';
+import { readSaveRaw, writeSaveRaw, removeSave } from '@/game/platform/saveStore';
+export { PROGRESS_KEY };
 
 export const FALLBACK = {
   tutorialCompleted: false,
   tutorialSkipped: false,
   tutorialGemsBanked: false,
+  tutorialReplays: 0,
+  achievements: {},
+  dailyChallenges: {},
+  timeTrialRecords: {},
+  endlessRecords: {},
   ownedSkins: [],
   equippedSkins: { solo: 'classic', p1: null, p2: 'classic' },
   skinPurchases: {},
@@ -27,31 +33,25 @@ export const FALLBACK = {
 
 const clone = (o) => JSON.parse(JSON.stringify(o));
 
-export function loadProgress() {
-  let raw;
+export function decodeProgress(raw) {
+  if (raw === null) return clone(FALLBACK);
   try {
-    raw = localStorage.getItem(KEY);
-    if (!raw) return clone(FALLBACK);
+    if (typeof raw !== 'string' || raw.length > 4194304) throw new Error('Invalid save size');
     const source = JSON.parse(raw);
-    const normalized = normalizeProgress(source, FALLBACK, LEVEL_COUNT);
-    const fields = source && typeof source === 'object' ? source : {};
-    return { ...normalized, ...tutorialSaveFields(fields), ...skinSaveFields(fields) };
-  } catch (e) {
-    // Keep an unreadable save recoverable instead of silently destroying it.
-    if (raw) {
-      try { if (!localStorage.getItem(`${KEY}-corrupt-backup`)) localStorage.setItem(`${KEY}-corrupt-backup`, raw); } catch (_) { /* storage unavailable */ }
-    }
-    return clone(FALLBACK);
+    if (!source || typeof source !== 'object' || Array.isArray(source)) throw new Error('Invalid save record');
+    return { ...normalizeProgress(source, FALLBACK, LEVEL_COUNT),
+      ...tutorialSaveFields(source), ...skinSaveFields(source) };
+  } catch (cause) {
+    throw Object.assign(new Error('Saved progress could not be read', { cause }), { code: 'corruptSave' });
   }
 }
 
-export function saveProgress(p) {
-  try { localStorage.setItem(KEY, JSON.stringify(p)); } catch (e) { /* storage unavailable */ }
+export function loadProgress() {
+  try { return decodeProgress(readSaveRaw()); }
+  catch { return clone(FALLBACK); } // Store protects the unreadable original from writes.
 }
-
-export function clearProgress() {
-  try { localStorage.removeItem(KEY); } catch (e) { /* ignore */ }
-}
+export function saveProgress(progress) { writeSaveRaw(JSON.stringify(progress)); }
+export function clearProgress() { removeSave(); }
 
 export function recordResult(progress, levelIndex, { stars, time }, totalLevels) {
   const next = clone(progress);

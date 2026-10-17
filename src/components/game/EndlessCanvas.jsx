@@ -84,7 +84,7 @@ export default function EndlessCanvas({ skinId = 'classic', settings, displaySet
       }
       if (eng.state === 'dead' && !reportedRef.current) {
         reportedRef.current = true;
-        if (cbRef.current.onResult) cbRef.current.onResult(Math.floor(eng.score), eng.gems);
+        if (cbRef.current.onResult) cbRef.current.onResult(Math.floor(eng.score), eng.gems, { distance: Math.floor(eng.px / 10), maxStreak: eng.maxStreak || 1 });
       }
       if (eng.state !== lastState) { lastState = eng.state; push(); lastSync = now; }
       else if (now - lastSync > 100) { lastSync = now; push(); }

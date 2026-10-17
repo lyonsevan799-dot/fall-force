@@ -2,7 +2,8 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from '@/App.jsx'
 import '@/index.css'
+import bootstrapGame from '@/game/platform/bootstrapGame';
 
-ReactDOM.createRoot(document.getElementById('root')).render(
-  <App />
-)
+bootstrapGame().then(() => {
+  ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+});
