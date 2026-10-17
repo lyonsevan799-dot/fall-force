@@ -879,6 +879,8 @@ function drawRacePlayer(ctx, p, color, accent, label, skinId, time, reduced) {
   ctx.rotate(p.rot);
   ctx.scale(p.sx, p.sy);
   drawSkin(ctx, skinId, { time, reduced });
+  ctx.strokeStyle = accent; ctx.lineWidth = 2.5;
+  rr(ctx, -size / 2 - 2, -size / 2 - 2, size + 4, size + 4, 7); ctx.stroke();
   ctx.restore();
   ctx.save();
   ctx.translate(cx, cy - size / 2 - 14);
@@ -893,44 +895,32 @@ function drawRacePlayer(ctx, p, color, accent, label, skinId, time, reduced) {
 }
 
 export function renderRace(ctx, eng, w, h, dpr = 1) {
-  const theme = eng.theme;
-  const p1 = eng.players[0], p2 = eng.players[1];
-  const cx1 = p1.px + PLAYER_SIZE / 2, cx2 = p2.px + PLAYER_SIZE / 2;
-  const midX = (cx1 + cx2) / 2;
-  const span = Math.abs(cx1 - cx2);
-  const targetW = Math.max(VIEW_W, span + 560);
-  const baseFit = Math.min(w / VIEW_W, h / VIEW_H);
-  let s = Math.min(w / targetW, h / VIEW_H) * eng.zoom;
-  s = Math.min(s, baseFit);
-  s = Math.max(s, 0.0001);
-  const tx = w * 0.5 - midX * s + eng.shakeX;
-  const ty = h * 0.5 - MID_Y * s + eng.shakeY;
-  const camLeft = -tx / s;
-  const camTop = -ty / s;
-  const viewW = w / s;
-
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  const grad = ctx.createLinearGradient(0, 0, 0, h);
-  grad.addColorStop(0, theme.bg[0]);
-  grad.addColorStop(0.55, theme.bg[1]);
-  grad.addColorStop(1, theme.bg[2]);
-  ctx.fillStyle = grad;
-  ctx.fillRect(0, 0, w, h);
-
-  drawParallax(ctx, eng, s, tx, ty, w, h, camLeft, camTop, viewW);
-
-  ctx.save();
-  ctx.setTransform(s * dpr, 0, 0, s * dpr, tx * dpr, ty * dpr);
-  drawTerrain(ctx, eng, camLeft, viewW);
-  if (!eng.level.noFinish) drawFinish(ctx, eng);
-  drawHazards(ctx, eng);
-  drawParticles(ctx, eng);
+  const paneW = w / 2, theme = eng.theme;
   const skins = eng.skinIds || ['classic', 'classic'];
-  drawRaceTrail(ctx, p1, getSkin(skins[0]).colors[1]);
-  drawRaceTrail(ctx, p2, getSkin(skins[1]).colors[1]);
-  if (p1.alive) drawRacePlayer(ctx, p1, RACE_P1, RACE_P1_ACCENT, '1', skins[0], eng.t, eng.settings.reduced);
-  if (p2.alive) drawRacePlayer(ctx, p2, RACE_P2, RACE_P2_ACCENT, '2', skins[1], eng.t, eng.settings.reduced);
-  ctx.restore();
-
+  // Identical independent views: lead never shrinks either runner or preview.
+  for (let i = 0; i < 2; i++) {
+    const p = eng.players[i], left = i * paneW;
+    const view = { level: p.course, levelIndex: eng.levelIndex, theme, t: eng.t,
+      px: p.px, py: p.py, particles: p.particles, settings: eng.settings };
+    const s = Math.max(0.0001, Math.min(paneW / VIEW_W, Math.max(1, h - 100) / (FLOOR_Y - CEIL_Y + 80)));
+    const tx = paneW * 0.28 - (p.px + PLAYER_SIZE / 2) * s;
+    const ty = (h + 60) / 2 - MID_Y * s;
+    const camLeft = -tx / s, camTop = -ty / s, viewW = paneW / s;
+    ctx.save();
+    ctx.setTransform(dpr, 0, 0, dpr, left * dpr, 0);
+    ctx.beginPath(); ctx.rect(0, 0, paneW, h); ctx.clip();
+    const grad = ctx.createLinearGradient(0, 0, 0, h);
+    grad.addColorStop(0, theme.bg[0]); grad.addColorStop(0.55, theme.bg[1]); grad.addColorStop(1, theme.bg[2]);
+    ctx.fillStyle = grad; ctx.fillRect(0, 0, paneW, h);
+    drawParallax(ctx, view, s, tx, ty, paneW, h, camLeft, camTop, viewW);
+    ctx.setTransform(s * dpr, 0, 0, s * dpr, (left + tx) * dpr, ty * dpr);
+    drawTerrain(ctx, view, camLeft, viewW); drawFinish(ctx, view);
+    drawHazards(ctx, view); drawParticles(ctx, view);
+    drawRaceTrail(ctx, p, i === 0 ? RACE_P1_ACCENT : RACE_P2_ACCENT);
+    if (p.alive) drawRacePlayer(ctx, p, i === 0 ? RACE_P1 : RACE_P2, i === 0 ? RACE_P1_ACCENT : RACE_P2_ACCENT, String(i + 1), skins[i], eng.t, eng.settings.reduced);
+    ctx.setTransform(dpr, 0, 0, dpr, left * dpr, 0);
+    if (p.flash > 0 && !eng.settings.reduced) { ctx.fillStyle = hexA('#ffffff', p.flash * 0.16); ctx.fillRect(0, 0, paneW, h); }
+    ctx.restore();
+  }
   drawScreenFx(ctx, eng, w, h, dpr);
 }

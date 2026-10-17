@@ -95,7 +95,8 @@
 .tutorial-shell,
 .shop-shell,
 .leaderboard-shell,
-.meta-shell {
+.meta-shell,
+.race-shell {
   --background: 233 50% 3%;
   --foreground: 0 0% 100%;
   --card: 230 48% 8%;
@@ -106,6 +107,8 @@
 }
 
 :root, .dark {
+  --race-one: 186 100% 61%;
+  --race-two: 328 100% 62%;
   --skin-basic: 187 76% 78%;
   --skin-rare: 210 100% 73%;
   --skin-epic: 275 100% 78%;

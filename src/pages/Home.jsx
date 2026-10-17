@@ -17,7 +17,7 @@ import TimeTrialCanvas from '@/components/game/timeTrial/TimeTrialCanvas';
 import commitTrialRecord from '@/game/timeTrial/records';
 import { trialRecord } from '@/game/timeTrial/courses';
 import SkinShop from '@/components/game/shop/SkinShop';
-import { skinForTarget } from '@/game/skins/inventory';
+import { skinForTarget, equipSkin } from '@/game/skins/inventory';
 import { challengeGroupIndex, challengeUnlocked, isChallengeDone } from '@/game/challenges';
 import MainMenu from '@/components/game/MainMenu';
 import GlobalLeaderboard from '@/components/game/leaderboard/GlobalLeaderboard';
@@ -267,13 +267,15 @@ export default function Home() {
         <RaceCanvas
           key={raceIndex}
           skinIds={raceSkins}
+          ownedSkins={save.ownedSkins}
+          onEquipSkin={(target, id) => commitGame((latest) => equipSkin(latest, id, target), { allowVolatile: false })}
           levelIndex={raceIndex}
           settings={settingsRef.current}
           displaySettings={save.settings}
           sound={sound}
           totalGems={save.totalGems || 0}
           onRaceWin={handleRaceWin}
-          onExit={() => setScreen('race-levels')}
+          onExit={() => setScreen('menu')}
           onUpdateSettings={handleUpdateSettings}
           onResetProgress={handleReset}
         />

@@ -11,6 +11,8 @@ module.exports = {
   			sm: 'calc(var(--radius) - 4px)'
   		},
   		colors: {
+        'race-one': 'hsl(var(--race-one))',
+        'race-two': 'hsl(var(--race-two))',
         'skin-basic': 'hsl(var(--skin-basic))',
         'skin-rare': 'hsl(var(--skin-rare))',
         'skin-epic': 'hsl(var(--skin-epic))',

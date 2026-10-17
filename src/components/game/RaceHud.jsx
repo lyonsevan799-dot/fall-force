@@ -1,44 +1,25 @@
 import React from 'react';
 import { Pause } from 'lucide-react';
-import { IconButton } from './ui';
+import { IconButton } from '@/components/game/ui';
 import GemCounter from '@/components/game/GemCounter';
 
-export default function RaceHud({ ui, totalGems, onPause, sound }) {
-  const fmt = (t) => (t || 0).toFixed(2);
-  return (
-    <div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex flex-col items-center gap-2 p-3 sm:p-4">
-      {/* Dual progress indicators: P1 ─────●────── / P2 ────●────────── */}
-      <div className="w-full max-w-2xl space-y-2">
-        <div className="flex items-center gap-2.5">
-          <span className="w-5 shrink-0 font-heading text-[10px] uppercase tracking-[0.15em] text-cyan-300">P1</span>
-          <div className="relative h-1.5 flex-1 rounded-full bg-white/10">
-            <div className="absolute top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-cyan-300 shadow-[0_0_10px_rgba(56,232,255,0.9)] transition-[left] duration-100"
-                 style={{ left: `${Math.max(2, Math.min(98, ui.p1 * 100))}%` }} />
-          </div>
-          <span className="flex w-24 shrink-0 items-center justify-end gap-1 font-mono text-xs text-cyan-200">
-            {ui.p1Finished ? 'Finished' : `${Math.floor(ui.p1 * 100)}%`}
-          </span>
-        </div>
-        <div className="flex items-center gap-2.5">
-          <span className="w-5 shrink-0 font-heading text-[10px] uppercase tracking-[0.15em] text-pink-300">P2</span>
-          <div className="relative h-1.5 flex-1 rounded-full bg-white/10">
-            <div className="absolute top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-pink-300 shadow-[0_0_10px_rgba(255,62,165,0.9)] transition-[left] duration-100"
-                 style={{ left: `${Math.max(2, Math.min(98, ui.p2 * 100))}%` }} />
-          </div>
-          <span className="flex w-24 shrink-0 items-center justify-end gap-1 font-mono text-xs text-pink-200">
-            {ui.p2Finished ? 'Finished' : `${Math.floor(ui.p2 * 100)}%`}
-          </span>
-        </div>
-      </div>
-
-      {/* Timer + pause */}
-      <div className="flex items-center gap-2.5">
-        <div className="rounded-xl border border-white/10 bg-black/40 px-4 py-1.5 text-center backdrop-blur">
-          <span className="font-mono text-base leading-none text-white">{fmt(ui.raceTime)}<span className="ml-0.5 text-[10px] text-white/40">s</span></span>
-        </div>
-        <GemCounter total={totalGems} size="md" />
-        <IconButton label="Pause" onClick={onPause} sound={sound}><Pause size={16} /></IconButton>
-      </div>
+export default function RaceHud({ ui, series, isTouch, totalGems, onPause, sound }) {
+  return <div className="pointer-events-none absolute inset-0 z-20">
+    <div className="grid grid-cols-2">{[0, 1].map((index) => {
+      const progress = (index === 0 ? ui.p1 : ui.p2) || 0;
+      const alive = index === 0 ? ui.p1Alive : ui.p2Alive;
+      const finished = index === 0 ? ui.p1Finished : ui.p2Finished;
+      const color = index === 0 ? 'text-race-one' : 'text-race-two';
+      return <div key={index} className={`bg-background/80 p-3 ${index === 0 ? 'pr-8' : 'pl-8'}`}>
+        <div className="flex items-center justify-between gap-2"><span className={`font-heading text-xs ${color}`}>P{index + 1} · {index === 0 ? 'Left' : 'Right'}</span><span className="font-mono text-sm">{(ui.raceTime || 0).toFixed(2)}s</span></div>
+        <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted"><div className={`h-full ${index === 0 ? 'bg-race-one' : 'bg-race-two'}`} style={{ width: `${progress * 100}%` }} /></div>
+        <div className="mt-1 flex justify-between text-[10px] text-muted-foreground"><span>{finished ? 'Finished' : !alive ? 'Respawning…' : `${Math.floor(progress * 100)}%`}</span><span>{index === 0 ? ui.p1Deaths : ui.p2Deaths} deaths</span></div>
+      </div>;
+    })}</div>
+    <div className="absolute left-1/2 top-3 -translate-x-1/2"><IconButton label="Pause local race" sound={sound} onClick={onPause}><Pause size={16} /></IconButton></div>
+    <div className="absolute bottom-3 left-1/2 -translate-x-1/2 rounded-xl bg-background/80 p-2 text-center">
+      {series.bestOfThree ? <p className="mb-1 text-[10px] text-muted-foreground">Race {series.rounds.length + 1} · P1 {series.wins[0]} : {series.wins[1]} P2 · First to 2</p> : null}<GemCounter total={totalGems} size="sm" />
     </div>
-  );
+    <div className="absolute inset-x-0 bottom-4 grid grid-cols-2 text-center text-[10px]"><span className="text-race-one">{isTouch ? 'P1 · Tap left half' : 'P1 · W / Space'}</span><span className="text-race-two">{isTouch ? 'P2 · Tap right half' : 'P2 · ↑ / Enter'}</span></div>
+  </div>;
 }
