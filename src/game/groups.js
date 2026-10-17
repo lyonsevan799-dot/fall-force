@@ -34,7 +34,7 @@ export const GROUPS = [
     accent: 'pink',
     tagline: 'Master the chaos',
     desc: 'Every obstacle at once. Precise timing, quick reactions and rapid switches.',
-    lockHint: 'Complete every Medium level to unlock.',
+    lockHint: 'Complete every Easy and Medium level to unlock.',
   },
 ];
 
@@ -61,8 +61,8 @@ export function groupCompleted(save, group) {
 // Easy (group 0) is always unlocked. Each later group unlocks only when the
 // previous group is fully completed.
 export function groupUnlocked(save, groupIndexArg) {
-  if (groupIndexArg <= 0) return true;
-  return groupCompleted(save, GROUPS[groupIndexArg - 1]);
+  if (!Number.isInteger(groupIndexArg) || groupIndexArg < 0 || groupIndexArg >= GROUPS.length) return false;
+  return GROUPS.slice(0, groupIndexArg).every((group) => groupCompleted(save, group));
 }
 
 export function groupProgress(save, group) {
@@ -80,6 +80,7 @@ export function groupProgress(save, group) {
 // progression (save.unlocked) has reached it. This preserves the old per-level
 // unlock behaviour inside an unlocked group.
 export function isLevelPlayable(save, index) {
+  if (!Number.isInteger(index) || index < 0 || index > GROUPS[GROUPS.length - 1].end) return false;
   const gi = groupIndex(groupForLevel(index));
   if (gi < 0) return false;
   if (!groupUnlocked(save, gi)) return false;

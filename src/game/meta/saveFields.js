@@ -12,7 +12,7 @@ export function initializeMetaProgress(save) {
   if (save.metaProgress?.version === 1) return save;
   // Legacy wallets include bonus rewards and omit spent gems: never call them lifetime pickups.
   const knownPickups = Object.values(save.levelGems || {}).reduce((total, amount) => total + safeInteger(amount), 0)
-    + (save.tutorialGemsBanked ? 9 : 0);
+    + (save.tutorialGemsBanked ? safeInteger(save.tutorialGemsAwarded ?? 9) : 0);
   const knownClean = Object.values(save.levels || {}).filter((record) => record.completed && record.stars === 3).length;
   return { ...save,
     lifetimeGemsCollected: Math.max(safeInteger(save.lifetimeGemsCollected), safeInteger(knownPickups)),

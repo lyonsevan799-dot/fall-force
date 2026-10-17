@@ -95,7 +95,7 @@ export default function GameCanvas({ skinId = 'classic', levelIndex, totalLevels
       if (eng.state === 'complete' && !completedRef.current) {
         completedRef.current = true;
         if (cbRef.current.onComplete) {
-          cbRef.current.onComplete(levelIndex, { deaths: eng.deaths, time: eng.attemptTime, stars: eng.stars, gems: eng.gems, middleSuccess: eng.middleAttempt?.succeeded === true });
+          cbRef.current.onComplete(levelIndex, { runId: eng.runId, deaths: eng.deaths, time: eng.attemptTime, stars: eng.stars, gems: eng.gems, middleSuccess: eng.middleAttempt?.succeeded === true });
         }
       }
       // Auto-respawn shortly after death so the player is back in the action

@@ -9,10 +9,10 @@ export const LESSONS = [
   { title: 'Safely over the spikes', text: 'Stay on the ceiling as you pass the spikes. You have plenty of room before the next cue.', icon: 'right', step: 3 },
   { title: 'Line up with the gems', text: 'Flip down now. The next stretch of floor is safe, with three gems along your path.', flip: true, icon: 'down', step: 4 },
   { title: 'A safe landing', text: 'Gravity brings you back down. Gems are collected by touching them, not by pressing a special button.', icon: 'down', step: 4 },
-  { title: 'Collecting gems', text: 'Run through the three gems on the floor. These tutorial gems are added to your saved balance on your first finish.', action: 'Collect the gems', icon: 'gem', step: 4 },
-  { title: 'Collecting gems', text: 'Stay on the floor and watch the gem counter. Your saved balance stays safe if you restart.', icon: 'gem', step: 4 },
+  { title: 'Collecting gems', text: 'Gems are optional. Pickups from your first tutorial finish are saved once; you can also finish with none.', action: 'Collect the gems', icon: 'gem', step: 4 },
+  { title: 'Collecting gems', text: 'Stay on the floor to collect gems, or flip to skip them. Your saved balance stays safe if you restart.', icon: 'gem', step: 4 },
   { title: 'Meet Gem Rush', text: 'The oversized glowing gem starts a rush. Touch it and your character automatically follows and collects the row. No holding!', action: 'Try Gem Rush', icon: 'gem', step: 5 },
-  { title: 'Automatic Gem Rush', text: 'Watch your character collect the row. No button needs to be held. The rush ends on its own.', icon: 'gem', step: 5 },
+  { title: 'Automatic Gem Rush', text: 'Touch the glowing gem to try the row, or flip to skip it. No holding is needed and no gems are required to finish.', icon: 'gem', step: 5 },
   { title: 'Reach the finish', text: 'Run into the glowing finish line ahead to complete the tutorial and unlock Level 1.', action: 'Run to the finish', icon: 'right', step: 6 },
   { title: 'You are ready!', text: 'Keep running to the finish. In Career, tap, click or press Space whenever you need to flip gravity.', icon: 'right', step: 6 },
 ];

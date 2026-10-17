@@ -4,6 +4,7 @@ import { challengeById } from '@/game/challenges';
 import { tutorialSaveFields } from '@/game/tutorialProgress';
 import { skinSaveFields } from '@/game/skins/inventory';
 import { metaSaveFields } from '@/game/meta/saveFields';
+import creditRunGems from '@/game/gemCredits';
 
 import { PROGRESS_KEY } from '@/game/platform/saveConstants';
 import { readSaveRaw, writeSaveRaw, removeSave } from '@/game/platform/saveStore';
@@ -13,6 +14,7 @@ export const FALLBACK = {
   tutorialCompleted: false,
   tutorialSkipped: false,
   tutorialGemsBanked: false,
+  tutorialGemsAwarded: 0,
   tutorialReplays: 0,
   achievements: {},
   dailyChallenges: {},
@@ -20,14 +22,15 @@ export const FALLBACK = {
   metaProgress: { version: 0, deathlessCompletions: 0, sessions: {} },
   timeTrialRecords: {},
   endlessRecords: {},
-  ownedSkins: [],
-  equippedSkins: { solo: 'classic', p1: null, p2: 'classic' },
+  ownedSkins: ['classic'],
+  equippedSkins: { solo: 'classic', p1: 'classic', p2: 'classic' },
   skinPurchases: {},
   levels: {},          // { [index]: { stars, time, completed } }
   unlocked: 0,         // highest playable level index (0-based)
   endlessBest: 0,      // highest endless score
   raceWins: 0,         // total race victories
   raceRewards: {},     // credited race IDs, actual winner, and one shared-wallet reward
+  gemCredits: {},      // durable per-run receipts, saved atomically with the wallet
   totalGems: 0,        // persistent gems across all modes
   levelGems: {},       // { [levelIndex]: bestGemsCollected }
   challenges: {},      // { [challengeId]: { completed, awardedAt } }
@@ -68,17 +71,15 @@ export function recordResult(progress, levelIndex, { stars, time }, totalLevels)
   return next;
 }
 
-export function commitLevelGems(progress, levelIndex, gems) {
-  const next = clone(progress);
-  next.totalGems = safeInteger(next.totalGems + safeInteger(gems));
-  next.levelGems[levelIndex] = Math.max(next.levelGems[levelIndex] || 0, safeInteger(gems));
-  return next;
+export function commitLevelGems(progress, levelIndex, gems, runId) {
+  const next = creditRunGems(progress, runId, 'career', gems, levelIndex);
+  if (next === progress) return progress;
+  return { ...next, levelGems: { ...next.levelGems,
+    [levelIndex]: Math.max(next.levelGems[levelIndex] || 0, safeInteger(gems)) } };
 }
 
-export function commitEndlessGems(progress, gems) {
-  const next = clone(progress);
-  next.totalGems = safeInteger(next.totalGems + safeInteger(gems));
-  return next;
+export function commitEndlessGems(progress, gems, runId) {
+  return creditRunGems(progress, runId, 'endless', gems);
 }
 
 export function totalStars(progress) {

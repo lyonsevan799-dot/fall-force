@@ -1,7 +1,7 @@
 import React from 'react';
 import { Pause, Flame, Gauge } from 'lucide-react';
 import { IconButton } from './ui';
-import GemCounter from './GemCounter';
+import RunGemBalance from '@/components/game/RunGemBalance';
 
 export default function EndlessHud({ ui, best, totalGems, onPause, sound }) {
   const speedPct = Math.round((ui.speed || 0.62) * 100);
@@ -21,7 +21,7 @@ export default function EndlessHud({ ui, best, totalGems, onPause, sound }) {
 
         <div className="flex items-center gap-2">
           <div className="rounded-2xl border border-cyan-300/20 bg-black/40 px-3 py-2 backdrop-blur">
-            <GemCounter count={ui.state === 'dead' ? 0 : ui.gems || 0} total={totalGems || 0} size="md" />
+            <RunGemBalance total={totalGems} gems={ui.gems} endsOnDeath />
           </div>
           <div className="hidden rounded-2xl border border-white/10 bg-black/40 px-3 py-2 text-right backdrop-blur sm:block">
             <div className="font-heading text-[9px] uppercase tracking-[0.22em] text-white/45">Best</div>

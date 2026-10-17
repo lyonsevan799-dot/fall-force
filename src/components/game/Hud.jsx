@@ -2,7 +2,7 @@ import React from 'react';
 import { Pause } from 'lucide-react';
 import { LEVELS } from '@/game/levels';
 import { IconButton } from './ui';
-import GemCounter from './GemCounter';
+import RunGemBalance from '@/components/game/RunGemBalance';
 
 export default function Hud({ levelIndex, ui, totalGems, onPause, sound }) {
   const level = LEVELS[levelIndex];
@@ -25,7 +25,7 @@ export default function Hud({ levelIndex, ui, totalGems, onPause, sound }) {
           </div>
           <div className="flex items-center gap-2">
             <div className="rounded-2xl border border-cyan-300/20 bg-black/40 px-3 py-2 backdrop-blur">
-              <GemCounter count={ui.state === 'complete' ? 0 : ui.gems || 0} total={totalGems || 0} size="md" />
+              <RunGemBalance total={totalGems} gems={ui.gems} />
             </div>
             <IconButton label="Pause" onClick={onPause} sound={sound}><Pause size={16} /></IconButton>
           </div>

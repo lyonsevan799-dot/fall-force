@@ -11,9 +11,9 @@ export default function ShopHeader({ save, target, setTarget, view, setView, rar
       </header>
       <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
         <div className="flex rounded-xl border border-border bg-card p-1">{['Shop', 'My Skins'].map((v) => <button type="button" key={v} aria-pressed={view === v} onClick={() => setView(v)} className={`min-h-11 rounded-lg px-4 text-xs font-bold ${view === v ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'}`}>{v}{v === 'My Skins' ? ` (${new Set(['classic', ...save.ownedSkins]).size})` : ''}</button>)}</div>
-        <label className="flex items-center gap-2 text-xs text-muted-foreground">Equip for <select value={target} onChange={(e) => setTarget(e.target.value)} className="min-h-11 rounded-xl border border-border bg-card px-3 text-foreground"><option value="solo">Solo / Tutorial</option><option value="p1">Race Player 1</option><option value="p2">Race Player 2</option></select></label>
+        <label className="flex items-center gap-2 text-xs text-muted-foreground">Equip for <select value={target} onChange={(e) => setTarget(e.target.value)} className="min-h-11 rounded-xl border border-border bg-card px-3 text-foreground"><option value="solo">Solo (Career / Endless / Tutorial)</option><option value="p1">Race Player 1</option><option value="p2">Race Player 2</option></select></label>
       </div>
-      <p className="mt-3 text-[11px] text-muted-foreground">Race P1 follows your Solo skin until you choose a P1 skin separately. P2 always has its own selection.</p>
+      <p className="mt-3 text-[11px] text-muted-foreground">Race players keep independent skins. Changing Solo or one Race player's skin never changes the other selections.</p>
       <nav aria-label="Skin rarity" className="mt-4 flex gap-2 overflow-x-auto pb-2">{RARITIES.map((r) => <button type="button" key={r} aria-pressed={rarity === r} onClick={() => setRarity(r)} className={`min-h-11 shrink-0 rounded-full border px-4 text-[11px] ${rarity === r ? 'border-primary bg-primary/10 text-primary' : 'border-border text-muted-foreground'}`}>{r}</button>)}</nav>
     </>
   );

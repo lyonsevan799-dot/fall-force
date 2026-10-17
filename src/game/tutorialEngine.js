@@ -25,7 +25,7 @@ export default class TutorialEngine extends Engine {
       super.switchGravity();
       this.phase++;
       this.waiting = false;
-    } else if (this.phase === 15) super.switchGravity();
+    } else if ([11, 13, 15].includes(this.phase)) super.switchGravity();
   }
   reachFinish() {
     if (this.phase === 15) super.reachFinish();
@@ -40,8 +40,8 @@ export default class TutorialEngine extends Engine {
     else if (this.phase === 5 && x >= 2400 && this.grounded) this.cue(6);
     else if (this.phase === 7 && x >= 3300 && this.grounded) this.cue(8);
     else if (this.phase === 9 && x >= 3800 && this.grounded) this.cue(10);
-    else if (this.phase === 11 && x >= 4700 && this.gems >= 3) this.cue(12);
-    else if (this.phase === 13 && x >= 5700 && this.gems === 9 && !this.rush) this.cue(14);
+    else if (this.phase === 11 && x >= 4700) this.cue(12);
+    else if (this.phase === 13 && x >= 5700 && !this.rush) this.cue(14);
   }
   update(dt) {
     if (this.paused) return;

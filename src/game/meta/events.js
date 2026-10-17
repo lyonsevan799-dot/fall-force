@@ -18,6 +18,7 @@ export function flushProgressEvents(engine) {
 export function startProgressRun(engine, full) {
   if (!full && runs.has(engine)) return;
   flushProgressEvents(engine);
+  engine.runId = crypto.randomUUID();
   runs.set(engine, { pending: new Map(), dayGems: new Map(), rows: new Set(), finished: false, deaths: 0 });
 }
 export function recordGemPickup(engine, gem) {

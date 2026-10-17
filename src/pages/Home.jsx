@@ -4,7 +4,7 @@ import { useGameAudio } from '@/hooks/useGameAudio';
 import { LEVEL_COUNT } from '@/game/levels';
 import { commitRaceResult } from '@/game/raceRewards';
 import { recordMiddleFailure, middleChallengeEligible } from '@/game/middleProgress';
-import { groupForLevel, groupCompleted, nextGroupAfter, groupIndex, isLevelPlayable } from '@/game/groups';
+import { groupForLevel, groupCompleted, nextGroupAfter, groupIndex, groupUnlocked, isLevelPlayable } from '@/game/groups';
 import { loadProgress, recordResult, commitLevelGems, commitEndlessGems, claimChallenge, completedCount, FALLBACK } from '@/game/progress';
 import { stopLoading, reportCompletion } from '@/game/platform/gameEvents';
 import useGameProgress from '@/hooks/useGameProgress';
@@ -72,10 +72,10 @@ export default function Home() {
     setChallenge(null); setChallengeReward(null); setScreen('tutorial');
   };
   const handleTutorialComplete = (gems) => commitGame((latest) => completeTutorial(latest, gems));
-  const startLevel = (i) => { if (!tutorialAccessibleCareer(saveRef.current)) { startTutorial(); return; } sound.init(); sound.resume(); setChallenge(null); setChallengeReward(null); setLevelIndex(i); setScreen('game'); };
+  const startLevel = (i) => { if (!tutorialAccessibleCareer(saveRef.current)) { startTutorial(); return; } if (!isLevelPlayable(saveRef.current, i)) return; sound.init(); sound.resume(); setChallenge(null); setChallengeReward(null); setLevelIndex(i); setScreen('game'); };
   const startRace = (i) => { sound.init(); sound.resume(); setRaceIndex(i); setScreen('race'); };
 
-  const enterGroup = (gi) => { sound.sfx('click'); setCareerGroup(gi); setScreen('levels'); };
+  const enterGroup = (gi) => { if (!groupUnlocked(saveRef.current, gi)) return; sound.sfx('click'); setCareerGroup(gi); setScreen('levels'); };
 
   const handleMiddleFailure = (id, reason) => commitGame((latest) => recordMiddleFailure(latest, id, reason));
 
@@ -92,7 +92,7 @@ export default function Home() {
       nextGroupName: nextGrp ? nextGrp.name : null,
       isFinalGroup: !nextGrp,
     };
-    let nextSave = commitLevelGems(withResult, i, result.gems || 0);
+    let nextSave = commitLevelGems(withResult, i, result.gems || 0, result.runId);
     let reward = null;
     if (challenge && challengeUnlocked(currentSave, challenge) && middleChallengeEligible(challenge, result) && group.id === challenge.groupId && !isChallengeDone(currentSave, challenge.id)) {
       nextSave = claimChallenge(nextSave, challenge.id, challenge.reward);
@@ -108,7 +108,7 @@ export default function Home() {
   const handleEnterNextGroup = () => {
     const group = groupForLevel(levelIndex);
     const nextGrp = nextGroupAfter(group);
-    if (nextGrp) {
+    if (nextGrp && groupUnlocked(saveRef.current, groupIndex(nextGrp))) {
       setCareerGroup(groupIndex(nextGrp));
       setScreen('levels');
     } else {
@@ -122,7 +122,7 @@ export default function Home() {
       distance: Math.max(p.endlessRecords?.distance || 0, records.distance),
       maxStreak: Math.max(p.endlessRecords?.maxStreak || 0, records.maxStreak),
     } };
-    return commitEndlessGems(withBest, gems || 0);
+    return commitEndlessGems(withBest, gems || 0, records.runId);
   });
 
   const handleRaceWin = (result) => commitGame((latest) => commitRaceResult(latest, result));
@@ -138,6 +138,7 @@ export default function Home() {
 
   const startChallenge = (ch) => {
     if (!tutorialAccessibleCareer(saveRef.current)) { startTutorial(); return; }
+    if (!challengeUnlocked(saveRef.current, ch)) return;
     sound.sfx('click');
     setChallenge(ch);
     setChallengeReward(null);
@@ -146,6 +147,8 @@ export default function Home() {
   };
 
   const startChallengeLevel = (i) => {
+    if (!challenge || !challengeUnlocked(saveRef.current, challenge) || groupForLevel(i).id !== challenge.groupId) return;
+    if (challenge.type !== 'middle' && !isLevelPlayable(saveRef.current, i)) return;
     sound.init(); sound.resume();
     setLevelIndex(i);
     setChallengeReward(null);

@@ -5,8 +5,7 @@ import { LEVELS } from '@/game/levels';
 import { groupForLevel } from '@/game/groups';
 
 export default function LevelComplete({ levelIndex, stars, deaths, time, gems, totalGems, isLast, groupJustCompleted, nextGroupName, isFinalGroup, onNext, onRetry, onExit, onEnterNextGroup, sound, challengeMode = false, exitLabel = 'Levels', challengeFailure = null }) {
-  const isLastInGroup = levelIndex === groupForLevel(levelIndex).end;
-  const showGroupComplete = isLastInGroup && groupJustCompleted && !challengeMode;
+  const showGroupComplete = groupJustCompleted && !challengeMode;
   const showFinal = showGroupComplete && isFinalGroup;
 
   return (
