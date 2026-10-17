@@ -12,6 +12,10 @@ import useMetaProgress from '@/hooks/useMetaProgress';
 import DailyChallengesScreen from '@/components/game/meta/DailyChallengesScreen';
 import AchievementsScreen from '@/components/game/meta/AchievementsScreen';
 import AchievementUnlocks from '@/components/game/meta/AchievementUnlocks';
+import TimeTrialLevels from '@/components/game/timeTrial/TimeTrialLevels';
+import TimeTrialCanvas from '@/components/game/timeTrial/TimeTrialCanvas';
+import commitTrialRecord from '@/game/timeTrial/records';
+import { trialRecord } from '@/game/timeTrial/courses';
 import SkinShop from '@/components/game/shop/SkinShop';
 import { skinForTarget } from '@/game/skins/inventory';
 import { challengeGroupIndex, challengeUnlocked, isChallengeDone } from '@/game/challenges';
@@ -47,6 +51,7 @@ export default function Home() {
   const [screen, setScreen] = useState('menu');
   const [levelIndex, setLevelIndex] = useState(Math.min(initial.unlocked || 0, LEVEL_COUNT - 1));
   const [raceIndex, setRaceIndex] = useState(0);
+  const [trialIndex, setTrialIndex] = useState(0);
   const [careerGroup, setCareerGroup] = useState(0);
   const [completedInfo, setCompletedInfo] = useState({ groupJustCompleted: false, nextGroupName: null, isFinalGroup: false });
   const [challenge, setChallenge] = useState(null);
@@ -127,6 +132,21 @@ export default function Home() {
 
   const handleRaceWin = (result) => commitGame((latest) => commitRaceResult(latest, result));
 
+  const startTrial = (index) => {
+    if (!isLevelPlayable(saveRef.current, index)) return;
+    sound.init(); sound.resume(); setTrialIndex(index); setScreen('time-trial');
+  };
+  const handleTrialRecord = async (run) => {
+    let outcome;
+    const saved = await commitGame((latest) => {
+      outcome = commitTrialRecord(latest, run);
+      return outcome.save;
+    }, { allowVolatile: false });
+    const best = saved ? trialRecord(saved.timeTrialRecords, run.levelIndex) : null;
+    return { saved: !!saved, newRecord: !!saved && outcome.improved,
+      bestMs: best?.timeMs ?? null, ghostStored: !!best?.ghost };
+  };
+
   const handleUpdateSettings = (patch) => commitGame((p) => ({ ...p, settings: { ...p.settings, ...patch } }));
 
   const handleReset = () => {
@@ -161,7 +181,7 @@ export default function Home() {
     setScreen('challenges');
   };
 
-  const inGame = screen === 'tutorial' || screen === 'game' || screen === 'endless' || screen === 'race';
+  const inGame = screen === 'tutorial' || screen === 'game' || screen === 'endless' || screen === 'race' || screen === 'time-trial';
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-[#04050c] text-white">
@@ -228,6 +248,12 @@ export default function Home() {
         />
       ) : null}
 
+      {screen === 'time-trial' ? <TimeTrialCanvas key={trialIndex} levelIndex={trialIndex}
+        records={save.timeTrialRecords} settings={save.settings} skinId={soloSkin} sound={sound}
+        ghostEnabled={save.timeTrialGhostEnabled !== false}
+        onToggleGhost={(enabled) => commitGame((latest) => ({ ...latest, timeTrialGhostEnabled: enabled }))}
+        onSave={handleTrialRecord} onBack={() => setScreen('time-trial-levels')} onMenu={() => setScreen('menu')} /> : null}
+
       {screen === 'race' ? (
         <RaceCanvas
           key={raceIndex}
@@ -257,6 +283,7 @@ export default function Home() {
                 onLeaderboard={() => setScreen('leaderboard')}
                 onDaily={() => { void meta.prepare(); setScreen('daily'); }}
                 onAchievements={() => setScreen('achievements')}
+                onTimeTrial={() => setScreen('time-trial-levels')}
                 onEndless={() => setScreen('endless')}
                 onRace={() => setScreen('race-levels')}
                 onChallenges={() => setScreen('challenges')}
@@ -304,6 +331,9 @@ export default function Home() {
               banner={challenge ? { name: challenge.name, reward: challenge.reward, type: challenge.type } : null}
             />
           ) : null}
+
+          {screen === 'time-trial-levels' ? <TimeTrialLevels save={save} sound={sound}
+            onSelect={startTrial} onBack={() => setScreen('menu')} /> : null}
 
           {screen === 'race-levels' ? (
             <RaceLevelSelect sound={sound} onSelect={startRace} onBack={() => setScreen('menu')} />

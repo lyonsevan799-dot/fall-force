@@ -1,0 +1,10 @@
+import React from 'react';
+import RotateOverlay from '@/components/game/RotateOverlay';
+
+export default function TimeTrialOverlays({ state, paused, needsRotate, onRotateDismiss, onStart, onResume, onRetry, onMenu, name }) {
+  return <>
+    {state === 'ready' && !paused ? <div className="absolute inset-0 z-20 flex items-center justify-center overflow-y-auto bg-background/80 p-4"><section className="my-auto max-w-md rounded-3xl border border-primary/30 bg-card p-5 text-center"><h2 className="font-heading text-lg">{name}</h2><p className="mt-3 text-xs leading-relaxed text-muted-foreground">The timer starts when you press Start. Tap, click, Space, or the arrow keys to flip. Death ends the run. P pauses; R retries.</p><button type="button" onClick={onStart} className="mt-4 min-h-11 rounded-xl bg-primary px-6 text-sm font-bold text-primary-foreground">Start Time Trial</button></section></div> : null}
+    {paused && ['ready', 'playing'].includes(state) ? <div className="absolute inset-0 z-30 flex items-center justify-center overflow-y-auto bg-background/90 p-4"><section className="my-auto max-w-md rounded-3xl border border-primary/30 bg-card p-5 text-center"><h2 className="font-heading text-xl">Paused</h2><p className="mt-3 text-xs text-muted-foreground">The timer and ghost are stopped. Resume when ready.</p><div className="mt-4 flex flex-wrap justify-center gap-3"><button type="button" onClick={onResume} className="min-h-11 rounded-xl bg-primary px-5 text-xs font-bold text-primary-foreground">Resume</button><button type="button" onClick={onRetry} className="min-h-11 rounded-xl border border-border px-5 text-xs">Retry</button><button type="button" onClick={onMenu} className="min-h-11 rounded-xl border border-border px-5 text-xs">Main menu</button></div></section></div> : null}
+    {needsRotate ? <RotateOverlay onDismiss={onRotateDismiss} /> : null}
+  </>;
+}

@@ -802,7 +802,7 @@ function drawScreenFx(ctx, eng, w, h, dpr) {
   }
 }
 
-export function render(ctx, eng, w, h, dpr = 1) {
+export function render(ctx, eng, w, h, dpr = 1, drawWorldOverlay = null) {
   const theme = eng.theme;
   const fit = Math.min(w / VIEW_W, h / VIEW_H);
   const s = fit * eng.zoom;
@@ -835,6 +835,7 @@ export function render(ctx, eng, w, h, dpr = 1) {
   drawTerrain(ctx, eng, camLeft, viewW);
   drawGemRows(ctx, eng);
   if (!eng.level.noFinish) drawFinish(ctx, eng);
+  if (drawWorldOverlay) drawWorldOverlay(ctx, eng);
   drawHazards(ctx, eng);
   drawParticles(ctx, eng);
   if (eng.state !== 'dying' && eng.state !== 'dead') {

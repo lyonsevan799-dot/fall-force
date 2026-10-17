@@ -4,6 +4,7 @@ import { LEVELS } from '@/game/levels';
 import { totalStars, completedCount } from '@/game/progress';
 import LeaderboardEntry from '@/components/game/leaderboard/LeaderboardEntry';
 import MetaMenuEntries from '@/components/game/meta/MetaMenuEntries';
+import TimeTrialEntry from '@/components/game/timeTrial/TimeTrialEntry';
 
 const MODES = [
   { key: 'career', label: 'Career', desc: 'Master the levels and conquer Fall Force.', icon: Trophy, accent: 'cyan' },
@@ -17,7 +18,7 @@ const ACCENT = {
   pink: 'border-pink-300/40 bg-pink-400/10 text-pink-200',
 };
 
-export default function MainMenu({ save, sound, onCareer, onTutorial, onShop, onEndless, onRace, onChallenges, onSettings, onLeaderboard, onDaily, onAchievements }) {
+export default function MainMenu({ save, sound, onCareer, onTutorial, onShop, onEndless, onRace, onChallenges, onSettings, onLeaderboard, onDaily, onAchievements, onTimeTrial }) {
   const stars = totalStars(save);
   const done = completedCount(save);
   const best = save.endlessBest || 0;
@@ -62,6 +63,7 @@ export default function MainMenu({ save, sound, onCareer, onTutorial, onShop, on
         <span className="flex items-center gap-1 text-xs text-cyan-200"><Gem size={15} />{(save.totalGems || 0).toLocaleString()}<ChevronRight size={16} /></span>
       </button>
 
+      <TimeTrialEntry sound={sound} onOpen={onTimeTrial} />
       <LeaderboardEntry best={best} sound={sound} onOpen={onLeaderboard} />
       <MetaMenuEntries sound={sound} onDaily={onDaily} onAchievements={onAchievements} />
 

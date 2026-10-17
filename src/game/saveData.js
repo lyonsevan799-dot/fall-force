@@ -28,5 +28,6 @@ export function normalizeProgress(value, defaults, levelCount) {
   return { ...defaults, ...source, levels, unlocked, settings, challenges, levelGems,
     totalGems: safeInteger(source.totalGems), gemCredits: object(source.gemCredits), endlessBest: safeInteger(source.endlessBest), raceWins: safeInteger(source.raceWins), raceRewards: object(source.raceRewards),
     endlessRecords: object(source.endlessRecords), achievements: object(source.achievements),
-    dailyChallenges: object(source.dailyChallenges), timeTrialRecords: object(source.timeTrialRecords) };
+    dailyChallenges: object(source.dailyChallenges), timeTrialRecords: object(source.timeTrialRecords),
+    timeTrialGhostEnabled: source.timeTrialGhostEnabled !== false };
 }

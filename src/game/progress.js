@@ -21,6 +21,7 @@ export const FALLBACK = {
   lifetimeGemsCollected: 0,
   metaProgress: { version: 0, deathlessCompletions: 0, sessions: {} },
   timeTrialRecords: {},
+  timeTrialGhostEnabled: true,
   endlessRecords: {},
   ownedSkins: ['classic'],
   equippedSkins: { solo: 'classic', p1: 'classic', p2: 'classic' },
