@@ -1,8 +1,11 @@
 import { useEffect } from 'react';
 import { setGameplay, setLevelContext } from '@/game/platform/gameEvents';
+import useAdGameplay from '@/hooks/useAdGameplay';
+import { isAdBusy } from '@/game/platform/ads/session';
 
 // Pause every active mode on focus loss; require an explicit resume afterward.
 export function useGameLifecycle(engineRef, setPaused, level = null) {
+  useAdGameplay(engineRef, setPaused);
   useEffect(() => {
     let focusPaused = null, frame;
     setLevelContext(level);
@@ -16,6 +19,7 @@ export function useGameLifecycle(engineRef, setPaused, level = null) {
     };
     frame = requestAnimationFrame(observe);
     const pause = () => {
+      if (isAdBusy()) return;
       const engine = engineRef.current;
       if (!engine || engine.paused || !['intro', 'playing', 'dying', 'racing', 'countdown', 'finished'].includes(engine.state)) return;
       // Preserve the SDK's lifecycle state on focus loss; CrazyGames handles focus itself.

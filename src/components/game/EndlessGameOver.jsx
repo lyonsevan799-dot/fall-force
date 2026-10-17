@@ -3,6 +3,7 @@ import { Gem, Flame, RotateCcw, Home } from 'lucide-react';
 import { GameButton, Panel } from './ui';
 import LeaderboardRunStatus from '@/components/game/leaderboard/LeaderboardRunStatus';
 import RunSaveStatus from '@/components/game/procedural/RunSaveStatus';
+import NewRecordBadge from '@/components/game/NewRecordBadge';
 
 export default function EndlessGameOver({ score, best, distance, gems, maxStreak, isNewBest, leaderboardStatus, sound, onRestart, onExit, saveStatus, onRetrySave }) {
   return (
@@ -18,9 +19,7 @@ export default function EndlessGameOver({ score, best, distance, gems, maxStreak
 
         <div className="mt-4 flex h-8 items-center justify-center">
           {isNewBest ? (
-            <span className="gs-pop rounded-full border border-amber-300/50 bg-amber-400/15 px-5 py-1.5 font-heading text-[11px] uppercase tracking-[0.28em] text-amber-200 shadow-[0_0_40px_-10px_rgba(252,211,77,0.6)]">
-              ★ New Best! ★
-            </span>
+            <NewRecordBadge />
           ) : null}
         </div>
 

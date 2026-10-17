@@ -759,6 +759,14 @@ function drawParticles(ctx, eng) {
 function drawTrail(ctx, eng) {
   const theme = eng.theme;
   const boost = eng.rush ? 2.4 : 1;
+  if (eng.rush && !eng.settings.reduced && eng.trail.length > 1) {
+    ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.beginPath();
+    eng.trail.forEach((point, index) => { const x = point.x + PLAYER_SIZE / 2, y = point.y + PLAYER_SIZE / 2; if (index === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y); });
+    ctx.lineTo(eng.px + PLAYER_SIZE / 2, eng.py + PLAYER_SIZE / 2);
+    ctx.strokeStyle = hexA(theme.accent2, 0.28); ctx.lineWidth = 15; ctx.stroke();
+    ctx.strokeStyle = hexA(theme.accent, 0.7); ctx.lineWidth = 4; ctx.stroke(); ctx.restore();
+  }
   for (let i = 0; i < eng.trail.length; i++) {
     const tr = eng.trail[i];
     const k = tr.life / tr.max;
@@ -803,8 +811,8 @@ function drawScreenFx(ctx, eng, w, h, dpr) {
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.fillStyle = vignette;
   ctx.fillRect(0, 0, w, h);
-  if (eng.flash > 0.001) {
-    ctx.fillStyle = `rgba(255,255,255,${clamp(eng.flash * 0.5, 0, 0.7)})`;
+  if (!eng.settings.reduced && eng.flash > 0.001) {
+    ctx.fillStyle = `rgba(255,255,255,${clamp(eng.flash * 0.5, 0, 0.16)})`;
     ctx.fillRect(0, 0, w, h);
   }
 }
@@ -845,7 +853,7 @@ export function render(ctx, eng, w, h, dpr = 1, drawWorldOverlay = null) {
   if (drawWorldOverlay) drawWorldOverlay(ctx, eng);
   drawHazards(ctx, eng);
   drawParticles(ctx, eng);
-  if (eng.state !== 'dying' && eng.state !== 'dead') {
+  if ((eng.state !== 'dying' && eng.state !== 'dead') || (eng.state === 'dying' && eng.hitstop > 0)) {
     drawRushGuide(ctx, eng);
     drawTrail(ctx, eng);
     drawPlayer(ctx, eng);
@@ -917,7 +925,7 @@ export function renderRace(ctx, eng, w, h, dpr = 1) {
     drawTerrain(ctx, view, camLeft, viewW); drawFinish(ctx, view);
     drawHazards(ctx, view); drawParticles(ctx, view);
     drawRaceTrail(ctx, p, i === 0 ? RACE_P1_ACCENT : RACE_P2_ACCENT);
-    if (p.alive) drawRacePlayer(ctx, p, i === 0 ? RACE_P1 : RACE_P2, i === 0 ? RACE_P1_ACCENT : RACE_P2_ACCENT, String(i + 1), skins[i], eng.t, eng.settings.reduced);
+    if (p.alive || p.impactHold > 0) drawRacePlayer(ctx, p, i === 0 ? RACE_P1 : RACE_P2, i === 0 ? RACE_P1_ACCENT : RACE_P2_ACCENT, String(i + 1), skins[i], eng.t, eng.settings.reduced);
     ctx.setTransform(dpr, 0, 0, dpr, left * dpr, 0);
     if (p.flash > 0 && !eng.settings.reduced) { ctx.fillStyle = hexA('#ffffff', p.flash * 0.16); ctx.fillRect(0, 0, paneW, h); }
     ctx.restore();

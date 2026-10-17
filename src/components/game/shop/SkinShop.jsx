@@ -4,6 +4,8 @@ import { equipSkin, purchaseSkin, skinForTarget, ownsSkin } from '@/game/skins/i
 import ShopHeader from '@/components/game/shop/ShopHeader';
 import SkinCard from '@/components/game/shop/SkinCard';
 import SkinDetail from '@/components/game/shop/SkinDetail';
+import RewardedGemOffer from '@/components/game/ads/RewardedGemOffer';
+import MenuBanner from '@/components/game/ads/MenuBanner';
 
 export default function SkinShop({ save, updateSave, sound, onBack }) {
   const [view, setView] = useState('Shop'), [rarity, setRarity] = useState('All Skins'), [target, setTarget] = useState('solo');
@@ -29,6 +31,8 @@ export default function SkinShop({ save, updateSave, sound, onBack }) {
       <div className="gs-grid pointer-events-none absolute inset-0 opacity-20" />
       <div className="relative mx-auto w-full max-w-6xl px-4 py-6 sm:px-8 sm:py-10">
         <ShopHeader save={save} target={target} setTarget={setTarget} view={view} setView={setView} rarity={rarity} setRarity={setRarity} onBack={onBack} />
+        <RewardedGemOffer updateSave={updateSave} />
+        {!selected ? <MenuBanner /> : null}
         <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">{visible.map((skin) => <SkinCard key={skin.id} skin={skin} owned={ownsSkin(save, skin.id)} equipped={skinForTarget(save, target) === skin.id && ownsSkin(save, skin.id)} onSelect={() => select(skin)} reduced={save.settings.reduced} />)}</div>
         {!visible.length && <p className="rounded-2xl border border-border bg-card p-8 text-center text-sm text-muted-foreground">No owned skins in this category yet. Browse Shop to find your next look.</p>}
         <p className="mt-6 text-center text-xs text-muted-foreground">Earn optional gems in runs and challenges. Gems, purchases and equipped skins share the same game save across modes.</p>

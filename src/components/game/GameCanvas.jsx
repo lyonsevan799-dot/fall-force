@@ -15,12 +15,14 @@ import { useGameLifecycle } from '@/hooks/useGameLifecycle';
 import MiddleAttempt from '@/game/middleAttempt';
 import MiddleChallengeIntro from '@/components/game/MiddleChallengeIntro';
 import ChallengeRunStatus from '@/components/game/ChallengeRunStatus';
+import useAdBreak from '@/hooks/useAdBreak';
 
 export default function GameCanvas({ skinId = 'classic', levelIndex, totalLevels, settings, displaySettings, sound, totalGems, groupJustCompleted, nextGroupName, isFinalGroup, onExit, onComplete, onNext, onEnterNextGroup, onUpdateSettings, onResetProgress, challenge, challengeReward, onClearReward, onChallengeFailure, onNewChallengeAttempt }) {
   const wrapRef = useRef(null);
   const canvasRef = useRef(null);
   const engineRef = useRef(null);
   const cbRef = useRef({});
+  const continueAfterAd = useAdBreak(engineRef);
   const completedRef = useRef(false);
   const [middleReady, setMiddleReady] = useState(challenge?.type === 'middle');
 
@@ -329,10 +331,10 @@ export default function GameCanvas({ skinId = 'classic', levelIndex, totalLevels
             challengeMode={!!challenge}
             challengeFailure={challenge?.type === 'middle' && ui.middleFailed ? ui.middleReason : null}
             exitLabel={challenge ? 'Challenges' : 'Levels'}
-            onNext={() => cbRef.current.onNext()}
+            onNext={() => continueAfterAd(() => cbRef.current.onNext())}
             onRetry={challenge?.type === 'middle' ? onNewChallengeAttempt : restart}
             onExit={onExit}
-            onEnterNextGroup={onEnterNextGroup}
+            onEnterNextGroup={() => continueAfterAd(onEnterNextGroup)}
           />
         )
       ) : null}

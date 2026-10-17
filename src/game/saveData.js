@@ -26,7 +26,7 @@ export function normalizeProgress(value, defaults, levelCount) {
   }
   const levelGems = Object.fromEntries(Object.entries(object(source.levelGems)).map(([key, gems]) => [key, safeInteger(gems)]));
   return { ...defaults, ...source, levels, unlocked, settings, challenges, levelGems,
-    totalGems: safeInteger(source.totalGems), gemCredits: object(source.gemCredits), endlessBest: safeInteger(source.endlessBest), raceWins: safeInteger(source.raceWins), raceRewards: object(source.raceRewards),
+    totalGems: safeInteger(source.totalGems), gemCredits: object(source.gemCredits), adRewards: object(source.adRewards), endlessBest: safeInteger(source.endlessBest), raceWins: safeInteger(source.raceWins), raceRewards: object(source.raceRewards),
     survivalRecords: { bestScore: safeInteger(object(source.survivalRecords).bestScore),
       bestTime: Number.isFinite(object(source.survivalRecords).bestTime) ? Math.max(0, source.survivalRecords.bestTime) : 0,
       bestDistance: safeInteger(object(source.survivalRecords).bestDistance), runs: safeInteger(object(source.survivalRecords).runs) },

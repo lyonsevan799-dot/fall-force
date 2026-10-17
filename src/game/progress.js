@@ -33,6 +33,7 @@ export const FALLBACK = {
   raceWins: 0,         // total race victories
   raceRewards: {},     // credited race IDs, actual winner, and one shared-wallet reward
   gemCredits: {},      // durable per-run receipts, saved atomically with the wallet
+  adRewards: {},       // successfully completed rewarded advertisements only
   totalGems: 0,        // persistent gems across all modes
   levelGems: {},       // { [levelIndex]: bestGemsCollected }
   challenges: {},      // { [challengeId]: { completed, awardedAt } }

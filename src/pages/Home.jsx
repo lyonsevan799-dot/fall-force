@@ -32,6 +32,8 @@ import RaceCanvas from '@/components/game/RaceCanvas';
 import TutorialCanvas from '@/components/game/tutorial/TutorialCanvas';
 import { tutorialAccessibleCareer, completeTutorial } from '@/game/tutorialProgress';
 import SurvivalCanvas from '@/components/game/survival/SurvivalCanvas';
+import AdOverlay from '@/components/game/ads/AdOverlay';
+import AdContent from '@/components/game/ads/AdContent';
 import commitSurvivalResult from '@/game/survivalRecords';
 
 export default function Home() {
@@ -188,7 +190,9 @@ export default function Home() {
   const inGame = screen === 'tutorial' || screen === 'game' || screen === 'endless' || screen === 'survival' || screen === 'race' || screen === 'time-trial';
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[#04050c] text-white">
+    <div data-reduced={save.settings.reduced ? 'true' : undefined} className="relative min-h-screen overflow-hidden bg-[#04050c] text-white">
+      <AdOverlay />
+      <AdContent>
       {saveError && screen !== 'shop' ? <div role="alert" className="fixed inset-x-4 bottom-4 z-50 rounded-xl border border-amber-300/50 bg-black/90 p-3 text-center text-xs text-amber-100">{saveError}</div> : null}
       <AchievementUnlocks achievements={save.achievements} onNotified={meta.notify} reduced={save.settings.reduced} />
       <div className="pointer-events-none absolute inset-0 gs-bg" />
@@ -362,6 +366,7 @@ export default function Home() {
           ) : null}
         </div>
       ) : null}
+      </AdContent>
     </div>
   );
 }

@@ -278,3 +278,16 @@ body {
 .gs-gem-pop {
   animation: gs-gem-pop-kf 0.8s ease-out forwards;
 }
+
+@keyframes gs-record-kf {
+  from { opacity: 0; transform: translateY(8px) scale(0.92); }
+  65% { opacity: 1; transform: translateY(0) scale(1.04); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.gs-record { animation: gs-record-kf 0.55s ease-out both; }
+[data-reduced="true"] :is(.gs-record, .gs-pop, .gs-screen-in, .gs-countdown, .gs-go, .gs-milestone-pop, .gs-winner-banner, .gs-float, .gs-gem-pop) { animation: none !important; }
+[data-reduced="true"] button { transition: none !important; }
+@media (prefers-reduced-motion: reduce) {
+  :is(.gs-record, .gs-pop, .gs-screen-in, .gs-countdown, .gs-go, .gs-milestone-pop, .gs-winner-banner, .gs-float, .gs-gem-pop) { animation: none !important; }
+  button { transition: none !important; }
+}

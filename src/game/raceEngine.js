@@ -68,7 +68,7 @@ export class RaceEngine {
       vy: 0, dir: 1, grounded: true, groundPlat: null, groundY: null,
       sx: 1, sy: 1, rot: 0, rotV: 0,
       speedMult: 1, gateIndex: 0,
-      alive: true, deadT: 0, invuln: 0,
+      alive: true, deadT: 0, invuln: 0, impactHold: 0,
       finished: false, finishTime: null, finalProgress: 0,
       portalsUsed: this.portals.map(() => false),
       trail: [],
@@ -183,7 +183,7 @@ export class RaceEngine {
 
   diePlayer(p) {
     if (!this._isActive() || !p.alive || p.finished) return;
-    p.alive = false; p.deadT = 0; p.deaths++;
+    p.alive = false; p.deadT = 0; p.deaths++; p.impactHold = 0.075;
     p.flash = 0.8; // A death must never stop or flash the opponent's screen.
     this.addShake(13, 0.45);
     this.sound.sfx('death');
@@ -289,6 +289,7 @@ export class RaceEngine {
     }
 
     for (const p of this.players) {
+      if (!p.alive && p.impactHold > 0) continue;
       const k = Math.min(1, dt * 13);
       p.sx += (1 - p.sx) * k; p.sy += (1 - p.sy) * k;
       p.rotV *= Math.max(0, 1 - dt * 6);
@@ -306,6 +307,7 @@ export class RaceEngine {
 
   updateFx(dt) {
     for (const p of this.players) {
+      if (p.impactHold > 0) { p.impactHold = Math.max(0, p.impactHold - dt); continue; }
       p.particles.update(dt); p.flash = Math.max(0, p.flash - dt * 2.6);
       for (let i = p.trail.length - 1; i >= 0; i--) {
         p.trail[i].life -= dt;

@@ -5,6 +5,8 @@ import { render } from '@/game/render';
 import { flushProgressEvents, recordRunOutcome } from '@/game/meta/events';
 import { setGameplay, setLevelContext } from '@/game/platform/gameEvents';
 import createRunLoop from '@/game/procedural/createRunLoop';
+import useAdGameplay from '@/hooks/useAdGameplay';
+import { isAdBusy } from '@/game/platform/ads/session';
 
 export default function useProceduralRun(props, mode, wrapRef, canvasRef, leaderboard) {
   const engineRef = useRef(null), actionsRef = useRef(null), latest = useRef({ props, leaderboard });
@@ -12,6 +14,7 @@ export default function useProceduralRun(props, mode, wrapRef, canvasRef, leader
   const [ui, setUi] = useState({ state: 'intro', score: 0, gems: 0, time: 0 });
   const [paused, setPaused] = useState(false), [ready, setReady] = useState(mode === 'survival');
   const [bank, setBank] = useState('idle');
+  useAdGameplay(engineRef, setPaused);
   useEffect(() => {
     const EngineClass = mode === 'survival' ? SurvivalEngine : EndlessEngine;
     const engine = new EngineClass({ sound: props.sound, settings: props.displaySettings || props.settings });
@@ -62,6 +65,7 @@ export default function useProceduralRun(props, mode, wrapRef, canvasRef, leader
       publish(); draw(); loop.start();
     };
     const pause = () => {
+      if (isAdBusy()) return;
       if (isReady || !['intro', 'playing'].includes(engine.state)) return;
       engine.paused = true; setPaused(true); setGameplay(false);
     };

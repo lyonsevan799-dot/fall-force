@@ -301,11 +301,11 @@ export class Engine {
     this.sound.sfx('gem');
     const theme = this.theme;
     const rushing = !!this.rush;
-    this.particles.burst(gem.x, gem.y, rushing ? 14 : 10, {
+    this.particles.burst(gem.x, gem.y, this.settings.reduced ? 3 : rushing ? 14 : 10, {
       color: [theme.accent, '#ffffff', theme.accent2],
       speed: rushing ? 230 : 180, size: 3.5, life: 0.5, drag: 2.5, shape: 'spark',
     });
-    this.particles.ring(gem.x, gem.y, { r: 5, rv: rushing ? 360 : 280, life: 0.35, color: theme.accent, w: 3 });
+    if (!this.settings.reduced) this.particles.ring(gem.x, gem.y, { r: 5, rv: rushing ? 360 : 280, life: 0.35, color: theme.accent, w: 3 });
     this.flash = Math.min(1, this.flash + (rushing ? 0.14 : 0.1));
     // Special trigger gem: immediately engage Gem Rush along its row — no
     // hold required. The rush auto-follows the row and ends on its own.
@@ -585,7 +585,7 @@ export class Engine {
 
     if (this.hitstop > 0) {
       this.hitstop -= dt;
-      this.updateFx(dt);
+      // Hold the impact frame, including particles; simulation is already stopped.
       return;
     }
 
@@ -652,6 +652,7 @@ export class Engine {
       this.trail[i].life -= dt;
       if (this.trail[i].life <= 0) this.trail.splice(i, 1);
     }
+    if (this.settings.shake === false) this.shakeMag = 0;
     if (this.shakeMag > 0) {
       this.shakeT += dt;
       const k = Math.max(0, 1 - this.shakeT / this.shakeDur);

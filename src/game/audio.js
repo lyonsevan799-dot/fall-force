@@ -14,6 +14,7 @@ export class Sound {
   constructor(settings) {
     this.s = settings || {};
     this.platformMuted = getPlatformSettings().muteAudio;
+    this.adMuted = false;
     this.ctx = null;
     this.ready = false;
     this.musicPlaying = false;
@@ -32,7 +33,7 @@ export class Sound {
     } catch (e) { return; }
     const ctx = this.ctx;
     this.master = ctx.createGain();
-    this.master.gain.value = this.platformMuted ? 0 : 0.9;
+    this.master.gain.value = (this.platformMuted || this.adMuted) ? 0 : 0.9;
     this.master.connect(ctx.destination);
     this.sfxGain = ctx.createGain();
     this.sfxGain.gain.value = (this.s.sfx === false) ? 0 : (this.s.sfxVolume == null ? 0.7 : this.s.sfxVolume);
@@ -53,14 +54,16 @@ export class Sound {
   }
 
   resume() {
+    if (this.adMuted || document.hidden) return;
     if (this.ctx && (this.ctx.state === 'suspended' || this.ctx.state === 'interrupted')) this.ctx.resume().catch(() => {});
   }
 
   setPlatformMuted(muted) { this.platformMuted = muted; this.applySettings(); }
+  setAdMuted(muted) { this.adMuted = muted; this.applySettings(); }
 
   applySettings() {
     if (!this.ready) return;
-    this.master.gain.setValueAtTime(this.platformMuted ? 0 : 0.9, this.ctx.currentTime);
+    this.master.gain.setValueAtTime((this.platformMuted || this.adMuted) ? 0 : 0.9, this.ctx.currentTime);
     const s = this.s || {};
     const sfxVol = s.sfx === false ? 0 : (s.sfxVolume == null ? 0.7 : s.sfxVolume);
     this.sfxGain.gain.setTargetAtTime(sfxVol, this.ctx.currentTime, 0.05);
@@ -119,7 +122,7 @@ export class Sound {
   }
 
   sfx(name) {
-    if (!this.ready || this.s.sfx === false) return;
+    if (!this.ready || this.platformMuted || this.adMuted || this.s.sfx === false) return;
     switch (name) {
       case 'switch':
         this.tone({ type: 'square', freq: 420, to: 980, dur: 0.13, gain: 0.075, filter: 2600 });

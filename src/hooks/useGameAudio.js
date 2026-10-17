@@ -1,11 +1,14 @@
 import { useEffect } from 'react';
 import { subscribePlatformSettings } from '@/game/platform/crazyGames';
+import useAdAudio from '@/hooks/useAdAudio';
+import { isAdBusy } from '@/game/platform/ads/session';
 
 export function useGameAudio(sound, settingsRef) {
+  useAdAudio(sound);
   useEffect(() => {
     const unsubscribe = subscribePlatformSettings((settings) => sound.setPlatformMuted(settings.muteAudio));
     const unlock = () => {
-      if (document.hidden) return;
+      if (document.hidden || isAdBusy()) return;
       sound.init(); sound.resume();
       if (settingsRef.current.music) sound.startMusic();
     };

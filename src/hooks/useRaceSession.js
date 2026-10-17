@@ -3,6 +3,8 @@ import { RaceEngine } from '@/game/raceEngine';
 import { renderRace } from '@/game/render';
 import { createRaceSeries, recordRaceRound } from '@/game/race/series';
 import { setGameplay, setLevelContext } from '@/game/platform/gameEvents';
+import useAdGameplay from '@/hooks/useAdGameplay';
+import { isAdBusy } from '@/game/platform/ads/session';
 
 export default function useRaceSession(options, wrapRef, canvasRef) {
   const engineRef = useRef(null), actionsRef = useRef(null), latest = useRef(options);
@@ -11,6 +13,7 @@ export default function useRaceSession(options, wrapRef, canvasRef) {
   const [series, setSeries] = useState(seriesRef.current), [ui, setUi] = useState({ state: 'ready', countdown: 3 });
   const [paused, setPaused] = useState(false), [bank, setBank] = useState('idle');
   const [touch, setTouch] = useState(false), [rotate, setRotate] = useState(false);
+  useAdGameplay(engineRef, setPaused);
   useEffect(() => {
     const engine = new RaceEngine({ sound: options.sound, settings: options.displaySettings || options.settings, levelIndex: options.levelIndex });
     engine.skinIds = latest.current.skinIds; engineRef.current = engine;
@@ -53,6 +56,7 @@ export default function useRaceSession(options, wrapRef, canvasRef) {
       raf = requestAnimationFrame(tick);
     };
     const pause = () => {
+      if (isAdBusy()) return;
       if (!['countdown', 'racing'].includes(engine.state) || engine.paused) return;
       engine.paused = true; setPaused(true); setGameplay(false);
     };
