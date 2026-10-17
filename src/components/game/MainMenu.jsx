@@ -2,6 +2,7 @@ import React from 'react';
 import { Trophy, Infinity as InfinityIcon, Swords, Settings2, Target, Gem, ChevronRight, ShoppingBag } from 'lucide-react';
 import { LEVELS } from '@/game/levels';
 import { totalStars, completedCount } from '@/game/progress';
+import LeaderboardEntry from '@/components/game/leaderboard/LeaderboardEntry';
 
 const MODES = [
   { key: 'career', label: 'Career', desc: 'Master the levels and conquer Fall Force.', icon: Trophy, accent: 'cyan' },
@@ -15,7 +16,7 @@ const ACCENT = {
   pink: 'border-pink-300/40 bg-pink-400/10 text-pink-200',
 };
 
-export default function MainMenu({ save, sound, onCareer, onTutorial, onShop, onEndless, onRace, onChallenges, onSettings }) {
+export default function MainMenu({ save, sound, onCareer, onTutorial, onShop, onEndless, onRace, onChallenges, onSettings, onLeaderboard }) {
   const stars = totalStars(save);
   const done = completedCount(save);
   const best = save.endlessBest || 0;
@@ -59,6 +60,8 @@ export default function MainMenu({ save, sound, onCareer, onTutorial, onShop, on
         <span className="flex-1"><span className="block font-heading text-sm uppercase tracking-[0.2em]">Shop</span><span className="mt-1 block text-[11px] text-white/55">Spend gems · collect skins · make it yours</span></span>
         <span className="flex items-center gap-1 text-xs text-cyan-200"><Gem size={15} />{(save.totalGems || 0).toLocaleString()}<ChevronRight size={16} /></span>
       </button>
+
+      <LeaderboardEntry best={best} sound={sound} onOpen={onLeaderboard} />
 
       <button
         type="button"

@@ -1,8 +1,9 @@
 import React from 'react';
 import { Gem, Flame, RotateCcw, Home } from 'lucide-react';
 import { GameButton, Panel } from './ui';
+import LeaderboardRunStatus from '@/components/game/leaderboard/LeaderboardRunStatus';
 
-export default function EndlessGameOver({ score, best, distance, gems, maxStreak, isNewBest, sound, onRestart, onExit }) {
+export default function EndlessGameOver({ score, best, distance, gems, maxStreak, isNewBest, leaderboardStatus, sound, onRestart, onExit }) {
   return (
     <div className="absolute inset-0 z-30 flex items-center justify-center overflow-y-auto bg-black/60 p-4 backdrop-blur-sm">
       <Panel className="gs-pop my-auto w-full max-w-md shrink-0 text-center">
@@ -41,6 +42,8 @@ export default function EndlessGameOver({ score, best, distance, gems, maxStreak
           <Flame size={11} className="text-amber-300/70" />
           <span className="font-mono">Max Streak x{(maxStreak || 1).toFixed(1)}</span>
         </div>
+
+        <LeaderboardRunStatus status={leaderboardStatus} />
 
         <div className="mt-6 grid grid-cols-1 gap-3">
           <GameButton variant="primary" size="lg" sound={sound} onClick={onRestart}>

@@ -12,6 +12,7 @@ import SkinShop from '@/components/game/shop/SkinShop';
 import { skinForTarget } from '@/game/skins/inventory';
 import { challengeGroupIndex, challengeUnlocked, isChallengeDone } from '@/game/challenges';
 import MainMenu from '@/components/game/MainMenu';
+import GlobalLeaderboard from '@/components/game/leaderboard/GlobalLeaderboard';
 import Challenges from '@/components/game/Challenges';
 import CareerGroups from '@/components/game/CareerGroups';
 import LevelSelect from '@/components/game/LevelSelect';
@@ -244,6 +245,7 @@ export default function Home() {
                 onCareer={() => tutorialAccessibleCareer(saveRef.current) ? setScreen('career') : startTutorial()}
                 onTutorial={startTutorial}
                 onShop={() => setScreen('shop')}
+                onLeaderboard={() => setScreen('leaderboard')}
                 onEndless={() => setScreen('endless')}
                 onRace={() => setScreen('race-levels')}
                 onChallenges={() => setScreen('challenges')}
@@ -251,6 +253,10 @@ export default function Home() {
               />
             </div>
           ) : null}
+
+          {screen === 'leaderboard' ? <GlobalLeaderboard best={save.endlessBest || 0}
+            hasRecord={save.endlessBest > 0 || save.endlessRecords?.maxStreak > 0}
+            sound={sound} onBack={() => setScreen('menu')} onPlay={() => setScreen('endless')} /> : null}
 
           {screen === 'shop' ? <SkinShop save={save} updateSave={updateSave} sound={sound} onBack={() => setScreen('menu')} /> : null}
 

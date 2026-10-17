@@ -9,6 +9,7 @@ import SettingsPanel from './SettingsPanel';
 import RotateOverlay from './RotateOverlay';
 import { useTapHoldControl } from '@/hooks/useTapHoldControl';
 import { useGameLifecycle } from '@/hooks/useGameLifecycle';
+import useEndlessLeaderboard from '@/hooks/useEndlessLeaderboard';
 
 export default function EndlessCanvas({ skinId = 'classic', settings, displaySettings, sound, best, totalGems, onResult, onExit, onUpdateSettings, onResetProgress }) {
   const wrapRef = useRef(null);
@@ -18,6 +19,7 @@ export default function EndlessCanvas({ skinId = 'classic', settings, displaySet
   const reportedRef = useRef(false);
   const bestRef = useRef(best || 0);
   const runStartBestRef = useRef(best || 0);
+  const leaderboard = useEndlessLeaderboard();
 
   const [ui, setUi] = useState({ state: 'intro', score: 0, distance: 0, gems: 0, streak: 1, sectionName: 'Training', speed: 0.62, rush: false, rushAvailable: false });
   const [milestone, setMilestone] = useState(null);
@@ -37,6 +39,7 @@ export default function EndlessCanvas({ skinId = 'classic', settings, displaySet
     const eng = new EndlessEngine({ sound, settings });
     eng.skinId = skinId;
     eng.loadEndless(bestRef.current);
+    leaderboard.begin(eng);
     runStartBestRef.current = bestRef.current;
     engineRef.current = eng;
     reportedRef.current = false;
@@ -84,6 +87,7 @@ export default function EndlessCanvas({ skinId = 'classic', settings, displaySet
       }
       if (eng.state === 'dead' && !reportedRef.current) {
         reportedRef.current = true;
+        leaderboard.finish(eng);
         if (cbRef.current.onResult) cbRef.current.onResult(Math.floor(eng.score), eng.gems, { distance: Math.floor(eng.px / 10), maxStreak: eng.maxStreak || 1 });
       }
       if (eng.state !== lastState) { lastState = eng.state; push(); lastSync = now; }
@@ -123,6 +127,7 @@ export default function EndlessCanvas({ skinId = 'classic', settings, displaySet
     reportedRef.current = false;
     eng.paused = false;
     eng.loadEndless(bestRef.current, true);
+    leaderboard.begin(eng);
     runStartBestRef.current = bestRef.current;
     setPaused(false);
     setShowSettings(false);
@@ -231,6 +236,7 @@ export default function EndlessCanvas({ skinId = 'classic', settings, displaySet
           gems={ui.gems}
           maxStreak={ui.maxStreak}
           isNewBest={isNewBest}
+          leaderboardStatus={leaderboard.status}
           sound={sound}
           onRestart={restart}
           onExit={() => cbRef.current.onExit()}

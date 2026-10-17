@@ -93,7 +93,8 @@
 
 /* Tutorial-only semantic colors, isolated from all existing game screens. */
 .tutorial-shell,
-.shop-shell {
+.shop-shell,
+.leaderboard-shell {
   --background: 233 50% 3%;
   --foreground: 0 0% 100%;
   --card: 230 48% 8%;
