@@ -11,8 +11,9 @@ export default function SkinCard({ skin, owned, equipped, onSelect, reduced }) {
       <SkinPreview skinId={skin.id} reduced={reduced} />
       <div className="border-t border-border/50 bg-card/80 p-3">
         <h3 className="font-heading text-xs text-foreground sm:text-sm">{skin.name}</h3>
-        <div className="mt-2 flex items-center gap-1 text-xs">
-          {equipped && owned ? <><Check size={13} />Equipped</> : owned ? 'Owned · Equip' : skin.price === 0 ? 'Free · Claim' : <><Gem size={13} />{skin.price.toLocaleString()}<Lock className="ml-auto" size={12} /></>}
+        <div className="mt-2 flex items-center gap-1 text-xs"><Gem size={13} />{skin.price === 0 ? 'Free' : `${skin.price.toLocaleString()} gems`}</div>
+        <div className="mt-2 flex items-center gap-1 text-[11px]">
+          {equipped && owned ? <><Check size={13} />Equipped</> : owned ? 'Owned · Equip' : skin.price === 0 ? 'Default · Claim free' : <><Lock size={12} />Not owned</>}
         </div>
         <span className="mt-2 block text-[10px] text-muted-foreground">Inspect skin →</span>
       </div>
