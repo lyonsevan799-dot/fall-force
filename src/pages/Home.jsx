@@ -150,9 +150,12 @@ export default function Home() {
 
       {screen === 'tutorial' ? (
         <TutorialCanvas sound={sound} settings={save.settings} skinId={soloSkin} totalGems={save.totalGems || 0}
-          banked={save.tutorialGemsBanked} canSkip={tutorialAccessibleCareer(save)}
+          banked={save.tutorialGemsBanked} canSkip
           onComplete={handleTutorialComplete} onPlay={() => startLevel(0)} onExit={() => setScreen('menu')}
-          onSkip={() => { if (tutorialAccessibleCareer(saveRef.current)) setScreen('career'); }} />
+          onSkip={async () => {
+            const saved = await commitGame((latest) => ({ ...latest, tutorialSkipped: true }));
+            if (saved) setScreen('career');
+          }} />
       ) : null}
 
       {screen === 'game' ? (

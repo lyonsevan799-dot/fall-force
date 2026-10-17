@@ -4,7 +4,7 @@ import { Pause, Play, RotateCcw, X, Gem } from 'lucide-react';
 export default function TutorialHud({ ui, totalGems, banked, canSkip, onPause, onRestart, onExit, onSkip }) {
   return (
     <>
-      <header className="absolute inset-x-0 top-0 z-30 flex flex-wrap items-center justify-between gap-1 bg-background/85 px-3 py-2 text-[10px] sm:text-xs">
+      <header className="absolute inset-x-0 top-0 z-40 flex flex-wrap items-center justify-between gap-1 bg-background/85 px-3 py-2 text-[10px] sm:text-xs">
         <span className="font-heading">Level 0: Tutorial</span>
         <span className="flex items-center gap-1 text-primary"><Gem size={14} />{totalGems.toLocaleString()} saved · {ui.gems} collected{banked ? ' (practice)' : ''}</span>
         <div className="flex items-center gap-1">
