@@ -3,6 +3,7 @@ import { LEVEL_COUNT } from '@/game/levels';
 import { challengeById } from '@/game/challenges';
 import { tutorialSaveFields } from '@/game/tutorialProgress';
 import { skinSaveFields } from '@/game/skins/inventory';
+import { metaSaveFields } from '@/game/meta/saveFields';
 
 import { PROGRESS_KEY } from '@/game/platform/saveConstants';
 import { readSaveRaw, writeSaveRaw, removeSave } from '@/game/platform/saveStore';
@@ -15,6 +16,8 @@ export const FALLBACK = {
   tutorialReplays: 0,
   achievements: {},
   dailyChallenges: {},
+  lifetimeGemsCollected: 0,
+  metaProgress: { version: 0, deathlessCompletions: 0, sessions: {} },
   timeTrialRecords: {},
   endlessRecords: {},
   ownedSkins: [],
@@ -40,7 +43,7 @@ export function decodeProgress(raw) {
     const source = JSON.parse(raw);
     if (!source || typeof source !== 'object' || Array.isArray(source)) throw new Error('Invalid save record');
     return { ...normalizeProgress(source, FALLBACK, LEVEL_COUNT),
-      ...tutorialSaveFields(source), ...skinSaveFields(source) };
+      ...tutorialSaveFields(source), ...skinSaveFields(source), ...metaSaveFields(source) };
   } catch (cause) {
     throw Object.assign(new Error('Saved progress could not be read', { cause }), { code: 'corruptSave' });
   }

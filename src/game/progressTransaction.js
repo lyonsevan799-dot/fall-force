@@ -1,5 +1,6 @@
 import { loadProgress, PROGRESS_KEY } from '@/game/progress';
 import { writeSaveRaw, keepSessionSave, usesBrowserSaves } from '@/game/platform/saveStore';
+import { reconcileMetaSave } from '@/game/meta/progression';
 
 let queue = Promise.resolve();
 const LOCK = `${PROGRESS_KEY}-write`;
@@ -31,7 +32,7 @@ export default function progressTransaction(update, { allowVolatile = false } = 
       const proposed = update(current);
       if (!proposed || proposed === current) return current;
       if (!Number.isSafeInteger(proposed.totalGems) || proposed.totalGems < 0) throw new Error('Invalid gem balance. Nothing was spent.');
-      const next = { ...proposed, saveRevision: (Number(current.saveRevision) || 0) + 1 };
+      const next = { ...reconcileMetaSave(proposed), saveRevision: (Number(current.saveRevision) || 0) + 1 };
       // One SDK/browser record atomically contains wallet, ownership, and claim ledgers.
       const raw = JSON.stringify(next);
       try { writeSaveRaw(raw); }

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import TutorialEngine from '@/game/tutorialEngine';
 import { render } from '@/game/render';
+import { flushProgressEvents } from '@/game/meta/events';
 import { useGameLifecycle } from '@/hooks/useGameLifecycle';
 
 export default function useTutorialGame({ sound, settings, skinId = 'classic', onComplete }) {
@@ -28,6 +29,7 @@ export default function useTutorialGame({ sound, settings, skinId = 'classic', o
     const observer = new ResizeObserver(resize); observer.observe(wrapRef.current);
     const loop = (now) => {
       engine.update((now - last) / 1000); last = now;
+      flushProgressEvents(engine);
       render(context, engine, width, height, dpr);
       if (engine.state === 'complete' && !reported) { reported = true; completeRef.current(engine.gems); }
       if (engine.state !== 'complete') reported = false;

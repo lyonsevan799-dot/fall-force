@@ -24,9 +24,9 @@ export default function useGameProgress(initial) {
     }
   }, [accept]);
   // Gameplay events do not leak rejected promises into the canvas loop.
-  const commitGame = useCallback(async (updater) => {
+  const commitGame = useCallback(async (updater, options = {}) => {
     try {
-      const next = await progressTransaction(updater, { allowVolatile: true });
+      const next = await progressTransaction(updater, { allowVolatile: options.allowVolatile !== false });
       accept(next); setSaveError(''); return next;
     } catch { return null; }
   }, [accept]);

@@ -3,6 +3,7 @@ import { emit } from './levels';
 import { BASE_SPEED, CROSS_TIME, START_X, clamp } from './config';
 import { ENDLESS_CHUNKS } from './endlessChunks';
 import { gemClear, LANE, placeRow } from './gemPlace';
+import { recordGemPickup } from '@/game/meta/events';
 
 // Visual sections — theme and name are driven by difficulty so transitions
 // happen smoothly as the player survives longer.
@@ -255,6 +256,7 @@ export class EndlessEngine extends Engine {
     if (gem.collected || (this.state !== 'playing' && this.state !== 'intro')) return;
     gem.collected = true;
     this.gems++;
+    recordGemPickup(this, gem);
     const value = 100 * (1 + (this._gen ? this._gen.difficulty : 0));
     this.score += value;
     this.sound.sfx('gem');

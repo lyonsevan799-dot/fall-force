@@ -4,6 +4,7 @@ import {
 } from './config';
 import { LEVELS } from './levels';
 import { Particles } from './particles';
+import { startProgressRun, recordGemPickup, recordRunOutcome } from '@/game/meta/events';
 import {
   sawGeom, bladeGeom, crusherGeom, laserGeom, platGeom, vanishGeom, spikeGeom,
   mspikeGeom, dropGeom, wallGeom, bounceGeom, trapGeom,
@@ -126,6 +127,7 @@ export class Engine {
     }
     this.middleAttempt?.position(this);
     this.state = this.state === 'intro' ? 'intro' : 'playing';
+    startProgressRun(this, full);
     this.syncUi();
   }
 
@@ -262,6 +264,7 @@ export class Engine {
     }
     this.particles.ring(cx, cy, { r: 12, rv: 640, life: 0.6, color: '#ffffff', w: 6 });
     this.particles.ring(cx, cy, { r: 8, rv: 380, life: 0.9, color: theme.accent, w: 3 });
+    recordRunOutcome(this, 'complete');
     this.syncUi();
   }
 
@@ -286,6 +289,7 @@ export class Engine {
     if (gem.collected || (this.state !== 'playing' && this.state !== 'intro')) return;
     gem.collected = true;
     this.gems++;
+    recordGemPickup(this, gem);
     this.sound.sfx('gem');
     const theme = this.theme;
     const rushing = !!this.rush;
@@ -636,7 +640,7 @@ export class Engine {
       this.dieT += dt;
       this.timeScale = Math.max(0.05, this.timeScale - dt * 1.8);
       this.zoomTarget = 1.15;
-      if (this.dieT > 0.5) { this.state = 'dead'; }
+      if (this.dieT > 0.5) { this.state = 'dead'; recordRunOutcome(this, 'death'); }
     } else if (this.state === 'complete') {
       this.completeT += dt;
       this.timeScale = Math.max(0.3, 0.32 + this.completeT * 0.5);

@@ -8,6 +8,10 @@ import { groupForLevel, groupCompleted, nextGroupAfter, groupIndex, isLevelPlaya
 import { loadProgress, recordResult, commitLevelGems, commitEndlessGems, claimChallenge, completedCount, FALLBACK } from '@/game/progress';
 import { stopLoading, reportCompletion } from '@/game/platform/gameEvents';
 import useGameProgress from '@/hooks/useGameProgress';
+import useMetaProgress from '@/hooks/useMetaProgress';
+import DailyChallengesScreen from '@/components/game/meta/DailyChallengesScreen';
+import AchievementsScreen from '@/components/game/meta/AchievementsScreen';
+import AchievementUnlocks from '@/components/game/meta/AchievementUnlocks';
 import SkinShop from '@/components/game/shop/SkinShop';
 import { skinForTarget } from '@/game/skins/inventory';
 import { challengeGroupIndex, challengeUnlocked, isChallengeDone } from '@/game/challenges';
@@ -33,6 +37,7 @@ export default function Home() {
   const settingsRef = useRef({ ...initial.settings });
 
   const { save, saveRef, updateSave, commitGame, saveError } = useGameProgress(initial);
+  const meta = useMetaProgress(commitGame);
   useEffect(() => {
     stopLoading();
     reportCompletion(completedCount(save) * 100 / LEVEL_COUNT);
@@ -158,6 +163,7 @@ export default function Home() {
   return (
     <div className="relative min-h-screen overflow-hidden bg-[#04050c] text-white">
       {saveError && screen !== 'shop' ? <div role="alert" className="fixed inset-x-4 bottom-4 z-50 rounded-xl border border-amber-300/50 bg-black/90 p-3 text-center text-xs text-amber-100">{saveError}</div> : null}
+      <AchievementUnlocks achievements={save.achievements} onNotified={meta.notify} reduced={save.settings.reduced} />
       <div className="pointer-events-none absolute inset-0 gs-bg" />
       <div className="pointer-events-none absolute inset-0 gs-grid opacity-[0.35]" />
       <div className="pointer-events-none absolute -left-40 top-10 h-96 w-96 rounded-full bg-cyan-500/10 blur-[120px]" />
@@ -246,6 +252,8 @@ export default function Home() {
                 onTutorial={startTutorial}
                 onShop={() => setScreen('shop')}
                 onLeaderboard={() => setScreen('leaderboard')}
+                onDaily={() => { void meta.prepare(); setScreen('daily'); }}
+                onAchievements={() => setScreen('achievements')}
                 onEndless={() => setScreen('endless')}
                 onRace={() => setScreen('race-levels')}
                 onChallenges={() => setScreen('challenges')}
@@ -253,6 +261,16 @@ export default function Home() {
               />
             </div>
           ) : null}
+
+          {screen === 'daily' ? <DailyChallengesScreen save={save} day={meta.day} sound={sound}
+            onBack={() => setScreen('menu')} onPrepare={meta.prepare}
+            onClaim={(date, id) => meta.claim('daily', date, id)} onPlay={(task) => {
+              if (task.mode === 'tutorial' || task.kind === 'rush') startTutorial();
+              else if (task.mode === 'career') startLevel(task.levelIndex ?? 0);
+              else setScreen('endless');
+            }} /> : null}
+          {screen === 'achievements' ? <AchievementsScreen save={save} sound={sound}
+            onBack={() => setScreen('menu')} onClaim={(id) => meta.claim('achievement', null, id)} /> : null}
 
           {screen === 'leaderboard' ? <GlobalLeaderboard best={save.endlessBest || 0}
             hasRecord={save.endlessBest > 0 || save.endlessRecords?.maxStreak > 0}

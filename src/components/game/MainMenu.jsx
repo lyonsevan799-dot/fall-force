@@ -3,6 +3,7 @@ import { Trophy, Infinity as InfinityIcon, Swords, Settings2, Target, Gem, Chevr
 import { LEVELS } from '@/game/levels';
 import { totalStars, completedCount } from '@/game/progress';
 import LeaderboardEntry from '@/components/game/leaderboard/LeaderboardEntry';
+import MetaMenuEntries from '@/components/game/meta/MetaMenuEntries';
 
 const MODES = [
   { key: 'career', label: 'Career', desc: 'Master the levels and conquer Fall Force.', icon: Trophy, accent: 'cyan' },
@@ -16,7 +17,7 @@ const ACCENT = {
   pink: 'border-pink-300/40 bg-pink-400/10 text-pink-200',
 };
 
-export default function MainMenu({ save, sound, onCareer, onTutorial, onShop, onEndless, onRace, onChallenges, onSettings, onLeaderboard }) {
+export default function MainMenu({ save, sound, onCareer, onTutorial, onShop, onEndless, onRace, onChallenges, onSettings, onLeaderboard, onDaily, onAchievements }) {
   const stars = totalStars(save);
   const done = completedCount(save);
   const best = save.endlessBest || 0;
@@ -62,6 +63,7 @@ export default function MainMenu({ save, sound, onCareer, onTutorial, onShop, on
       </button>
 
       <LeaderboardEntry best={best} sound={sound} onOpen={onLeaderboard} />
+      <MetaMenuEntries sound={sound} onDaily={onDaily} onAchievements={onAchievements} />
 
       <button
         type="button"

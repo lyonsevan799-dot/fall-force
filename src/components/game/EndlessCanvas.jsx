@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { EndlessEngine } from '@/game/endlessEngine';
+import { flushProgressEvents } from '@/game/meta/events';
 import { render } from '@/game/render';
 import EndlessHud from './EndlessHud';
 import EndlessGameOver from './EndlessGameOver';
@@ -80,6 +81,7 @@ export default function EndlessCanvas({ skinId = 'classic', settings, displaySet
       const dt = (now - last) / 1000;
       last = now;
       if (!eng.paused) eng.update(dt);
+      flushProgressEvents(eng);
       render(ctx, eng, cssW, cssH, dpr);
       if (eng.milestoneEvent) {
         setMilestone(eng.milestoneEvent);

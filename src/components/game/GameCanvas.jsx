@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Engine } from '@/game/engine';
+import { flushProgressEvents } from '@/game/meta/events';
 import { render } from '@/game/render';
 import Hud from './Hud';
 import LevelIntro from './LevelIntro';
@@ -88,6 +89,7 @@ export default function GameCanvas({ skinId = 'classic', levelIndex, totalLevels
       const dt = (now - last) / 1000;
       last = now;
       if (!eng.paused) eng.update(dt);
+      flushProgressEvents(eng);
       render(ctx, eng, cssW, cssH, dpr);
 
       if (eng.state === 'complete' && !completedRef.current) {
