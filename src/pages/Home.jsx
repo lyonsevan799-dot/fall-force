@@ -111,6 +111,7 @@ export default function Home() {
     return nextSave;
     }).then((saved) => {
       if (saved) { setCompletedInfo(completion.info); setChallengeReward(completion.reward); }
+      return saved;
     });
   };
 

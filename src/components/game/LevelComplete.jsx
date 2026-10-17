@@ -3,8 +3,9 @@ import { Gem, Trophy, ChevronRight } from 'lucide-react';
 import { GameButton, Panel, Stars } from './ui';
 import { LEVELS } from '@/game/levels';
 import { groupForLevel } from '@/game/groups';
+import CareerSaveStatus from '@/components/game/CareerSaveStatus';
 
-export default function LevelComplete({ levelIndex, stars, deaths, time, gems, totalGems, isLast, groupJustCompleted, nextGroupName, isFinalGroup, onNext, onRetry, onExit, onEnterNextGroup, sound, challengeMode = false, exitLabel = 'Levels', challengeFailure = null }) {
+export default function LevelComplete({ levelIndex, stars, deaths, time, gems, totalGems, isLast, groupJustCompleted, nextGroupName, isFinalGroup, onNext, onRetry, onExit, onEnterNextGroup, sound, challengeMode = false, exitLabel = 'Levels', challengeFailure = null, completion = { saved: true } }) {
   const showGroupComplete = groupJustCompleted && !challengeMode;
   const showFinal = showGroupComplete && isFinalGroup;
 
@@ -49,6 +50,7 @@ export default function LevelComplete({ levelIndex, stars, deaths, time, gems, t
         </div>
 
         {challengeFailure ? <p role="status" className="mt-3 text-xs text-pink-200">Failed Attempt: {challengeFailure}. Retry starts a new attempt from the level picker.</p> : null}
+        <CareerSaveStatus completion={completion} />
         <div className="mt-6 grid grid-cols-2 gap-3">
           {challengeMode ? (
             <>
@@ -58,13 +60,13 @@ export default function LevelComplete({ levelIndex, stars, deaths, time, gems, t
           ) : showFinal ? (
             <GameButton variant="primary" className="col-span-2" sound={sound} onClick={onExit}>Finish</GameButton>
           ) : showGroupComplete ? (
-            <GameButton variant="primary" className="col-span-2" sound={sound} onClick={onEnterNextGroup}>
+            <GameButton variant="primary" className="col-span-2" sound={sound} disabled={!completion.saved} onClick={onEnterNextGroup}>
               Enter {nextGroupName} <ChevronRight size={14} className="ml-1" />
             </GameButton>
           ) : isLast ? (
             <GameButton variant="primary" className="col-span-2" sound={sound} onClick={onExit}>Finish</GameButton>
           ) : (
-            <GameButton variant="primary" className="col-span-2" sound={sound} onClick={onNext}>Next Level</GameButton>
+            <GameButton variant="primary" className="col-span-2" sound={sound} disabled={!completion.saved} onClick={onNext}>Next Level</GameButton>
           )}
           {!challengeMode ? (
             <>

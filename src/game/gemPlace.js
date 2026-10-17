@@ -43,6 +43,10 @@ function boxOf(it) {
         const y0 = Math.min(it.y0, it.y1), y1 = Math.max(it.y0, it.y1);
         return { x: it.x - r, y: y0 - r, w: r * 2, h: (y1 - y0) + r * 2 };
       }
+      if (it.move) {
+        const x0 = Math.min(it.x0, it.x1), x1 = Math.max(it.x0, it.x1);
+        return { x: x0 - r, y: it.y - r, w: x1 - x0 + r * 2, h: r * 2 };
+      }
       return { x: it.x - r, y: it.y - r, w: r * 2, h: r * 2 };
     }
     case 'blade': {

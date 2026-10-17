@@ -6,6 +6,7 @@ import LeaderboardEntry from '@/components/game/leaderboard/LeaderboardEntry';
 import MetaMenuEntries from '@/components/game/meta/MetaMenuEntries';
 import TimeTrialEntry from '@/components/game/timeTrial/TimeTrialEntry';
 import { Shield } from 'lucide-react';
+import CrazyGamesProfile from '@/components/game/platform/CrazyGamesProfile';
 
 const MODES = [
   { key: 'career', label: 'Career', desc: 'Master the levels and conquer Fall Force.', icon: Trophy, accent: 'cyan' },
@@ -42,6 +43,7 @@ export default function MainMenu({ save, sound, onCareer, onTutorial, onShop, on
           <span className="block bg-gradient-to-r from-cyan-200 via-white to-fuchsia-300 bg-clip-text text-transparent">Force</span>
         </h1>
         <div className="h-[2px] w-40 bg-gradient-to-r from-transparent via-cyan-300/80 to-transparent" />
+        <CrazyGamesProfile />
       </div>
 
       <div className="grid w-full max-w-3xl gap-3 sm:grid-cols-4">

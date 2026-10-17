@@ -1,4 +1,5 @@
 import { safeInteger } from '@/game/saveData';
+import dailySaveFields from '@/game/meta/dailySaveFields';
 
 const object = (value) => value && typeof value === 'object' && !Array.isArray(value) ? value : {};
 export function metaSaveFields(source) {
@@ -6,7 +7,7 @@ export function metaSaveFields(source) {
   return { lifetimeGemsCollected: safeInteger(source.lifetimeGemsCollected),
     metaProgress: { ...meta, version: safeInteger(meta.version), deathlessCompletions: safeInteger(meta.deathlessCompletions), sessions: object(meta.sessions) },
     achievements: object(source.achievements),
-    dailyChallenges: { ...object(source.dailyChallenges), days: object(source.dailyChallenges?.days) } };
+    dailyChallenges: dailySaveFields(source) };
 }
 export function initializeMetaProgress(save) {
   if (save.metaProgress?.version === 1) return save;

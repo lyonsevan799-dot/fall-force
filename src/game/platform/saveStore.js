@@ -3,7 +3,22 @@ import migrateLegacySave from '@/game/platform/saveMigration';
 
 let backend = null, mode = 'memory', cached = null, volatile = false, blocked = false, validate;
 let notice = '';
-const listeners = new Set();
+const listeners = new Set(), sessionListeners = new Set();
+let session = 0;
+export const getSaveSession = () => session;
+export function subscribeSaveSession(listener) { sessionListeners.add(listener); return () => sessionListeners.delete(listener); }
+export function switchSaveSession() {
+  if (mode !== 'crazygames') return;
+  session++; cached = null; volatile = false; blocked = false;
+  let failure = null;
+  try {
+    const candidate = backend.getItem(PROGRESS_KEY);
+    if (candidate !== null) validate(candidate);
+    cached = candidate;
+  } catch (error) { blocked = true; failure = error; }
+  notify(failure);
+  sessionListeners.forEach((listener) => listener());
+}
 export const getSaveNotice = () => notice;
 export const usesBrowserSaves = () => mode === 'browser' && !blocked;
 export function subscribeSaveNotice(listener) { listeners.add(listener); return () => listeners.delete(listener); }
@@ -22,6 +37,7 @@ export function initializeSaveStore(sdk, decode) {
       cached = backend.getItem(PROGRESS_KEY);
     }
     if (cached !== null) decode(cached);
+    if (!sdk && import.meta.env.CRAZYGAMES) notify({ code: 'sdkUnavailable' });
   } catch (error) {
     // A failed SDK read must not fall through to an unrelated browser/account wallet.
     blocked = true;
@@ -41,6 +57,7 @@ export function readSaveRaw() {
   if (volatile || blocked) return cached;
   try {
     const candidate = backend?.getItem(PROGRESS_KEY) ?? null;
+    if (mode === 'crazygames' && candidate === null && cached !== null) throw Object.assign(new Error('The active save is temporarily unavailable'), { code: 'saveMissing' });
     if (candidate !== null) validate(candidate);
     cached = candidate;
   } catch (error) { blocked = true; notify(error); }

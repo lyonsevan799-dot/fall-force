@@ -19,14 +19,16 @@ export default function useProceduralRun(props, mode, wrapRef, canvasRef, leader
     const EngineClass = mode === 'survival' ? SurvivalEngine : EndlessEngine;
     const engine = new EngineClass({ sound: props.sound, settings: props.displaySettings || props.settings });
     engineRef.current = engine;
-    let disposed = false, isReady = mode === 'survival', reported = null, bankEpoch = 0;
+    let disposed = false, isReady = mode === 'survival', reported = null, bankEpoch = 0, focusPaused = false;
     let width = 1, height = 1, dpr = 1;
     const canvas = canvasRef.current, ctx = canvas.getContext('2d', { alpha: false });
     const draw = () => render(ctx, engine, width, height, dpr);
     const publish = () => {
       flushProgressEvents(engine);
       setUi({ ...engine.ui, isNewBest: engine.score > engine.best && engine.score > 0 });
-      setGameplay(!engine.paused && ['intro', 'playing'].includes(engine.state));
+      if (!focusPaused || !engine.paused) {
+        focusPaused = false; setGameplay(!engine.paused && ['intro', 'playing'].includes(engine.state));
+      }
     };
     const bankRun = (result) => {
       const epoch = ++bankEpoch;
@@ -56,7 +58,7 @@ export default function useProceduralRun(props, mode, wrapRef, canvasRef, leader
       draw();
     };
     const load = (retry = false) => {
-      loop.stop(); bankEpoch++;
+      loop.stop(); bankEpoch++; focusPaused = false;
       const best = Math.max(latest.current.props.best || 0, engine.score || 0);
       engine.loadEndless(best, retry); engine.skinId = latest.current.props.skinId;
       engine.paused = isReady; reported = null;
@@ -66,8 +68,8 @@ export default function useProceduralRun(props, mode, wrapRef, canvasRef, leader
     };
     const pause = () => {
       if (isAdBusy()) return;
-      if (isReady || !['intro', 'playing'].includes(engine.state)) return;
-      engine.paused = true; setPaused(true); setGameplay(false);
+      if (isReady || engine.paused || !['intro', 'playing'].includes(engine.state)) return;
+      focusPaused = true; engine.paused = true; setPaused(true);
     };
     const visibility = () => { if (document.hidden) pause(); };
     actionsRef.current = {
@@ -75,7 +77,7 @@ export default function useProceduralRun(props, mode, wrapRef, canvasRef, leader
       start: () => { props.sound.init(); props.sound.resume(); isReady = false; engine.paused = false; setReady(false); },
       togglePause: () => {
         if (isReady || !['intro', 'playing'].includes(engine.state)) return;
-        engine.paused = !engine.paused; setPaused(engine.paused);
+        focusPaused = false; engine.paused = !engine.paused; setPaused(engine.paused);
         setGameplay(!engine.paused);
       },
       restart: () => {

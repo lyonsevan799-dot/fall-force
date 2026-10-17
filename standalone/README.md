@@ -14,7 +14,7 @@ To run the built game locally use `npx vite preview --config standalone/vite.con
 
 The standalone configuration selects `standalone/src/App.jsx` instead of the hosted auth/router entry and does not load the Base44 Vite plugin. It retains all game hooks and UI. The game itself uses Canvas, procedural WebAudio, and CrazyGames Data Module saves (browser fallback off-platform), with React, ReactDOM, lucide-react and canvas-confetti. No Base44 SDK, auth, database, analytics, or backend endpoints are needed by this build's reachable game code.
 
-Fonts are bundled locally with their SIL Open Font License notices; paths are relative. No Google Fonts request is necessary for this build. No advertisements, SDK mocks, third-party trackers, or account screens are added. Custom fullscreen requests are disabled for the CrazyGames build, since the portal supplies fullscreen.
+Fonts are bundled locally with their SIL Open Font License notices; paths are relative. No Google Fonts request is necessary for this build. No SDK mocks, third-party trackers, external login screens, or real-money purchases are added. Optional CrazyGames advertising remains disabled pending approval. When supported, the menu shows the CrazyGames username without requiring login. Custom fullscreen requests are disabled for the CrazyGames build, since the portal supplies fullscreen.
 
 The downloadable source kit uses the slim manifest from `standalone/package.json` at its root and includes only the game source, hooks, fonts and build configuration. The regular Base44 source export can also use this configuration without replacing its original package manifest.
 
@@ -24,10 +24,14 @@ The original `gravity-switch-save-v1` key and progress format are retained. Star
 
 CrazyGames cannot read saves from base44.app or another origin. Migration can access only the browser storage on the current game origin; keep the same CrazyGames game ID/origin for future updates. No player data is bundled in the export.
 
-The Data Module integration is implemented, but real guest/account/cross-device sync is NOT verified. Enable **Progress Save → Yes, using the Data Module from the CrazyGames SDK** in the Developer Portal submission. The SDK handles guest/account transitions and its own approximately one-second debounce (sometimes up to 30 seconds). Do not force-reload immediately after a save when checking cloud sync. No undocumented flush/ack method is used. This remains a client-authoritative economy, not a trusted source for cash or competitive leaderboards.
+The Data Module integration is implemented, but real guest/account/cross-device sync is NOT verified. Enable **Progress Save → Yes, using the Data Module from the CrazyGames SDK** in the Developer Portal submission. The SDK handles guest/account storage and its own approximately one-second debounce (sometimes up to 30 seconds). The documented auth listener now reloads the selected SDK save and retires old runs/queued writes without merging wallets; CrazyGames documents logout as a page reload. Optional older ghost recordings can be removed near the 900 KB safety budget without deleting best times, splits, ownership or claim receipts. Do not force-reload immediately after a save when checking cloud sync. No undocumented flush/ack method is used. This remains a client-authoritative economy, not a trusted source for cash or competitive leaderboards.
 
 ## Submission status
 
 This is a Basic Launch candidate, NOT a claim of CrazyGames acceptance or completed gameplay QA. Under the official requirements reviewed on 2026-10-16, SDK integration is optional for Basic Launch and ads are not allowed; Full Launch requires the official SDK gameplay lifecycle and applicable account/progress integrations. None is faked here.
 
 Before submission, run the QA checklist through Testing Agent and the CrazyGames Developer Portal preview, confirm desktop/mobile/iframe behavior, and supply real cover assets and gameplay videos. For this integration, read `src/standalone/CRAZYGAMES_INTEGRATION_REPORT.md`; `src/standalone/PUBLISHING_REPORT.md` is the earlier historical stability report. To test the real SDK locally use localhost/127.0.0.1, or append `?useLocalSdk=true` on another domain; `&muteAudio=true` and `&disableChat=true` exercise platform settings. The SDK determines its own environment.
+
+## Final launch handoff
+
+See `src/standalone/FINAL_LAUNCH_REPORT.md` for the final code/build inspection, confirmed fixes, remaining playthrough matrix, portal settings and approval requirements. A passing build is not a claim of a completed gameplay test or CrazyGames acceptance. The packager supports either `zip` or Python 3's standard ZIP library; neither packages private keys or player saves.

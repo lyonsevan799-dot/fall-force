@@ -17,7 +17,7 @@ export default function useRaceSession(options, wrapRef, canvasRef) {
   useEffect(() => {
     const engine = new RaceEngine({ sound: options.sound, settings: options.displaySettings || options.settings, levelIndex: options.levelIndex });
     engine.skinIds = latest.current.skinIds; engineRef.current = engine;
-    let disposed = false, raf = 0, epoch = 0, bankEpoch = 0, reported = null, last = 0, sync = 0, state = '';
+    let disposed = false, raf = 0, epoch = 0, bankEpoch = 0, reported = null, last = 0, sync = 0, state = '', focusPaused = false;
     let width = 1, height = 1, dpr = 1;
     const ctx = canvasRef.current.getContext('2d', { alpha: false });
     const draw = () => renderRace(ctx, engine, width, height, dpr);
@@ -27,7 +27,9 @@ export default function useRaceSession(options, wrapRef, canvasRef) {
         p1: engine.getProgress(a), p2: engine.getProgress(b), p1Alive: a.alive, p2Alive: b.alive,
         p1Finished: a.finished, p2Finished: b.finished, p1Time: a.finishTime, p2Time: b.finishTime,
         p1Deaths: a.deaths, p2Deaths: b.deaths, ...engine.result });
-      setGameplay(!engine.paused && ['countdown', 'racing'].includes(engine.state));
+      if (!focusPaused || !engine.paused) {
+        focusPaused = false; setGameplay(!engine.paused && engine.state === 'racing');
+      }
     };
     const save = () => {
       if (!engine.result) return;
@@ -55,10 +57,11 @@ export default function useRaceSession(options, wrapRef, canvasRef) {
       };
       raf = requestAnimationFrame(tick);
     };
-    const pause = () => {
+    const pause = (reason) => {
       if (isAdBusy()) return;
       if (!['countdown', 'racing'].includes(engine.state) || engine.paused) return;
-      engine.paused = true; setPaused(true); setGameplay(false);
+      focusPaused = reason !== 'orientation'; engine.paused = true; setPaused(true);
+      if (!focusPaused) setGameplay(false);
     };
     const resize = () => {
       if (disposed || !wrapRef.current) return;
@@ -67,7 +70,7 @@ export default function useRaceSession(options, wrapRef, canvasRef) {
       canvasRef.current.width = Math.floor(width * dpr); canvasRef.current.height = Math.floor(height * dpr);
       const coarse = navigator.maxTouchPoints > 0 || window.matchMedia('(pointer: coarse)').matches;
       setTouch(coarse); setRotate(coarse && height > width);
-      if (coarse && height > width) pause();
+      if (coarse && height > width) pause('orientation');
       draw();
     };
     const visibility = () => { if (document.hidden) pause(); };
@@ -75,11 +78,11 @@ export default function useRaceSession(options, wrapRef, canvasRef) {
       start: () => { options.sound.init(); options.sound.resume(); engine.start(); publish(); },
       togglePause: () => {
         if (!['countdown', 'racing'].includes(engine.state)) return;
-        engine.paused = !engine.paused; setPaused(engine.paused); publish();
+        focusPaused = false; engine.paused = !engine.paused; setPaused(engine.paused); publish();
       },
       rematch: () => {
         if (engine.state === 'finished') return;
-        stop(); bankEpoch++;
+        stop(); bankEpoch++; focusPaused = false;
         if (seriesRef.current.complete) { seriesRef.current = createRaceSeries(seriesRef.current.bestOfThree); setSeries(seriesRef.current); }
         options.sound.init(); options.sound.resume(); engine.load(options.levelIndex); engine.skinIds = latest.current.skinIds;
         reported = null; setPaused(false); setBank('idle'); engine.start(); publish(); run();

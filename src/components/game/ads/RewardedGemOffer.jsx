@@ -1,11 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Film } from 'lucide-react';
 import { AD_CONFIG } from '@/game/platform/ads/config';
+import { getSaveSession } from '@/game/platform/saveStore';
 import { requestVideoAd, videoAvailability } from '@/game/platform/ads/videoAds';
 import creditAdReward, { getPendingAdReward, keepPendingAdReward, clearPendingAdReward } from '@/game/platform/ads/rewards';
 
 export default function RewardedGemOffer({ updateSave }) {
-  const busy = useRef(false), receipt = useRef(getPendingAdReward()), mounted = useRef(false);
+  const busy = useRef(false), receipt = useRef(getPendingAdReward()), mounted = useRef(false), session = useRef(getSaveSession());
   const [pending, setPending] = useState(false), [message, setMessage] = useState(''), [retry, setRetry] = useState(!!getPendingAdReward()), [, refresh] = useState(0);
   useEffect(() => {
     mounted.current = true;
@@ -18,6 +19,7 @@ export default function RewardedGemOffer({ updateSave }) {
     busy.current = true; setPending(true); setMessage('');
     try {
       const result = receipt.current || await requestVideoAd('rewarded');
+      if (session.current !== getSaveSession()) return;
       if (result.status !== 'finished') { if (mounted.current) setMessage(`${result.message || 'Keep playing normally.'} No bonus gems were granted.`); return; }
       receipt.current = result; keepPendingAdReward(result);
       await updateSave((save) => creditAdReward(save, result));

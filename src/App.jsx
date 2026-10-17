@@ -7,7 +7,7 @@ import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import ScrollToTop from './components/ScrollToTop';
 // Add page imports here
-import Home from '@/pages/Home';
+import Home from '@/components/game/GameRoot';
 import GameErrorBoundary from '@/components/game/GameErrorBoundary';
 
 const AuthenticatedApp = () => {

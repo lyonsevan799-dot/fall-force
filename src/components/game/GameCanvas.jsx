@@ -16,6 +16,7 @@ import MiddleAttempt from '@/game/middleAttempt';
 import MiddleChallengeIntro from '@/components/game/MiddleChallengeIntro';
 import ChallengeRunStatus from '@/components/game/ChallengeRunStatus';
 import useAdBreak from '@/hooks/useAdBreak';
+import useCareerCompletion from '@/hooks/useCareerCompletion';
 
 export default function GameCanvas({ skinId = 'classic', levelIndex, totalLevels, settings, displaySettings, sound, totalGems, groupJustCompleted, nextGroupName, isFinalGroup, onExit, onComplete, onNext, onEnterNextGroup, onUpdateSettings, onResetProgress, challenge, challengeReward, onClearReward, onChallengeFailure, onNewChallengeAttempt }) {
   const wrapRef = useRef(null);
@@ -24,6 +25,7 @@ export default function GameCanvas({ skinId = 'classic', levelIndex, totalLevels
   const cbRef = useRef({});
   const continueAfterAd = useAdBreak(engineRef);
   const completedRef = useRef(false);
+  const completion = useCareerCompletion(onComplete, levelIndex);
   const [middleReady, setMiddleReady] = useState(challenge?.type === 'middle');
 
   const [ui, setUi] = useState({ state: 'intro', deaths: 0, time: 0, progress: 0, checkpoint: 0, stars: 3, gems: 0, rush: false, rushAvailable: false });
@@ -97,7 +99,7 @@ export default function GameCanvas({ skinId = 'classic', levelIndex, totalLevels
       if (eng.state === 'complete' && !completedRef.current) {
         completedRef.current = true;
         if (cbRef.current.onComplete) {
-          cbRef.current.onComplete(levelIndex, { runId: eng.runId, deaths: eng.deaths, time: eng.attemptTime, stars: eng.stars, gems: eng.gems, middleSuccess: eng.middleAttempt?.succeeded === true });
+          void completion.submit({ runId: eng.runId, deaths: eng.deaths, time: eng.attemptTime, stars: eng.stars, gems: eng.gems, middleSuccess: eng.middleAttempt?.succeeded === true });
         }
       }
       // Auto-respawn shortly after death so the player is back in the action
@@ -170,6 +172,7 @@ export default function GameCanvas({ skinId = 'classic', levelIndex, totalLevels
     const eng = engineRef.current;
     if (!eng) return;
     if (eng.middleAttempt && !eng.middleAttempt.started) return;
+    if (!completion.clear()) return;
     completedRef.current = false;
     eng.paused = false;
     eng.restart(true);
@@ -317,6 +320,7 @@ export default function GameCanvas({ skinId = 'classic', levelIndex, totalLevels
           />
         ) : (
           <LevelComplete
+            completion={completion}
             levelIndex={levelIndex}
             stars={ui.stars}
             deaths={ui.deaths}

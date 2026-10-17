@@ -1,4 +1,4 @@
-import Home from '@/pages/Home';
+import Home from '@/components/game/GameRoot';
 import '@/standalone/fonts.css';
 import GameErrorBoundary from '@/components/game/GameErrorBoundary';
 

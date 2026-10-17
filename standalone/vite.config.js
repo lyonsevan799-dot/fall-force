@@ -15,7 +15,13 @@ export default defineConfig({
     { name: 'standalone-html', transformIndexHtml: {
       order: 'pre',
       handler: () => readFileSync(new URL('./index.html', import.meta.url), 'utf8'),
-    }, generateBundle() {
+    }, generateBundle(_options, bundle) {
+      for (const output of Object.values(bundle)) {
+        if (output.type !== 'chunk') continue;
+        for (const id of Object.keys(output.modules)) {
+          if (/@base44[\\/]|src[\\/](api[\\/]|lib[\\/]AuthContext)/.test(id)) throw new Error(`Hosted-only dependency in standalone game: ${id}`);
+        }
+      }
       for (const name of ['Inter-OFL.txt', 'Orbitron-OFL.txt']) {
         this.emitFile({ type: 'asset', fileName: `licenses/${name}`, source: readFileSync(new URL(`../src/assets/fonts/${name}`, import.meta.url), 'utf8') });
       }

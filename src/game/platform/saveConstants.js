@@ -8,6 +8,7 @@ export function checkSaveSize(raw) {
   }
 }
 export function saveMessage(error) {
+  if (error?.code === 'sdkUnavailable') return 'CrazyGames is unavailable. Saves use this browser only; no cloud backup is confirmed.';
   if (error?.code === 'dataLimitExcedeed') return 'Save data is too large. Previous saved progress is untouched; new progress stays in this session.';
   if (error?.code === 'dataModuleDisabled') return 'CrazyGames saving is disabled. Progress stays in this session; enable the Data Module in the CrazyGames submission settings.';
   if (error?.code === 'corruptSave') return 'Saved data could not be read. The original is untouched; new progress stays in this session.';

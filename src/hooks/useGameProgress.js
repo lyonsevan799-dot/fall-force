@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
-import { usesBrowserSaves, getSaveNotice, subscribeSaveNotice } from '@/game/platform/saveStore';
+import { usesBrowserSaves, getSaveNotice, subscribeSaveNotice, getSaveSession } from '@/game/platform/saveStore';
 import { loadProgress, PROGRESS_KEY } from '@/game/progress';
 import progressTransaction from '@/game/progressTransaction';
 
 export default function useGameProgress(initial) {
-  const [save, setSave] = useState(initial), saveRef = useRef(initial);
+  const [save, setSave] = useState(initial), saveRef = useRef(initial), session = useRef(getSaveSession());
   const [saveError, setSaveError] = useState('');
   const storageNotice = useSyncExternalStore(subscribeSaveNotice, getSaveNotice);
-  const accept = useCallback((next) => { saveRef.current = next; setSave(next); }, []);
+  const accept = useCallback((next) => { if (session.current !== getSaveSession()) return; saveRef.current = next; setSave(next); }, []);
   useEffect(() => {
     const sync = (event) => { if (usesBrowserSaves() && (event.key === PROGRESS_KEY || event.key == null)) accept(loadProgress()); };
     window.addEventListener('storage', sync);
@@ -15,6 +15,7 @@ export default function useGameProgress(initial) {
   }, [accept]);
   const updateSave = useCallback(async (updater) => {
     try {
+      if (session.current !== getSaveSession()) throw new Error('The CrazyGames account changed. Reopen the shop.');
       const next = await progressTransaction(updater);
       accept(next); setSaveError(''); return next;
     } catch (error) {
@@ -25,6 +26,7 @@ export default function useGameProgress(initial) {
   }, [accept]);
   // Gameplay events do not leak rejected promises into the canvas loop.
   const commitGame = useCallback(async (updater, options = {}) => {
+    if (session.current !== getSaveSession()) return null;
     try {
       const next = await progressTransaction(updater, { allowVolatile: options.allowVolatile !== false });
       accept(next); setSaveError(''); return next;
