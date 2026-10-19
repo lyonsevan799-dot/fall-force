@@ -94,6 +94,20 @@ export default function GameCanvas({ skinId = 'classic', levelIndex, totalLevels
       last = now;
       if (!eng.paused) eng.update(dt);
       flushProgressEvents(eng);
+      if (challenge && (eng.middleAttempt?.failed || eng.deaths > 0)) {
+        eng.middleAttempt = null;
+        eng.restart(true);
+        if (challenge.type === 'middle') {
+          eng.middleAttempt = new MiddleAttempt((reason) => cbRef.current.onChallengeFailure?.(challenge.id, reason));
+          eng.middleAttempt.position(eng);
+          eng.middleAttempt.start(eng);
+        }
+        completedRef.current = false;
+        deadAt = null;
+        lastCp = eng.ui.checkpoint;
+        setToast(false);
+        push();
+      }
       render(ctx, eng, cssW, cssH, dpr);
 
       if (eng.state === 'complete' && !completedRef.current) {
