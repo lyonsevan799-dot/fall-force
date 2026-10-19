@@ -15,7 +15,7 @@ export function achievementProgress(save, id) {
   if (id === 'endless_runner') return save.endlessBest || 0;
   if (id === 'gravity_master') {
     let count = 0;
-    for (let index = hard.start; index <= hard.end; index++) if (save.levels?.[index]?.completed) count++;
+    for (let index = hard.start; index <= hard.end; index++) if (save.levels?.[index]?.completed && !save.levels[index].skipped) count++;
     return count;
   }
   return 0;

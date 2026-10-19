@@ -5,6 +5,7 @@ import { tutorialSaveFields } from '@/game/tutorialProgress';
 import { skinSaveFields } from '@/game/skins/inventory';
 import { metaSaveFields } from '@/game/meta/saveFields';
 import creditRunGems from '@/game/gemCredits';
+import powerSaveFields from '@/game/powers/saveFields';
 
 import { PROGRESS_KEY } from '@/game/platform/saveConstants';
 import { readSaveRaw, writeSaveRaw, removeSave } from '@/game/platform/saveStore';
@@ -27,6 +28,10 @@ export const FALLBACK = {
   ownedSkins: ['classic'],
   equippedSkins: { solo: 'classic', p1: 'classic', p2: 'classic' },
   skinPurchases: {},
+  powerInventory: { doubleGems: 0 },
+  powerPurchases: {},
+  powerActivations: {},
+  levelStruggles: {},
   levels: {},          // { [index]: { stars, time, completed } }
   unlocked: 0,         // highest playable level index (0-based)
   endlessBest: 0,      // highest endless score
@@ -49,7 +54,7 @@ export function decodeProgress(raw) {
     const source = JSON.parse(raw);
     if (!source || typeof source !== 'object' || Array.isArray(source)) throw new Error('Invalid save record');
     return { ...normalizeProgress(source, FALLBACK, LEVEL_COUNT),
-      ...tutorialSaveFields(source), ...skinSaveFields(source), ...metaSaveFields(source) };
+      ...tutorialSaveFields(source), ...skinSaveFields(source), ...metaSaveFields(source), ...powerSaveFields(source) };
   } catch (cause) {
     throw Object.assign(new Error('Saved progress could not be read', { cause }), { code: 'corruptSave' });
   }
@@ -66,6 +71,7 @@ export function recordResult(progress, levelIndex, { stars, time }, totalLevels)
   const next = clone(progress);
   const prev = next.levels[levelIndex] || { stars: 0, time: null, completed: false };
   next.levels[levelIndex] = {
+    ...prev, skipped: false,
     stars: Math.max(prev.stars || 0, stars),
     time: prev.time == null ? time : Math.min(prev.time, time),
     completed: true,

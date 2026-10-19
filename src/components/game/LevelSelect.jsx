@@ -69,7 +69,7 @@ export default function LevelSelect({ save, groupIndex, onSelect, onBack, sound,
                     {!playable ? 'Locked' : lv.name}
                   </div>
                   <div className="mt-2">
-                    <Stars value={playable ? (rec ? rec.stars : 0) : 0} size={12} />
+                    {rec?.skipped ? <span className="font-heading text-[9px] uppercase text-race-two">Skipped · Replay to earn stars</span> : <Stars value={playable ? (rec ? rec.stars : 0) : 0} size={12} />}
                   </div>
                 </div>
               </div>

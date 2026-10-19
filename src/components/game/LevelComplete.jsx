@@ -5,7 +5,7 @@ import { LEVELS } from '@/game/levels';
 import { groupForLevel } from '@/game/groups';
 import CareerSaveStatus from '@/components/game/CareerSaveStatus';
 
-export default function LevelComplete({ levelIndex, stars, deaths, time, gems, totalGems, isLast, groupJustCompleted, nextGroupName, isFinalGroup, onNext, onRetry, onExit, onEnterNextGroup, sound, challengeMode = false, exitLabel = 'Levels', challengeFailure = null, completion = { saved: true } }) {
+export default function LevelComplete({ levelIndex, stars, deaths, time, gems, doubleGems = false, totalGems, isLast, groupJustCompleted, nextGroupName, isFinalGroup, onNext, onRetry, onExit, onEnterNextGroup, sound, challengeMode = false, exitLabel = 'Levels', challengeFailure = null, completion = { saved: true } }) {
   const showGroupComplete = groupJustCompleted && !challengeMode;
   const showFinal = showGroupComplete && isFinalGroup;
 
@@ -41,7 +41,7 @@ export default function LevelComplete({ levelIndex, stars, deaths, time, gems, t
             <span>Time {time.toFixed(2)}s</span>
             <span>Deaths {deaths}</span>
           </div>
-          <div className="text-white/50">Gems collected this level: <span className="text-cyan-300">{gems || 0}</span></div>
+          <div className="text-white/50">{doubleGems ? 'Level gems awarded (×2):' : 'Gems collected this level:'} <span className="text-cyan-300">{gems || 0}</span></div>
           <div className="flex items-center gap-1.5 text-cyan-300">
             <Gem size={12} />
             <span>{(totalGems || 0).toLocaleString()}</span>

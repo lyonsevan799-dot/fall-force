@@ -6,7 +6,7 @@ export default function ShopHeader({ save, target, setTarget, view, setView, rar
   return (
     <>
       <header className="flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-3"><button type="button" onClick={onBack} aria-label="Back to main menu" className="min-h-11 min-w-11 rounded-xl border border-border bg-card"><ArrowLeft className="mx-auto" size={18} /></button><div><h1 className="flex items-center gap-2 font-heading text-xl sm:text-3xl"><ShoppingBag className="text-primary" />Skin Shop</h1><p className="mt-1 text-xs text-muted-foreground">A new look. The same gravity-defying runner.</p></div></div>
+        <div className="flex items-center gap-3"><button type="button" onClick={onBack} aria-label="Back" className="min-h-11 min-w-11 rounded-xl border border-border bg-card"><ArrowLeft className="mx-auto" size={18} /></button><div><h1 className="flex items-center gap-2 font-heading text-xl sm:text-3xl"><ShoppingBag className="text-primary" />Item Shop</h1><p className="mt-1 text-xs text-muted-foreground">Skins and powers. One gem balance.</p></div></div>
         <div className="rounded-2xl border border-primary/40 bg-primary/10 px-5 py-3"><span className="text-[9px] uppercase tracking-widest text-muted-foreground">Your saved gems</span><div className="flex items-center gap-2 font-heading text-xl text-primary"><Gem size={22} />{save.totalGems.toLocaleString()}</div></div>
       </header>
       <div className="mt-6 flex flex-wrap items-center justify-between gap-3">

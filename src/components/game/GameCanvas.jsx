@@ -17,8 +17,12 @@ import MiddleChallengeIntro from '@/components/game/MiddleChallengeIntro';
 import ChallengeRunStatus from '@/components/game/ChallengeRunStatus';
 import useAdBreak from '@/hooks/useAdBreak';
 import useCareerCompletion from '@/hooks/useCareerCompletion';
+import useLevelStruggle from '@/hooks/useLevelStruggle';
+import { canSkip } from '@/game/powers/catalog';
+import SkipRecommendation from '@/components/game/powers/SkipRecommendation';
+import restartChallengeAttempt from '@/game/restartChallengeAttempt';
 
-export default function GameCanvas({ skinId = 'classic', levelIndex, totalLevels, settings, displaySettings, sound, totalGems, groupJustCompleted, nextGroupName, isFinalGroup, onExit, onComplete, onNext, onEnterNextGroup, onUpdateSettings, onResetProgress, challenge, challengeReward, onClearReward, onChallengeFailure, onNewChallengeAttempt }) {
+export default function GameCanvas({ skinId = 'classic', levelIndex, totalLevels, settings, displaySettings, sound, totalGems, groupJustCompleted, nextGroupName, isFinalGroup, onExit, onComplete, onNext, onEnterNextGroup, onUpdateSettings, onResetProgress, challenge, challengeReward, onClearReward, onChallengeFailure, onNewChallengeAttempt, powerTools = null }) {
   const wrapRef = useRef(null);
   const canvasRef = useRef(null);
   const engineRef = useRef(null);
@@ -26,7 +30,10 @@ export default function GameCanvas({ skinId = 'classic', levelIndex, totalLevels
   const continueAfterAd = useAdBreak(engineRef);
   const completedRef = useRef(false);
   const completion = useCareerCompletion(onComplete, levelIndex);
-  const [middleReady, setMiddleReady] = useState(challenge?.type === 'middle');
+  const struggle = useLevelStruggle(levelIndex, powerTools?.save, powerTools?.commitGame);
+  const recommendation = useRef(false);
+  recommendation.current = !!powerTools && struggle.eligible && canSkip(powerTools.save, levelIndex);
+  const [middleReady, setMiddleReady] = useState(challenge?.type === 'middle' && !powerTools);
 
   const [ui, setUi] = useState({ state: 'intro', deaths: 0, time: 0, progress: 0, checkpoint: 0, stars: 3, gems: 0, rush: false, rushAvailable: false });
   const [paused, setPaused] = useState(false);
@@ -45,13 +52,15 @@ export default function GameCanvas({ skinId = 'classic', levelIndex, totalLevels
     const ctx = canvas.getContext('2d', { alpha: false });
     const eng = new Engine({ sound, settings });
     eng.skinId = skinId;
+    eng.powerActivation = powerTools?.active?.levelIndex === levelIndex ? powerTools.active : null;
     eng.load(levelIndex);
     if (challenge?.type === 'middle') {
       eng.middleAttempt = new MiddleAttempt((reason) => cbRef.current.onChallengeFailure?.(challenge.id, reason));
       eng.middleAttempt.position(eng);
-      eng.paused = true;
+      if (powerTools) eng.middleAttempt.start(eng);
+      else eng.paused = true;
     }
-    setMiddleReady(challenge?.type === 'middle');
+    setMiddleReady(challenge?.type === 'middle' && !powerTools);
     engineRef.current = eng;
     completedRef.current = false;
     setPaused(false);
@@ -84,7 +93,7 @@ export default function GameCanvas({ skinId = 'classic', levelIndex, totalLevels
     const push = () => setUi({
       state: eng.state, deaths: eng.deaths, time: eng.attemptTime,
       progress: eng.ui.progress, checkpoint: eng.ui.checkpoint, stars: eng.stars,
-      gems: eng.gems, rush: !!eng.rush, rushAvailable: eng.rushAvailable,
+      gems: eng.gems * (eng.powerActivation ? 2 : 1), doubleGems: !!eng.powerActivation, rush: !!eng.rush, rushAvailable: eng.rushAvailable,
       middleFailed: !!eng.middleAttempt?.failed, middleReason: eng.middleAttempt?.reason,
     });
 
@@ -93,15 +102,11 @@ export default function GameCanvas({ skinId = 'classic', levelIndex, totalLevels
       const dt = (now - last) / 1000;
       last = now;
       if (!eng.paused) eng.update(dt);
+      struggle.sample(eng, dt);
       flushProgressEvents(eng);
       if (challenge && (eng.middleAttempt?.failed || eng.deaths > 0)) {
-        eng.middleAttempt = null;
-        eng.restart(true);
-        if (challenge.type === 'middle') {
-          eng.middleAttempt = new MiddleAttempt((reason) => cbRef.current.onChallengeFailure?.(challenge.id, reason));
-          eng.middleAttempt.position(eng);
-          eng.middleAttempt.start(eng);
-        }
+        if (eng.deaths === 0 && eng.middleAttempt?.reason !== 'Restarted the level') struggle.failure();
+        restartChallengeAttempt(eng, challenge, (reason) => cbRef.current.onChallengeFailure?.(challenge.id, reason));
         completedRef.current = false;
         deadAt = null;
         lastCp = eng.ui.checkpoint;
@@ -113,13 +118,13 @@ export default function GameCanvas({ skinId = 'classic', levelIndex, totalLevels
       if (eng.state === 'complete' && !completedRef.current) {
         completedRef.current = true;
         if (cbRef.current.onComplete) {
-          void completion.submit({ runId: eng.runId, deaths: eng.deaths, time: eng.attemptTime, stars: eng.stars, gems: eng.gems, middleSuccess: eng.middleAttempt?.succeeded === true });
+          void completion.submit({ runId: eng.runId, deaths: eng.deaths, time: eng.attemptTime, stars: eng.stars, gems: eng.gems, powerActivationId: eng.powerActivation?.id, middleSuccess: eng.middleAttempt?.succeeded === true });
         }
       }
       // Auto-respawn shortly after death so the player is back in the action
       // almost immediately — no need to wait for a tap. Tapping still skips
       // the pause for impatient players.
-      if (eng.state === 'dead' && !eng.paused) {
+      if (eng.state === 'dead' && !eng.paused && !recommendation.current) {
         if (deadAt == null) deadAt = now;
         if (now - deadAt > 550) { deadAt = null; eng.respawn(); }
       } else if (eng.state !== 'dying') {
@@ -163,6 +168,10 @@ export default function GameCanvas({ skinId = 'classic', levelIndex, totalLevels
   }, [displaySettings]);
 
   useEffect(() => { if (engineRef.current) engineRef.current.skinId = skinId; }, [skinId]);
+  useEffect(() => {
+    const eng = engineRef.current;
+    if (eng && eng.state !== 'complete') eng.powerActivation = powerTools?.active?.levelIndex === levelIndex ? powerTools.active : null;
+  }, [powerTools?.active, levelIndex]);
 
   // ---- actions -------------------------------------------------------------
   const startMiddle = () => {
@@ -175,7 +184,7 @@ export default function GameCanvas({ skinId = 'classic', levelIndex, totalLevels
 
   const primary = () => {
     const eng = engineRef.current;
-    if (!eng || eng.paused) return;
+    if (!eng || eng.paused || (recommendation.current && eng.state === 'dead')) return;
     sound.init();
     sound.resume();
     if (eng.state === 'playing' || eng.state === 'intro') eng.switchGravity();
@@ -187,10 +196,14 @@ export default function GameCanvas({ skinId = 'classic', levelIndex, totalLevels
     if (!eng) return;
     if (eng.middleAttempt && !eng.middleAttempt.started) return;
     if (!completion.clear()) return;
+    const finished = eng.state === 'complete';
+    const suggest = !finished && struggle.restart() && !!powerTools;
+    if (finished) eng.powerActivation = null;
     completedRef.current = false;
     eng.paused = false;
-    eng.restart(true);
-    setPaused(false);
+    restartChallengeAttempt(eng, challenge, (reason) => cbRef.current.onChallengeFailure?.(challenge?.id, reason));
+    eng.paused = suggest;
+    setPaused(suggest);
     setShowSettings(false);
   };
 
@@ -211,6 +224,7 @@ export default function GameCanvas({ skinId = 'classic', levelIndex, totalLevels
       if (!eng) return;
       if (e.target instanceof Element && e.target.closest('button, input, select, textarea, a, [role="button"], [contenteditable="true"]')) return;
       if (eng.middleAttempt && !eng.middleAttempt.started) return;
+      if (recommendation.current && (eng.state === 'dead' || eng.paused)) return;
       sound.init();
       sound.resume();
       if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'ArrowDown' || e.code === 'Enter') {
@@ -263,10 +277,18 @@ export default function GameCanvas({ skinId = 'classic', levelIndex, totalLevels
   }, [toast]);
 
   const flip = () => { const eng = engineRef.current; if (eng && (eng.state === 'playing' || eng.state === 'intro')) eng.switchGravity(); };
-  const deadTap = () => { const eng = engineRef.current; if (eng && eng.state === 'dead') eng.respawn(); };
+  const deadTap = () => { const eng = engineRef.current; if (eng && eng.state === 'dead' && !recommendation.current) eng.respawn(); };
   const pointer = useTapHoldControl({ engineRef, sound, onFlip: flip, onDeadTap: deadTap });
 
   const showRotate = needsRotate && !rotateDismissed;
+  const showRecommendation = recommendation.current && (ui.state === 'dead' || (paused && !showSettings));
+  const dismissRecommendation = () => {
+    struggle.dismiss();
+    const eng = engineRef.current;
+    if (eng?.state === 'dead') eng.respawn();
+    if (eng) eng.paused = false;
+    setPaused(false);
+  };
 
   return (
     <div ref={wrapRef} className="gs-screen-in fixed inset-0 touch-none select-none overflow-hidden bg-[#04050c]">
@@ -312,7 +334,9 @@ export default function GameCanvas({ skinId = 'classic', levelIndex, totalLevels
         </div>
       ) : null}
 
-      {ui.state === 'dead' ? (
+      {showRecommendation && <div role="dialog" aria-modal="true" aria-label="Optional skip recommendation" className="absolute inset-0 z-40 flex items-center justify-center overflow-y-auto bg-background/80 p-4"><div className="my-auto w-full max-w-sm"><SkipRecommendation save={powerTools.save} levelIndex={levelIndex} updateSave={powerTools.updateSave} onSkipped={powerTools.onSkipped} onDismiss={dismissRecommendation} /></div></div>}
+
+      {ui.state === 'dead' && !showRecommendation ? (
         <DeathOverlay
           deaths={ui.deaths}
           levelIndex={levelIndex}
@@ -340,6 +364,7 @@ export default function GameCanvas({ skinId = 'classic', levelIndex, totalLevels
             deaths={ui.deaths}
             time={ui.time}
             gems={ui.gems}
+            doubleGems={ui.doubleGems}
             totalGems={totalGems}
             isLast={levelIndex >= totalLevels - 1}
             groupJustCompleted={groupJustCompleted}
@@ -357,7 +382,7 @@ export default function GameCanvas({ skinId = 'classic', levelIndex, totalLevels
         )
       ) : null}
 
-      {paused && !showSettings ? (
+      {paused && !showSettings && !showRecommendation ? (
         <PauseMenu
           levelIndex={levelIndex}
           sound={sound}

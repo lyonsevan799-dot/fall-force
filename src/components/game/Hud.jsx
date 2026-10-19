@@ -3,6 +3,7 @@ import { Pause } from 'lucide-react';
 import { LEVELS } from '@/game/levels';
 import { IconButton } from './ui';
 import RunGemBalance from '@/components/game/RunGemBalance';
+import DoubleGemsBadge from '@/components/game/powers/DoubleGemsBadge';
 
 export default function Hud({ levelIndex, ui, totalGems, onPause, sound }) {
   const level = LEVELS[levelIndex];
@@ -31,6 +32,8 @@ export default function Hud({ levelIndex, ui, totalGems, onPause, sound }) {
           </div>
         </div>
       </div>
+
+      {ui.doubleGems && ui.state !== 'complete' && <div className="shop-shell mx-auto rounded-xl bg-card/90 px-3 py-1"><DoubleGemsBadge label="×2 Gems Active" reduced /></div>}
 
       <div className="relative mx-auto h-[6px] w-full max-w-3xl overflow-hidden rounded-full border border-white/10 bg-black/45 backdrop-blur">
         <div

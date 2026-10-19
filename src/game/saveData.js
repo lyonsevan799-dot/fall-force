@@ -10,7 +10,7 @@ export function normalizeProgress(value, defaults, levelCount) {
   for (const [key, value] of Object.entries(object(source.levels))) {
     if (!/^\d+$/.test(key) || Number(key) >= levelCount) continue;
     const record = object(value);
-    levels[key] = { ...record, completed: record.completed === true, stars: Math.min(3, safeInteger(record.stars)), time: typeof record.time === 'number' && Number.isFinite(record.time) && record.time >= 0 ? record.time : null };
+    levels[key] = { ...record, completed: record.completed === true || record.skipped === true, skipped: record.skipped === true, stars: Math.min(3, safeInteger(record.stars)), time: typeof record.time === 'number' && Number.isFinite(record.time) && record.time >= 0 ? record.time : null };
     if (levels[key].completed) unlocked = Math.max(unlocked, Math.min(levelCount - 1, Number(key) + 1));
   }
   const settings = { ...defaults.settings, ...object(source.settings) };
