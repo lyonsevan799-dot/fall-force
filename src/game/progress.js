@@ -5,7 +5,7 @@ import { tutorialSaveFields } from '@/game/tutorialProgress';
 import { skinSaveFields } from '@/game/skins/inventory';
 import { metaSaveFields } from '@/game/meta/saveFields';
 import creditRunGems from '@/game/gemCredits';
-import powerSaveFields from '@/game/powers/saveFields';
+import skipSaveFields from '@/game/skipLevel/saveFields';
 
 import { PROGRESS_KEY } from '@/game/platform/saveConstants';
 import { readSaveRaw, writeSaveRaw, removeSave } from '@/game/platform/saveStore';
@@ -28,9 +28,7 @@ export const FALLBACK = {
   ownedSkins: ['classic'],
   equippedSkins: { solo: 'classic', p1: 'classic', p2: 'classic' },
   skinPurchases: {},
-  powerInventory: { doubleGems: 0 },
-  powerPurchases: {},
-  powerActivations: {},
+  skipPurchases: {},
   levelStruggles: {},
   levels: {},          // { [index]: { stars, time, completed } }
   unlocked: 0,         // highest playable level index (0-based)
@@ -51,10 +49,11 @@ export function decodeProgress(raw) {
   if (raw === null) return clone(FALLBACK);
   try {
     if (typeof raw !== 'string' || raw.length > 4194304) throw new Error('Invalid save size');
-    const source = JSON.parse(raw);
-    if (!source || typeof source !== 'object' || Array.isArray(source)) throw new Error('Invalid save record');
+    const decoded = JSON.parse(raw);
+    if (!decoded || typeof decoded !== 'object' || Array.isArray(decoded)) throw new Error('Invalid save record');
+    const source = skipSaveFields(decoded);
     return { ...normalizeProgress(source, FALLBACK, LEVEL_COUNT),
-      ...tutorialSaveFields(source), ...skinSaveFields(source), ...metaSaveFields(source), ...powerSaveFields(source) };
+      ...tutorialSaveFields(source), ...skinSaveFields(source), ...metaSaveFields(source) };
   } catch (cause) {
     throw Object.assign(new Error('Saved progress could not be read', { cause }), { code: 'corruptSave' });
   }

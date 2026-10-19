@@ -5,7 +5,7 @@ import { LEVEL_COUNT } from '@/game/levels';
 import { commitRaceResult } from '@/game/raceRewards';
 import { recordMiddleFailure, middleChallengeEligible } from '@/game/middleProgress';
 import { groupForLevel, groupCompleted, nextGroupAfter, groupIndex, groupUnlocked, isLevelPlayable } from '@/game/groups';
-import { loadProgress, recordResult, commitEndlessGems, claimChallenge, completedCount, FALLBACK } from '@/game/progress';
+import { loadProgress, recordResult, commitLevelGems, commitEndlessGems, claimChallenge, completedCount, FALLBACK } from '@/game/progress';
 import { stopLoading, reportCompletion } from '@/game/platform/gameEvents';
 import useGameProgress from '@/hooks/useGameProgress';
 import useMetaProgress from '@/hooks/useMetaProgress';
@@ -35,11 +35,8 @@ import SurvivalCanvas from '@/components/game/survival/SurvivalCanvas';
 import AdOverlay from '@/components/game/ads/AdOverlay';
 import AdContent from '@/components/game/ads/AdContent';
 import commitSurvivalResult from '@/game/survivalRecords';
-import usePowers from '@/hooks/usePowers';
-import { creditPoweredLevel } from '@/game/powers/activation';
-import { skipPrice } from '@/game/powers/catalog';
-import LevelStartScreen from '@/components/game/powers/LevelStartScreen';
-import PowerFeedback from '@/components/game/powers/PowerFeedback';
+import { skipPrice } from '@/game/skipLevel/catalog';
+import SkipFeedback from '@/components/game/skipLevel/SkipFeedback';
 
 export default function Home() {
   const initial = useMemo(() => loadProgress(), []);
@@ -51,10 +48,7 @@ export default function Home() {
 
   const { save, saveRef, updateSave, commitGame, saveError } = useGameProgress(initial);
   const meta = useMetaProgress(commitGame);
-  const powers = usePowers(updateSave);
-  const [levelRequest, setLevelRequest] = useState(null);
-  const [shopReturn, setShopReturn] = useState('menu');
-  const [powerNotice, setPowerNotice] = useState('');
+  const [skipNotice, setSkipNotice] = useState('');
   useEffect(() => {
     stopLoading();
     reportCompletion(completedCount(save) * 100 / LEVEL_COUNT);
@@ -94,20 +88,15 @@ export default function Home() {
     if (!tutorialAccessibleCareer(saveRef.current)) { startTutorial(); return; }
     const allowed = ch?.type === 'middle' ? challengeUnlocked(saveRef.current, ch) && groupForLevel(i).id === ch.groupId : isLevelPlayable(saveRef.current, i);
     if (!allowed) return;
-    powers.end(); setLevelIndex(i); setCareerGroup(groupIndex(groupForLevel(i))); setChallenge(ch); setChallengeReward(null);
-    setLevelRequest({ index: i, challenge: ch, id: crypto.randomUUID() }); setScreen('level-start');
+    sound.init(); sound.resume();
+    setLevelIndex(i); setCareerGroup(groupIndex(groupForLevel(i))); setChallenge(ch); setChallengeReward(null);
+    setSkipNotice(''); setScreen('game');
   };
   const startLevel = (i) => { if (!tutorialAccessibleCareer(saveRef.current)) { startTutorial(); return; } prepareLevel(i); };
-  const launchLevel = async () => {
-    if (!levelRequest) return;
-    sound.init(); sound.resume();
-    if (await powers.begin(levelRequest.index, levelRequest.challenge, levelRequest.id)) { setPowerNotice(''); setScreen('game'); }
-  };
   const afterSkip = (i) => {
-    powers.end(); setChallenge(null); setChallengeReward(null);
-    setPowerNotice(`Level ${i + 1} skipped for ${skipPrice(i).toLocaleString()} gems. Progress saved; no completion rewards awarded.`);
-    if (i + 1 < LEVEL_COUNT && isLevelPlayable(saveRef.current, i + 1)) prepareLevel(i + 1);
-    else setScreen('career');
+    setChallenge(null); setChallengeReward(null);
+    setSkipNotice(`Level ${i + 1} skipped for ${skipPrice(i).toLocaleString()} gems. Progress saved; no completion rewards awarded.`);
+    setCareerGroup(groupIndex(groupForLevel(i))); setScreen('levels');
   };
   const startRace = (i) => { sound.init(); sound.resume(); setRaceIndex(i); setScreen('race'); };
 
@@ -128,7 +117,7 @@ export default function Home() {
       nextGroupName: nextGrp ? nextGrp.name : null,
       isFinalGroup: !nextGrp,
     };
-    let nextSave = creditPoweredLevel(withResult, i, result.gems || 0, result.runId, result.powerActivationId);
+    let nextSave = commitLevelGems(withResult, i, result.gems || 0, result.runId);
     let reward = null;
     if (challenge && challengeUnlocked(currentSave, challenge) && middleChallengeEligible(challenge, result) && group.id === challenge.groupId && !isChallengeDone(currentSave, challenge.id)) {
       nextSave = claimChallenge(nextSave, challenge.id, challenge.reward);
@@ -137,7 +126,7 @@ export default function Home() {
     completion = { info, reward };
     return nextSave;
     }).then((saved) => {
-      if (saved) { powers.end(); setCompletedInfo(completion.info); setChallengeReward(completion.reward); }
+      if (saved) { setCompletedInfo(completion.info); setChallengeReward(completion.reward); }
       return saved;
     });
   };
@@ -184,7 +173,7 @@ export default function Home() {
   const handleUpdateSettings = (patch) => commitGame((p) => ({ ...p, settings: { ...p.settings, ...patch } }));
 
   const handleReset = () => {
-    powers.end(); powers.setSelected(false); setPowerNotice('');
+    setSkipNotice('');
     commitGame((p) => ({ ...JSON.parse(JSON.stringify(FALLBACK)), settings: p.settings }));
     setLevelIndex(0);
     setChallenge(null);
@@ -253,9 +242,9 @@ export default function Home() {
           challengeReward={challengeReward}
           onClearReward={() => setChallengeReward(null)}
           onChallengeFailure={handleMiddleFailure}
-          powerTools={{ save, updateSave, commitGame, active: powers.active, onSkipped: afterSkip }}
-          onNewChallengeAttempt={() => { powers.end(); setChallengeReward(null); setScreen('challenge-levels'); }}
-          onExit={() => { powers.end(); if (challenge) exitChallenge(); else setScreen('levels'); }}
+          skipTools={{ save, updateSave, commitGame, onSkipped: afterSkip }}
+          onNewChallengeAttempt={() => { setChallengeReward(null); setScreen('challenge-levels'); }}
+          onExit={() => { if (challenge) exitChallenge(); else setScreen('levels'); }}
           onComplete={handleComplete}
           onNext={() => {
             const next = Math.min(LEVEL_COUNT - 1, levelIndex + 1);
@@ -314,8 +303,7 @@ export default function Home() {
 
       {!inGame ? (
         <div key={screen} className="gs-screen-in relative z-10 min-h-screen">
-          {powerNotice && <PowerFeedback message={powerNotice} onDismiss={() => setPowerNotice('')} />}
-          {screen === 'level-start' && levelRequest && <LevelStartScreen key={levelRequest.id} save={save} levelIndex={levelRequest.index} challenge={levelRequest.challenge} powers={powers} updateSave={updateSave} commitGame={commitGame} onStart={launchLevel} onBack={() => setScreen(challenge ? 'challenge-levels' : 'levels')} onShop={() => { setShopReturn('level-start'); setScreen('shop'); }} onSkipped={afterSkip} />}
+          {skipNotice && <SkipFeedback message={skipNotice} onDismiss={() => setSkipNotice('')} />}
           {screen === 'menu' ? (
             <div className="flex min-h-screen flex-col justify-center">
               <MainMenu
@@ -323,7 +311,7 @@ export default function Home() {
                 sound={sound}
                 onCareer={() => tutorialAccessibleCareer(saveRef.current) ? setScreen('career') : startTutorial()}
                 onTutorial={startTutorial}
-                onShop={() => { setShopReturn('menu'); setScreen('shop'); }}
+                onShop={() => setScreen('shop')}
                 onLeaderboard={() => setScreen('leaderboard')}
                 onDaily={() => { void meta.prepare(); setScreen('daily'); }}
                 onAchievements={() => setScreen('achievements')}
@@ -351,7 +339,7 @@ export default function Home() {
             hasRecord={save.endlessBest > 0 || save.endlessRecords?.maxStreak > 0}
             sound={sound} onBack={() => setScreen('menu')} onPlay={() => setScreen('endless')} /> : null}
 
-          {screen === 'shop' ? <SkinShop save={save} updateSave={updateSave} sound={sound} powers={powers} levelIndex={levelIndex} onSkipped={afterSkip} onBack={() => setScreen(shopReturn)} /> : null}
+          {screen === 'shop' ? <SkinShop save={save} updateSave={updateSave} sound={sound} onBack={() => setScreen('menu')} /> : null}
 
           {screen === 'career' ? (
             <CareerGroups save={save} sound={sound} onEnter={enterGroup} onBack={() => setScreen('menu')} />
