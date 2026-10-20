@@ -10,9 +10,9 @@ export default function TutorialPrompt({ phase, onContinue, onFlip }) {
       <div className="mb-2 flex items-center gap-2 text-primary"><Icon size={24} /><span className="font-heading text-[10px] uppercase tracking-wider">Lesson {lesson.step} / 6</span></div>
       <h2 className="font-heading text-sm sm:text-lg">{lesson.title}</h2>
       <p className="mt-2 text-xs leading-relaxed text-muted-foreground sm:text-sm">{lesson.text}</p>
-      {lesson.flip && <button type="button" onClick={onFlip} className="mt-3 flex w-full flex-wrap items-center justify-center gap-2 rounded-xl border-2 border-primary bg-primary/15 p-3 text-xs font-bold text-primary"><MousePointer2 size={16} />Tap / Click <span>or</span><Keyboard size={16} />Space {lesson.icon === 'up' ? '↑' : '↓'}</button>}
+      {lesson.flip && <button type="button" onClick={onFlip} className="mt-3 flex min-h-11 w-full flex-wrap items-center justify-center gap-2 rounded-xl border-2 border-primary bg-primary/15 p-3 text-xs font-bold text-primary"><MousePointer2 size={16} />Tap / Click <span>or</span><Keyboard size={16} /><kbd className="rounded border border-primary/50 px-2 py-1 font-mono">Space</kbd> {lesson.icon === 'up' ? '↑' : '↓'}</button>}
       {lesson.action && <button type="button" onClick={onContinue} className="mt-3 min-h-11 w-full rounded-xl bg-primary px-3 py-2 text-xs font-bold text-primary-foreground">{lesson.action} →</button>}
-      {!lesson.flip && !lesson.action && <p className="mt-2 text-[10px] text-primary">Guided practice · wait for the next cue</p>}
+      {!lesson.flip && !lesson.action && <p className="mt-2 text-[10px] text-primary">Guided practice · follow the arrows</p>}
     </section>
   );
 }

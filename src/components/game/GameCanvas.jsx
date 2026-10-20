@@ -235,7 +235,7 @@ export default function GameCanvas({ skinId = 'classic', levelIndex, totalLevels
       } else if (e.code === 'KeyR') {
         e.preventDefault();
         restart();
-      } else if (e.code === 'Escape' || e.code === 'KeyP') {
+      } else if (e.code === 'KeyP') {
         e.preventDefault();
         togglePause();
       }

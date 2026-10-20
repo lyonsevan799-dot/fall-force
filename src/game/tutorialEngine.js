@@ -21,6 +21,7 @@ export default class TutorialEngine extends Engine {
   }
   switchGravity() {
     if (this.paused || this.state !== 'playing') return;
+    if (this.phase === 1) this.cue(2);
     if (this.waiting && [2, 4, 6, 8].includes(this.phase)) {
       super.switchGravity();
       this.phase++;

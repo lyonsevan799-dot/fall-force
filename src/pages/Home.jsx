@@ -55,7 +55,7 @@ export default function Home() {
   }, [save]);
   const soloSkin = skinForTarget(save);
   const raceSkins = [skinForTarget(save, 'p1'), skinForTarget(save, 'p2')];
-  const [screen, setScreen] = useState('menu');
+  const [screen, setScreen] = useState(() => tutorialAccessibleCareer(initial) ? 'menu' : 'tutorial');
   const [levelIndex, setLevelIndex] = useState(Math.min(initial.unlocked || 0, LEVEL_COUNT - 1));
   const [raceIndex, setRaceIndex] = useState(0);
   const [trialIndex, setTrialIndex] = useState(0);

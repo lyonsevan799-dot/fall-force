@@ -7,7 +7,7 @@ import { useGameLifecycle } from '@/hooks/useGameLifecycle';
 export default function useTutorialGame({ sound, settings, skinId = 'classic', onComplete }) {
   const canvasRef = useRef(null), wrapRef = useRef(null), engineRef = useRef(null), completeRef = useRef(onComplete);
   completeRef.current = onComplete;
-  const [ui, setUi] = useState({ state: 'playing', phase: 0, gems: 0, paused: false });
+  const [ui, setUi] = useState({ state: 'playing', phase: 1, gems: 0, paused: false });
   const sync = () => {
     const e = engineRef.current;
     if (e) setUi((u) => u.state === e.state && u.phase === e.phase && u.gems === e.gems && u.paused === e.paused
@@ -52,7 +52,7 @@ export default function useTutorialGame({ sound, settings, skinId = 'classic', o
     const onKey = (event) => {
       if (event.repeat || event.ctrlKey || event.metaKey || event.altKey || event.target instanceof Element && event.target.closest('button,input,select,textarea')) return;
       if (['Space', 'ArrowUp', 'ArrowDown', 'Enter'].includes(event.code)) { event.preventDefault(); flip(); }
-      else if (['Escape', 'KeyP'].includes(event.code)) { event.preventDefault(); pause(); }
+      else if (event.code === 'KeyP') { event.preventDefault(); pause(); }
       else if (event.code === 'KeyR') { event.preventDefault(); restart(); }
     };
     window.addEventListener('keydown', onKey);

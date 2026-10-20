@@ -10,7 +10,7 @@ export default function useProceduralControls(engineRef, actionsRef, sound) {
     const key = (event) => {
       if (event.repeat || event.ctrlKey || event.metaKey || event.altKey || !actionsRef.current) return;
       const focused = event.target instanceof Element && event.target.closest('button, input, textarea, select, a, [role="button"], [contenteditable="true"]');
-      if (focused && !['Escape', 'KeyP'].includes(event.code)) return;
+      if (focused && event.code !== 'KeyP') return;
       const actions = actionsRef.current, engine = engineRef.current;
       if (['Space', 'ArrowUp', 'ArrowDown', 'Enter'].includes(event.code)) {
         event.preventDefault();
@@ -18,7 +18,7 @@ export default function useProceduralControls(engineRef, actionsRef, sound) {
         else if (engine?.state === 'dead') actions.restart();
         else flip();
       } else if (event.code === 'KeyR') { event.preventDefault(); actions.restart(); }
-      else if (['Escape', 'KeyP'].includes(event.code)) { event.preventDefault(); actions.togglePause(); }
+      else if (event.code === 'KeyP') { event.preventDefault(); actions.togglePause(); }
     };
     window.addEventListener('keydown', key);
     return () => window.removeEventListener('keydown', key);

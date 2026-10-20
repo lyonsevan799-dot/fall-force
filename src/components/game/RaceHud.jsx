@@ -20,6 +20,6 @@ export default function RaceHud({ ui, series, isTouch, totalGems, onPause, sound
     <div className="absolute bottom-3 left-1/2 -translate-x-1/2 rounded-xl bg-background/80 p-2 text-center">
       {series.bestOfThree ? <p className="mb-1 text-[10px] text-muted-foreground">Race {series.rounds.length + 1} · P1 {series.wins[0]} : {series.wins[1]} P2 · First to 2</p> : null}<GemCounter total={totalGems} size="sm" />
     </div>
-    <div className="absolute inset-x-0 bottom-4 grid grid-cols-2 text-center text-[10px]"><span className="text-race-one">{isTouch ? 'P1 · Tap left half' : 'P1 · W / Space'}</span><span className="text-race-two">{isTouch ? 'P2 · Tap right half' : 'P2 · ↑ / Enter'}</span></div>
+    <div className="absolute inset-x-0 bottom-4 grid grid-cols-2 text-center text-[10px]"><span className="text-race-one">{isTouch ? 'P1 · Tap left half' : 'P1 · W / Z / Space'}</span><span className="text-race-two">{isTouch ? 'P2 · Tap right half' : 'P2 · ↑ / Enter'}</span></div>
   </div>;
 }

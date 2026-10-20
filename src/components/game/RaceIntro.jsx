@@ -15,7 +15,7 @@ export default function RaceIntro({ sound, onStart, onExit, isTouch, series, onF
       <RaceSetup series={series} onFormat={onFormat} skinIds={skinIds} ownedSkins={ownedSkins} onEquipSkin={onEquipSkin} onBusy={setBusy} />
       <p className="mt-3 text-xs leading-relaxed text-muted-foreground">Death: automatic respawn after 0.55s, a 600-unit setback and 1.2s of protection. Both players follow the same rule. Wait for 3, 2, 1, GO.</p>
       <p className="mt-2 text-xs text-muted-foreground">{RACE_WIN_REWARD} gems per round win, once to the shared wallet. Draws earn 0. No pickups or Gem Rush.</p>
-      {!isTouch ? <p className="mt-2 text-xs text-muted-foreground">P / Esc: pause · R: restart current round</p> : null}
+      {!isTouch ? <p className="mt-2 text-xs text-muted-foreground">P: pause · R: restart current round</p> : null}
       <div className="mt-5 flex flex-col gap-2"><GameButton size="lg" sound={sound} onClick={onStart} disabled={busy}>Start Race</GameButton><GameButton variant="ghost" sound={sound} onClick={onExit}>Main Menu</GameButton></div>
     </Panel>
   </div>;

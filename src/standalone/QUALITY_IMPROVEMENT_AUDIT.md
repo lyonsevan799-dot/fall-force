@@ -21,7 +21,8 @@ This is a completed source-inspection and targeted implementation pass, NOT a co
 - Cached row membership/order outside rendering, reused gem row paths, and culled off-screen hazard/gem drawing. These are implementation optimizations, not measured FPS claims.
 - Kept race proximity-triggered hazards advancing during respawn invulnerability so they do not depend on whether the renderer saw them. Both players retain independent collision and control state.
 - Reset the Race frame timestamp on resume to avoid advancing paused elapsed time.
-- Added a prominent one-click Play/Continue entry, starting the interactive tutorial directly on its safe runway. Preserved the full mode menu and explicit tutorial replay/skip paths.
+- Added a prominent one-click Play/Continue entry. First-time visitors now land directly in the interactive tutorial on its safe runway; returning players retain the full mode menu. The first tap/click/Space immediately flips gravity instead of waiting for the first automatic cue. Tutorial prompts use shorter copy, directional icons and a visible Space keycap, with an immediately accessible Skip Tutorial control; all lesson and reward logic remains available.
+- Reserved Escape for browser fullscreen behavior across gameplay modes; P remains the pause control. Race accepts W or Z plus Space for Player 1 and retains Arrow Up/Enter for Player 2, with matching visible instructions.
 - Corrected visible menu, loading, completion and rotation branding to Gravity Switch; replaced the hosted favicon with an original geometric gravity mark.
 - Improved shared button touch sizes, keyboard-focus treatment and audio-setting accessibility labels.
 - Preserved browser modifier shortcuts rather than treating Ctrl/Cmd/Alt combinations as gameplay input.
