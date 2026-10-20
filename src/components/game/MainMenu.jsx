@@ -40,8 +40,8 @@ export default function MainMenu({ save, sound, onCareer, onTutorial, onShop, on
       <div className="flex flex-col items-center gap-3 text-center">
         <div className="font-heading text-[10px] uppercase tracking-[0.6em] text-cyan-200/60">Arcade Gravity Runner</div>
         <h1 className="gs-title font-heading text-4xl uppercase leading-none tracking-[0.14em] sm:text-6xl">
-          Gravity
-          <span className="block bg-gradient-to-r from-cyan-200 via-white to-fuchsia-300 bg-clip-text text-transparent">Switch</span>
+          Fall
+          <span className="block bg-gradient-to-r from-cyan-200 via-white to-fuchsia-300 bg-clip-text text-transparent">Force</span>
         </h1>
         <div className="h-[2px] w-40 bg-gradient-to-r from-transparent via-cyan-300/80 to-transparent" />
         <CrazyGamesProfile />
