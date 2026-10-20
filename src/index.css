@@ -92,6 +92,7 @@
 }
 
 /* Tutorial-only semantic colors, isolated from all existing game screens. */
+.game-shell,
 .tutorial-shell,
 .shop-shell,
 .leaderboard-shell,
@@ -115,7 +116,11 @@
   --skin-legendary: 43 96% 67%;
 }
 
-/* ---- Fall Force game chrome ---- */
+/* ---- Gravity Switch game chrome ---- */
+.game-shell :is(button, a, input):focus-visible {
+  outline: 2px solid hsl(var(--primary));
+  outline-offset: 3px;
+}
 html,
 body,
 #root {

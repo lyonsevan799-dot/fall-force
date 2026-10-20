@@ -16,6 +16,7 @@ export default function Hud({ levelIndex, ui, totalGems, onPause, sound }) {
             Level {String(levelIndex + 1).padStart(2, '0')} / {LEVELS.length}
           </div>
           <div className="font-heading text-sm uppercase tracking-[0.16em] text-white">{level.name}</div>
+          <div className="mt-1 font-mono text-[10px] text-muted-foreground sm:hidden">{ui.deaths} death{ui.deaths === 1 ? '' : 's'} · {ui.time.toFixed(1)}s</div>
         </div>
         <div className="flex items-center gap-2">
           <div className="hidden rounded-2xl border border-white/10 bg-black/40 px-3 py-2 text-right backdrop-blur sm:block">
@@ -49,11 +50,7 @@ export default function Hud({ levelIndex, ui, totalGems, onPause, sound }) {
         ))}
       </div>
 
-      <div className="flex justify-center sm:hidden">
-        <div className="rounded-full border border-white/10 bg-black/40 px-3 py-1 font-heading text-[10px] uppercase tracking-[0.22em] text-white/60 backdrop-blur">
-          {ui.deaths} death{ui.deaths === 1 ? '' : 's'} · {ui.time.toFixed(1)}s
-        </div>
-      </div>
+
     </div>
   );
 }

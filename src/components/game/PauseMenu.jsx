@@ -4,7 +4,7 @@ import { LEVELS } from '@/game/levels';
 
 export default function PauseMenu({ levelIndex, title, exitLabel, onResume, onRestart, onSettings, onExit, sound }) {
   return (
-    <div className="absolute inset-0 z-30 flex items-center justify-center overflow-y-auto bg-black/60 p-4 backdrop-blur-sm">
+    <div role="dialog" aria-modal="true" aria-label="Game paused" className="absolute inset-0 z-30 flex items-center justify-center overflow-y-auto bg-black/60 p-4 backdrop-blur-sm">
       <Panel className="gs-pop my-auto w-full max-w-sm shrink-0 text-center">
         <div className="font-heading text-[10px] uppercase tracking-[0.5em] text-cyan-200/80">Paused</div>
         <h2 className="mt-2 font-heading text-xl uppercase tracking-[0.2em] text-white">

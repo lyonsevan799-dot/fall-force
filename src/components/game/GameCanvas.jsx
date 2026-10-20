@@ -127,7 +127,7 @@ export default function GameCanvas({ skinId = 'classic', levelIndex, totalLevels
       // the pause for impatient players.
       if (eng.state === 'dead' && !eng.paused && !recommendation.current) {
         if (deadAt == null) deadAt = now;
-        if (now - deadAt > 550) { deadAt = null; eng.respawn(); }
+        if (now - deadAt > 150) { deadAt = null; eng.respawn(); }
       } else if (eng.state !== 'dying') {
         deadAt = null;
       }
@@ -217,7 +217,7 @@ export default function GameCanvas({ skinId = 'classic', levelIndex, totalLevels
   // ---- input ---------------------------------------------------------------
   useEffect(() => {
     const onKey = (e) => {
-      if (e.repeat) return;
+      if (e.repeat || e.ctrlKey || e.metaKey || e.altKey) return;
       const eng = engineRef.current;
       if (!eng) return;
       if (e.target instanceof Element && e.target.closest('button, input, select, textarea, a, [role="button"], [contenteditable="true"]')) return;

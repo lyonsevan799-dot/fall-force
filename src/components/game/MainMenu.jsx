@@ -7,9 +7,10 @@ import MetaMenuEntries from '@/components/game/meta/MetaMenuEntries';
 import TimeTrialEntry from '@/components/game/timeTrial/TimeTrialEntry';
 import { Shield } from 'lucide-react';
 import CrazyGamesProfile from '@/components/game/platform/CrazyGamesProfile';
+import MainMenuPlay from '@/components/game/MainMenuPlay';
 
 const MODES = [
-  { key: 'career', label: 'Career', desc: 'Master the levels and conquer Fall Force.', icon: Trophy, accent: 'cyan' },
+  { key: 'career', label: 'Career', desc: 'Master gravity across 55 authored levels.', icon: Trophy, accent: 'cyan' },
   { key: 'endless', label: 'Endless', desc: 'How long can you survive?', icon: InfinityIcon, accent: 'amber' },
   { key: 'race', label: 'Race', desc: 'Race your opponent to the finish!', icon: Swords, accent: 'pink' },
   { key: 'survival', label: 'Survival', desc: 'One life. 100 points per second. Separate personal records.', icon: Shield, accent: 'cyan' },
@@ -21,7 +22,7 @@ const ACCENT = {
   pink: 'border-pink-300/40 bg-pink-400/10 text-pink-200',
 };
 
-export default function MainMenu({ save, sound, onCareer, onTutorial, onShop, onEndless, onRace, onChallenges, onSettings, onLeaderboard, onDaily, onAchievements, onTimeTrial, onSurvival }) {
+export default function MainMenu({ save, sound, onCareer, onTutorial, onShop, onEndless, onRace, onChallenges, onSettings, onLeaderboard, onDaily, onAchievements, onTimeTrial, onSurvival, onQuickPlay }) {
   const stars = totalStars(save);
   const done = completedCount(save);
   const best = save.endlessBest || 0;
@@ -35,18 +36,20 @@ export default function MainMenu({ save, sound, onCareer, onTutorial, onShop, on
   };
 
   return (
-    <div className="relative z-10 flex min-h-full flex-col items-center justify-center gap-8 px-6 py-12">
+    <div className="meta-shell relative z-10 flex min-h-full flex-col items-center justify-center gap-6 px-5 py-6 text-foreground sm:px-6 sm:py-10">
       <div className="flex flex-col items-center gap-3 text-center">
         <div className="font-heading text-[10px] uppercase tracking-[0.6em] text-cyan-200/60">Arcade Gravity Runner</div>
         <h1 className="gs-title font-heading text-4xl uppercase leading-none tracking-[0.14em] sm:text-6xl">
-          Fall
-          <span className="block bg-gradient-to-r from-cyan-200 via-white to-fuchsia-300 bg-clip-text text-transparent">Force</span>
+          Gravity
+          <span className="block bg-gradient-to-r from-cyan-200 via-white to-fuchsia-300 bg-clip-text text-transparent">Switch</span>
         </h1>
         <div className="h-[2px] w-40 bg-gradient-to-r from-transparent via-cyan-300/80 to-transparent" />
         <CrazyGamesProfile />
       </div>
 
-      <div className="grid w-full max-w-3xl gap-3 sm:grid-cols-4">
+      <MainMenuPlay save={save} sound={sound} onTutorial={onTutorial} onQuickPlay={onQuickPlay} />
+
+      <div className="grid w-full max-w-3xl grid-cols-2 gap-3 sm:grid-cols-4">
         {MODES.map((m) => {
           const Icon = m.icon;
           return (
@@ -56,7 +59,7 @@ export default function MainMenu({ save, sound, onCareer, onTutorial, onShop, on
                 <Icon size={26} strokeWidth={2} />
               </span>
               <span className="font-heading text-base uppercase tracking-[0.22em] text-white">{m.label}</span>
-              <span className="text-[11px] leading-relaxed text-white/45">{m.desc}</span>
+              <span className="text-[11px] leading-relaxed text-muted-foreground">{m.desc}</span>
             </button>
           );
         })}
@@ -104,7 +107,7 @@ export default function MainMenu({ save, sound, onCareer, onTutorial, onShop, on
       </button>
 
       <button type="button" onClick={() => { sound.sfx('click'); onSettings(); }}
-        className="flex items-center gap-2 font-heading text-[10px] uppercase tracking-[0.24em] text-white/45 transition-colors hover:text-white">
+        className="flex min-h-11 items-center gap-2 font-heading text-[10px] uppercase tracking-[0.24em] text-white/70 transition-colors hover:text-white">
         <Settings2 size={14} /> Settings
       </button>
 

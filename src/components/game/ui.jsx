@@ -2,7 +2,7 @@ import React from 'react';
 import { Star } from 'lucide-react';
 
 export function GameButton({ children, onClick, variant = 'primary', size = 'md', className = '', disabled = false, sound }) {
-  const base = 'relative select-none font-heading uppercase tracking-[0.14em] rounded-xl border transition-all duration-150 active:scale-[0.97] disabled:opacity-40 disabled:pointer-events-none inline-flex items-center justify-center gap-2';
+  const base = 'min-h-11 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 relative select-none font-heading uppercase tracking-[0.14em] rounded-xl border transition-all duration-150 active:scale-[0.97] disabled:opacity-40 disabled:pointer-events-none inline-flex items-center justify-center gap-2';
   const sizes = {
     sm: 'px-4 py-2 text-[11px]',
     md: 'px-6 py-3 text-xs',
@@ -31,7 +31,7 @@ export function IconButton({ children, onClick, className = '', label, sound }) 
       type="button"
       aria-label={label}
       onClick={(e) => { if (sound) sound.sfx('click'); if (onClick) onClick(e); }}
-      className={`pointer-events-auto flex h-10 w-10 items-center justify-center rounded-xl border border-white/15 bg-black/40 text-white/80 backdrop-blur transition-all duration-150 hover:bg-white/10 hover:text-white active:scale-95 ${className}`}
+      className={`pointer-events-auto flex h-11 w-11 items-center justify-center rounded-xl border border-white/15 bg-black/40 text-white/80 backdrop-blur transition-all duration-150 hover:bg-white/10 hover:text-white active:scale-95 ${className}`}
     >
       {children}
     </button>
@@ -66,6 +66,8 @@ export function ToggleRow({ label, hint, value, onChange, sound }) {
   return (
     <button
       type="button"
+      role="switch"
+      aria-checked={value}
       onClick={() => { if (sound) sound.sfx('click'); onChange(!value); }}
       className="flex w-full items-center justify-between rounded-2xl border border-white/8 bg-white/[0.03] px-5 py-4 text-left transition-colors duration-150 hover:bg-white/[0.07]"
     >
@@ -88,6 +90,7 @@ export function SliderRow({ label, value, onChange, sound }) {
         <span className="w-9 text-right font-mono text-xs text-white/50">{Math.round(value * 100)}%</span>
         <input
           type="range"
+          aria-label={label}
           min="0"
           max="1"
           step="0.05"

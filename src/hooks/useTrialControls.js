@@ -18,7 +18,7 @@ export default function useTrialControls({ engineRef, sound, setPaused, retry, p
   }, [engineRef, setPaused]);
   useEffect(() => {
     const key = (event) => {
-      if (event.repeat || event.target instanceof Element && event.target.closest('input,select,textarea,[contenteditable=true]')) return;
+      if (event.repeat || event.ctrlKey || event.metaKey || event.altKey || event.target instanceof Element && event.target.closest('input,select,textarea,[contenteditable=true]')) return;
       if (['Escape', 'KeyP'].includes(event.code)) { event.preventDefault(); pause(); }
       else if (event.code === 'KeyR') { event.preventDefault(); if (!pending) retry(); }
       else if (['Space', 'ArrowUp', 'ArrowDown', 'Enter'].includes(event.code)

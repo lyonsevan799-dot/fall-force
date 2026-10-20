@@ -6,6 +6,7 @@ import {
 } from './geom';
 
 import drawSkin from '@/game/skins/drawSkin';
+import drawGemRows from '@/game/renderGemRows';
 import { getSkin } from '@/game/skins/catalog';
 
 // ---------- helpers ----------
@@ -186,12 +187,17 @@ function spikePath(ctx, x, baseY, w, h, up) {
   ctx.closePath();
 }
 
-function drawHazards(ctx, eng) {
+function drawHazards(ctx, eng, camLeft, viewW) {
   const theme = eng.theme;
   const t = eng.t;
   const items = eng.level.items;
   for (let i = 0; i < items.length; i++) {
     const it = items[i];
+    if (it.type === 'gem' && it.collected) continue;
+    const margin = Math.max(180, it.w || 0, it.arm || 0, it.amp || 0);
+    const left = Math.min(it.x, it.x0 ?? it.x, it.x1 ?? it.x) - margin;
+    const right = Math.max(it.x, it.x0 ?? it.x, it.x1 ?? it.x) + margin;
+    if (right < camLeft || left > camLeft + viewW) continue;
     switch (it.type) {
       case 'spike': {
         const up = it.side === 'floor';
@@ -336,16 +342,16 @@ function drawHazards(ctx, eng) {
         ctx.fill();
         if (g.active) {
           const grad = ctx.createLinearGradient(g.x, 0, g.x + LASER_W, 0);
-          grad.addColorStop(0, hexA(theme.accent, 0.15));
-          grad.addColorStop(0.5, hexA(theme.accent, 0.95));
-          grad.addColorStop(1, hexA(theme.accent, 0.15));
+          grad.addColorStop(0, hexA(theme.hazard, 0.15));
+          grad.addColorStop(0.5, hexA(theme.hazard, 0.95));
+          grad.addColorStop(1, hexA(theme.hazard, 0.15));
           ctx.fillStyle = grad;
           ctx.fillRect(g.x, g.y, g.w, g.h);
           ctx.fillStyle = '#ffffff';
           ctx.globalAlpha = 0.85;
           ctx.fillRect(g.x + g.w / 2 - 2, g.y, 4, g.h);
           ctx.globalAlpha = 1;
-          ctx.fillStyle = hexA(theme.accent, 0.9);
+          ctx.fillStyle = hexA(theme.hazard, 0.9);
           ctx.beginPath(); ctx.arc(it.x, padY, 8, 0, 6.2832); ctx.fill();
         } else if (g.warn) {
           ctx.strokeStyle = hexA('#ffffff', 0.2 + 0.6 * g.warnK);
@@ -670,37 +676,6 @@ function drawFinish(ctx, eng) {
   }
 }
 
-function drawGemRows(ctx, eng) {
-  const theme = eng.theme;
-  const t = eng.t;
-  const items = eng.level.items;
-  const groups = {};
-  for (let i = 0; i < items.length; i++) {
-    const it = items[i];
-    if (it.type !== 'gem' || it.groupId == null || it.collected) continue;
-    if (!groups[it.groupId]) groups[it.groupId] = [];
-    groups[it.groupId].push(it);
-  }
-  for (const id in groups) {
-    const gs = groups[id];
-    if (gs.length < 4) continue;
-    gs.sort((a, b) => a.x - b.x);
-    const pulse = 0.5 + 0.3 * Math.sin(t * 3 + gs[0].x * 0.01);
-    ctx.strokeStyle = hexA(theme.accent, 0.1 * pulse);
-    ctx.lineWidth = 9;
-    ctx.beginPath();
-    ctx.moveTo(gs[0].x, gs[0].y);
-    for (let i = 1; i < gs.length; i++) ctx.lineTo(gs[i].x, gs[i].y);
-    ctx.stroke();
-    ctx.strokeStyle = hexA(theme.accent, 0.22 * pulse);
-    ctx.lineWidth = 2.5;
-    ctx.beginPath();
-    ctx.moveTo(gs[0].x, gs[0].y);
-    for (let i = 1; i < gs.length; i++) ctx.lineTo(gs[i].x, gs[i].y);
-    ctx.stroke();
-  }
-}
-
 function drawRushGuide(ctx, eng) {
   if (!eng.rush) return;
   const r = eng.rush;
@@ -788,8 +763,8 @@ function drawPlayer(ctx, eng) {
   let spawnAlpha = 1;
   if (eng.spawnT > 0) {
     const p = 1 - eng.spawnT / 0.42;
-    spawnK = 0.25 + 0.75 * (p * p * (3 - 2 * p));
-    spawnAlpha = 0.3 + 0.7 * p;
+    spawnK = 0.8 + 0.2 * (p * p * (3 - 2 * p));
+    spawnAlpha = 0.8 + 0.2 * p;
   }
   ctx.scale(eng.sx * spawnK, eng.sy * spawnK);
   ctx.globalAlpha = spawnAlpha;
@@ -819,11 +794,13 @@ function drawScreenFx(ctx, eng, w, h, dpr) {
 
 export function render(ctx, eng, w, h, dpr = 1, drawWorldOverlay = null) {
   const theme = eng.theme;
-  const fit = Math.min(w / VIEW_W, h / VIEW_H);
-  const s = fit * eng.zoom;
+  const topInset = Math.min(100, h * 0.42);
+  const availableHeight = Math.max(1, h - topInset);
+  const fit = Math.min(w / VIEW_W, availableHeight / (FLOOR_Y - CEIL_Y + 80));
+  const s = fit * (eng.state === 'playing' || eng.state === 'intro' ? 1 : eng.zoom);
   const anchorX = w * 0.34;
   let tx = anchorX - (eng.px + PLAYER_SIZE / 2) * s + eng.shakeX;
-  const ty = h * 0.5 - MID_Y * s + eng.shakeY;
+  const ty = topInset + availableHeight * 0.5 - MID_Y * s + eng.shakeY;
 
   const leftWorld = -tx / s;
   if (leftWorld < -70) tx = 70 * s;
@@ -848,10 +825,10 @@ export function render(ctx, eng, w, h, dpr = 1, drawWorldOverlay = null) {
   ctx.save();
   ctx.setTransform(s * dpr, 0, 0, s * dpr, tx * dpr, ty * dpr);
   drawTerrain(ctx, eng, camLeft, viewW);
-  drawGemRows(ctx, eng);
+  drawGemRows(ctx, eng, camLeft, viewW);
   if (!eng.level.noFinish) drawFinish(ctx, eng);
   if (drawWorldOverlay) drawWorldOverlay(ctx, eng);
-  drawHazards(ctx, eng);
+  drawHazards(ctx, eng, camLeft, viewW);
   drawParticles(ctx, eng);
   if ((eng.state !== 'dying' && eng.state !== 'dead') || (eng.state === 'dying' && eng.hitstop > 0)) {
     drawRushGuide(ctx, eng);
@@ -923,7 +900,7 @@ export function renderRace(ctx, eng, w, h, dpr = 1) {
     drawParallax(ctx, view, s, tx, ty, paneW, h, camLeft, camTop, viewW);
     ctx.setTransform(s * dpr, 0, 0, s * dpr, (left + tx) * dpr, ty * dpr);
     drawTerrain(ctx, view, camLeft, viewW); drawFinish(ctx, view);
-    drawHazards(ctx, view); drawParticles(ctx, view);
+    drawHazards(ctx, view, camLeft, viewW); drawParticles(ctx, view);
     drawRaceTrail(ctx, p, i === 0 ? RACE_P1_ACCENT : RACE_P2_ACCENT);
     if (p.alive || p.impactHold > 0) drawRacePlayer(ctx, p, i === 0 ? RACE_P1 : RACE_P2, i === 0 ? RACE_P1_ACCENT : RACE_P2_ACCENT, String(i + 1), skins[i], eng.t, eng.settings.reduced);
     ctx.setTransform(dpr, 0, 0, dpr, left * dpr, 0);

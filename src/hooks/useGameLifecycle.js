@@ -13,7 +13,7 @@ export function useGameLifecycle(engineRef, setPaused, level = null) {
       const engine = engineRef.current;
       if (engine && !(focusPaused === engine && engine.paused)) {
         focusPaused = null;
-        setGameplay(!engine.paused && !engine.waiting && ['intro', 'playing', 'racing', 'finished'].includes(engine.state));
+        setGameplay(!engine.paused && !engine.waiting && ['intro', 'playing', 'racing'].includes(engine.state));
       }
       frame = requestAnimationFrame(observe);
     };

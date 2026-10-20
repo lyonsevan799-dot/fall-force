@@ -205,7 +205,7 @@ export default function Home() {
   const inGame = screen === 'tutorial' || screen === 'game' || screen === 'endless' || screen === 'survival' || screen === 'race' || screen === 'time-trial';
 
   return (
-    <div data-reduced={save.settings.reduced ? 'true' : undefined} className="relative min-h-screen overflow-hidden bg-[#04050c] text-white">
+    <div data-reduced={save.settings.reduced ? 'true' : undefined} className="game-shell relative min-h-screen overflow-hidden bg-[#04050c] text-white">
       <AdOverlay />
       <AdContent>
       {saveError && screen !== 'shop' ? <div role="alert" className="fixed inset-x-4 bottom-4 z-50 rounded-xl border border-amber-300/50 bg-black/90 p-3 text-center text-xs text-amber-100">{saveError}</div> : null}
@@ -311,6 +311,7 @@ export default function Home() {
                 sound={sound}
                 onCareer={() => tutorialAccessibleCareer(saveRef.current) ? setScreen('career') : startTutorial()}
                 onTutorial={startTutorial}
+                onQuickPlay={startLevel}
                 onShop={() => setScreen('shop')}
                 onLeaderboard={() => setScreen('leaderboard')}
                 onDaily={() => { void meta.prepare(); setScreen('daily'); }}

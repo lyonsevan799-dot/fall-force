@@ -5,10 +5,10 @@ export default class TutorialEngine extends Engine {
   get level() { return this.tutorialLevel; }
   loadTutorial() {
     this.tutorialLevel = tutorialLevel();
-    super.load(0);
     this.mode = 'tutorial';
-    this.phase = 0;
-    this.waiting = true;
+    super.load(0);
+    this.phase = 1;
+    this.waiting = false;
     this.state = 'playing';
     this.timeScale = 1;
   }

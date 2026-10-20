@@ -50,7 +50,7 @@ export default function useTutorialGame({ sound, settings, skinId = 'classic', o
   const flip = () => act('switchGravity');
   useEffect(() => {
     const onKey = (event) => {
-      if (event.repeat || event.target instanceof Element && event.target.closest('button,input,select,textarea')) return;
+      if (event.repeat || event.ctrlKey || event.metaKey || event.altKey || event.target instanceof Element && event.target.closest('button,input,select,textarea')) return;
       if (['Space', 'ArrowUp', 'ArrowDown', 'Enter'].includes(event.code)) { event.preventDefault(); flip(); }
       else if (['Escape', 'KeyP'].includes(event.code)) { event.preventDefault(); pause(); }
       else if (event.code === 'KeyR') { event.preventDefault(); restart(); }

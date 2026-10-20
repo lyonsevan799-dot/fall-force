@@ -9,7 +9,7 @@ export default function useRaceControls(engineRef, actionsRef, sound) {
   useEffect(() => {
     const key = (event) => {
       const engine = engineRef.current, actions = actionsRef.current;
-      if (event.repeat || !engine || !actions) return;
+      if (event.repeat || event.ctrlKey || event.metaKey || event.altKey || !engine || !actions) return;
       if (event.target instanceof Element && event.target.closest('input, select, textarea, [contenteditable="true"]')) return;
       if (event.code === 'Escape' || event.code === 'KeyP') {
         event.preventDefault();

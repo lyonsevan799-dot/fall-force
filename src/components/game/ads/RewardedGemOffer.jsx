@@ -28,6 +28,7 @@ export default function RewardedGemOffer({ updateSave }) {
     } catch { if (mounted.current) { setRetry(!!receipt.current); setMessage('The completed reward could not be saved. Retry saving without watching another ad.'); } }
     finally { busy.current = false; if (mounted.current) setPending(false); }
   };
+  if (!retry && (!AD_CONFIG.approved || !AD_CONFIG.rewarded)) return null;
   return <section className="mt-5 rounded-2xl border border-border bg-card p-4" aria-label="Optional advertisement reward">
     <h2 className="font-heading text-sm">Optional bonus · {AD_CONFIG.rewardGems} gems</h2>
     <p className="mt-2 text-xs text-muted-foreground">Watch one advertisement to completion for {AD_CONFIG.rewardGems} bonus gems. All existing content stays playable without ads; gems can also be earned in runs.</p>

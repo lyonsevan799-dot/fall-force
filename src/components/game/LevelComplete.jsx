@@ -15,7 +15,7 @@ export default function LevelComplete({ levelIndex, stars, deaths, time, gems, t
         {showFinal ? (
           <>
             <div className="flex justify-center"><Trophy size={40} className="text-amber-300 drop-shadow-[0_0_18px_rgba(252,211,77,0.6)]" /></div>
-            <div className="mt-3 font-heading text-[10px] uppercase tracking-[0.5em] text-amber-200/80">Fall Force Complete</div>
+            <div className="mt-3 font-heading text-[10px] uppercase tracking-[0.5em] text-amber-200/80">Gravity Switch Complete</div>
             <h2 className="mt-2 font-heading text-2xl uppercase tracking-[0.2em] text-white">You Conquered It All</h2>
           </>
         ) : showGroupComplete ? (

@@ -78,7 +78,7 @@ export default function useRaceSession(options, wrapRef, canvasRef) {
       start: () => { options.sound.init(); options.sound.resume(); engine.start(); publish(); },
       togglePause: () => {
         if (!['countdown', 'racing'].includes(engine.state)) return;
-        focusPaused = false; engine.paused = !engine.paused; setPaused(engine.paused); publish();
+        focusPaused = false; engine.paused = !engine.paused; last = performance.now(); setPaused(engine.paused); publish();
       },
       rematch: () => {
         if (engine.state === 'finished') return;

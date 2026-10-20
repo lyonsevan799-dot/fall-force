@@ -22,6 +22,7 @@ export class Sound {
     this.step = 0;
     this.nextTime = 0;
     this.timer = null;
+    this.lastSfx = Object.create(null);
   }
 
   init() {
@@ -96,6 +97,7 @@ export class Sound {
     }
     node.connect(g);
     g.connect(o.bus === 'music' ? this.musicGain : this.sfxGain);
+    osc.onended = () => { osc.disconnect(); if (node !== osc) node.disconnect(); g.disconnect(); };
     osc.start(t0);
     osc.stop(t0 + o.dur + 0.03);
   }
@@ -117,12 +119,17 @@ export class Sound {
     g.gain.exponentialRampToValueAtTime(0.0001, t0 + o.dur);
     src.connect(f); f.connect(g);
     g.connect(o.bus === 'music' ? this.musicGain : this.sfxGain);
+    src.onended = () => { src.disconnect(); f.disconnect(); g.disconnect(); };
     src.start(t0);
     src.stop(t0 + o.dur + 0.02);
   }
 
   sfx(name) {
     if (!this.ready || this.platformMuted || this.adMuted || this.s.sfx === false) return;
+    const interval = name === 'gem' ? 0.035 : name === 'land' ? 0.06 : name === 'switch' ? 0.025 : 0;
+    const now = this.ctx.currentTime;
+    if (interval && now - (this.lastSfx[name] ?? -Infinity) < interval) return;
+    this.lastSfx[name] = now;
     switch (name) {
       case 'switch':
         this.tone({ type: 'square', freq: 420, to: 980, dur: 0.13, gain: 0.075, filter: 2600 });

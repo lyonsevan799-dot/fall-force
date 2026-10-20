@@ -6,9 +6,11 @@ import { LEVELS } from './levels';
 import { Particles } from './particles';
 import resolveSurfaceCollision, { carryPlatform } from '@/game/surfaceCollision';
 import createRush, { nextRushSegment } from '@/game/rushMotion';
+import hitSpikeTeeth from '@/game/spikeCollision';
+import { captureCheckpoint, restoreCheckpoint } from '@/game/checkpointState';
 import { startProgressRun, recordGemPickup, recordRunOutcome } from '@/game/meta/events';
 import {
-  sawGeom, bladeGeom, crusherGeom, laserGeom, platGeom, vanishGeom, spikeGeom,
+  sawGeom, bladeGeom, crusherGeom, laserGeom, platGeom, vanishGeom,
   mspikeGeom, dropGeom, wallGeom, bounceGeom, trapGeom,
   rectHit, circleHit, segmentHit,
 } from './geom';
@@ -43,11 +45,15 @@ export class Engine {
     this.ui = { state: 'intro', deaths: 0, time: 0, progress: 0, checkpoint: 0, level: 0, gems: 0, rush: false, rushAvailable: false };
   }
 
-  get level() { return LEVELS[this.levelIndex]; }
+  get level() { return this.runtimeLevel || LEVELS[this.levelIndex]; }
   get theme() { return THEMES[this.level.theme]; }
 
   load(index) {
     this.levelIndex = index;
+    if (this.mode === 'career') {
+      const source = LEVELS[index];
+      this.runtimeLevel = { ...source, items: source.items.map((item) => ({ ...item })), checkpoints: source.checkpoints.map((checkpoint) => ({ ...checkpoint })) };
+    }
     const L = this.level;
     this.hazards = L.items.filter((i) => i.type === 'spike' || i.type === 'saw' || i.type === 'blade' || i.type === 'crusher' || i.type === 'laser' || i.type === 'mspike' || i.type === 'drop' || i.type === 'wall' || i.type === 'bounce' || i.type === 'trap');
     this.solids = L.items.filter((i) => i.type === 'plat' || i.type === 'vanish');
@@ -76,7 +82,7 @@ export class Engine {
     if (full || this.cpIndex < 0) {
       if (full) {
         this.deaths = 0; this.cpIndex = -1; this.gems = 0;
-        this.level.checkpoints.forEach((cp) => { cp.done = false; cp.collected = null; });
+        this.level.checkpoints.forEach((cp) => { cp.done = false; cp.collected = null; cp.snapshot = null; });
       }
       this.px = this.level.startX;
       this.dir = 1;
@@ -94,7 +100,8 @@ export class Engine {
     this.groundPlat = null;
     this.sx = 1; this.sy = 1; this.rot = 0; this.rotV = 0;
     this.t = 0;
-    this.attemptTime = 0;
+    if (full) this.attemptTime = 0;
+    this.physicsAccumulator = 0;
     this.speedMult = 1;
     this.gateIndex = 0;
     this.finishReached = false;
@@ -111,7 +118,11 @@ export class Engine {
     this.hazards.forEach((h) => {
       if (h.type === 'drop' || h.type === 'trap') { h._triggered = false; h._phase = 'idle'; h._triggerT = 0; }
     });
-    if (full) this.collectibles.forEach((g) => { g.collected = false; });
+    if (full || this.cpIndex < 0) {
+      this.gems = 0;
+      this.collectibles.forEach((g) => { g.collected = false; });
+    }
+    if (!full && this.cpIndex >= 0) restoreCheckpoint(this, this.level.checkpoints[this.cpIndex]);
     this.spawnT = 0;
     this.rush = null;
     this.rushCandidate = null;
@@ -157,6 +168,7 @@ export class Engine {
       if (!this.gemGroups[g.groupId]) this.gemGroups[g.groupId] = [];
       this.gemGroups[g.groupId].push(g);
     }
+    for (const id in this.gemGroups) this.gemGroups[id].sort((a, b) => a.x - b.x);
   }
 
   get rushAvailable() {
@@ -178,6 +190,9 @@ export class Engine {
     if (this.paused || this.rush || (this.state !== 'playing' && this.state !== 'intro')) return;
     // A forced field owns gravity until the body fully exits its marked bounds.
     if (this.zones?.some((zone) => this.px + PLAYER_SIZE > zone.x && this.px < zone.x + zone.w && -this.dir !== zone.dir)) return;
+    if (this.state === 'intro') {
+      this.state = 'playing'; this.introT = 1.5; this.timeScale = 1; this.attemptTime = 0;
+    }
     this.middleAttempt?.sample(this);
     this.dir = -this.dir;
     this.vy = this.dir * LAUNCH_V;
@@ -212,7 +227,7 @@ export class Engine {
     this.deaths++;
     this.rush = null;
     this.rushCandidate = null;
-    this.hitstop = 0.075;
+    this.hitstop = 0.045;
     this.flash = 0.95;
     this.addShake(17, 0.55);
     this.timeScale = 0.55;
@@ -281,6 +296,7 @@ export class Engine {
     cp.dir = this.dir;
     cp.gems = this.gems;
     cp.collected = this.collectibles.map((gem) => gem.collected === true);
+    cp.snapshot = captureCheckpoint(this);
     this.cpIndex = i;
     this.sound.sfx('checkpoint');
     this.flash = Math.min(1, this.flash + 0.25);
@@ -306,7 +322,7 @@ export class Engine {
       speed: rushing ? 230 : 180, size: 3.5, life: 0.5, drag: 2.5, shape: 'spark',
     });
     if (!this.settings.reduced) this.particles.ring(gem.x, gem.y, { r: 5, rv: rushing ? 360 : 280, life: 0.35, color: theme.accent, w: 3 });
-    this.flash = Math.min(1, this.flash + (rushing ? 0.14 : 0.1));
+    this.flash = Math.max(this.flash, 0.06); // Pickups sparkle locally, not repeated full-screen flashes.
     // Special trigger gem: immediately engage Gem Rush along its row — no
     // hold required. The rush auto-follows the row and ends on its own.
     if (gem.trigger && gem.groupId != null && !this.rush && this.state === 'playing') {
@@ -368,6 +384,7 @@ export class Engine {
     this.resolveSurfaces(prevY, prevX);
     this.middleAttempt?.sample(this);
     this.checkHazards();
+    this.checkCheckpoints();
 
     if (!L.noFinish && this.state === 'playing' && !this.finishReached && this.px >= L.length) this.reachFinish();
   }
@@ -412,6 +429,11 @@ export class Engine {
       }
     }
     this.collectGems();
+  }
+
+  checkCheckpoints() {
+    if (this.state !== 'playing' || this.rush) return;
+    const size = PLAYER_SIZE;
     for (let i = 0; i < this.level.checkpoints.length; i++) {
       const cp = this.level.checkpoints[i];
       if (!cp.done && this.px + size > cp.x) this.triggerCheckpoint(i);
@@ -447,8 +469,7 @@ export class Engine {
       const it = this.hazards[i];
       switch (it.type) {
         case 'spike': {
-          const g = spikeGeom(it);
-          if (rectHit(bx, by, bw, bh, g.x, g.y, g.w, g.h)) return this.die();
+          if (hitSpikeTeeth(it, it.h || 30, bx, by, bw, bh)) return this.die();
           break;
         }
         case 'saw': {
@@ -473,7 +494,7 @@ export class Engine {
         }
         case 'mspike': {
           const g = mspikeGeom(it, t);
-          if (g.active && rectHit(bx, by, bw, bh, g.x, g.y, g.w, g.h)) return this.die();
+          if (hitSpikeTeeth(it, g.drawH, bx, by, bw, bh, g.floor)) return this.die();
           break;
         }
         case 'drop': {
@@ -505,7 +526,7 @@ export class Engine {
         }
         case 'trap': {
           const g = trapGeom(it, t, this.px);
-          if (g.active && rectHit(bx, by, bw, bh, g.x, g.y, g.w, g.h)) return this.die();
+          if (hitSpikeTeeth(it, g.drawH, bx, by, bw, bh, g.floor)) return this.die();
           break;
         }
         default: break;
@@ -572,6 +593,7 @@ export class Engine {
     this.checkTriggers();
     const blocked = this.resolveSurfaces(prevY, prevX);
     this.checkHazards();
+    this.checkCheckpoints();
     if (!this.rush || this.state !== 'playing') return;
     if (blocked) { this.endRush(); return; }
     if (!this.level.noFinish && !this.finishReached && this.px >= this.level.length) { this.reachFinish(); return; }
@@ -579,7 +601,7 @@ export class Engine {
   }
 
   update(dtRaw) {
-    if (this.paused) return;
+    if (this.paused || !Number.isFinite(dtRaw) || dtRaw <= 0) return;
     const dt = Math.min(0.05, dtRaw);
     this.dt = dt;
 
@@ -602,7 +624,7 @@ export class Engine {
       this.dieT += dt;
       this.timeScale = Math.max(0.05, this.timeScale - dt * 1.8);
       this.zoomTarget = 1.15;
-      if (this.dieT > 0.5) { this.state = 'dead'; recordRunOutcome(this, 'death'); }
+      if (this.dieT >= 0.24) { this.state = 'dead'; recordRunOutcome(this, 'death'); }
     } else if (this.state === 'complete') {
       this.completeT += dt;
       this.timeScale = Math.max(0.3, 0.32 + this.completeT * 0.5);
@@ -611,15 +633,14 @@ export class Engine {
 
     const worldDt = dt * this.timeScale;
     if (this.state === 'playing' || this.state === 'intro') {
-      let rem = worldDt;
+      this.physicsAccumulator = (this.physicsAccumulator || 0) + worldDt;
       let guard = 0;
-      while (rem > 0.0005 && guard++ < 12) {
-        const h = Math.min(rem, SUB);
-        this.t += h;
-        if (this.state === 'playing') this.attemptTime += h;
-        this.step(h);
-        rem -= h;
-        if (this.state !== 'playing' && this.state !== 'intro') break;
+      while (this.physicsAccumulator + 1e-9 >= SUB && guard++ < 12) {
+        this.physicsAccumulator = Math.max(0, this.physicsAccumulator - SUB);
+        this.t += SUB;
+        if (this.state === 'playing' && !this.waiting) this.attemptTime += SUB;
+        this.step(SUB);
+        if (this.waiting || (this.state !== 'playing' && this.state !== 'intro')) { this.physicsAccumulator = 0; break; }
       }
     }
 
@@ -646,6 +667,7 @@ export class Engine {
   }
 
   updateFx(dt) {
+    if (this.state === 'playing' || this.state === 'intro') this.zoomTarget = 1;
     this.particles.update(dt);
     if (this.spawnT > 0) this.spawnT = Math.max(0, this.spawnT - dt);
     for (let i = this.trail.length - 1; i >= 0; i--) {

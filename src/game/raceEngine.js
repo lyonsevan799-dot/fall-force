@@ -50,6 +50,7 @@ export class RaceEngine {
     this.countdown = 3;
     this._lastBeep = 3;
     this.raceTime = 0;
+    this.accumulator = 0;
     this.winner = -1;
     this.finishT = 0;
     this.t = 0;
@@ -120,7 +121,7 @@ export class RaceEngine {
     this.checkTriggersPlayer(p);
     this.resolveSurfacesPlayer(p, prevY, prevX);
     if (p.invuln > 0) p.invuln -= h;
-    if (p.alive && p.invuln <= 0 && !p.finished) this.checkHazardsPlayer(p);
+    if (p.alive && !p.finished) this.checkHazardsPlayer(p);
     if (p.alive && !p.finished && p.px >= L.length) {
       const crossing = clamp((L.length - prevX) / (p.px - prevX || 1), 0, 1);
       this.playerFinish(p, this._stepTime + crossing * h);
@@ -177,7 +178,8 @@ export class RaceEngine {
 
   checkHazardsPlayer(p) {
     for (const item of p.hazards) {
-      if (hitRaceHazard(item, this.t, p)) { this.diePlayer(p); return; }
+      const hit = hitRaceHazard(item, this.t, p);
+      if (hit && p.invuln <= 0) { this.diePlayer(p); return; }
     }
   }
 
@@ -262,9 +264,10 @@ export class RaceEngine {
       this.state = 'racing'; this.raceTime = 0; this.sound.sfx('go');
     }
     if (this.state === 'racing') {
-      let remaining = dt, budget = 64;
-      while (remaining > 0.0000001 && budget-- > 0 && this.state === 'racing') {
-        const h = Math.min(remaining, SUB);
+      this.accumulator += dt;
+      let budget = 64;
+      while (this.accumulator + 1e-9 >= SUB && budget-- > 0 && this.state === 'racing') {
+        const h = SUB;
         this._stepTime = this.raceTime; this.t += h;
         for (const p of this.players) {
           if (p.alive && !p.finished) this.stepPlayer(p, h);
@@ -272,8 +275,9 @@ export class RaceEngine {
         }
         this.raceTime += h;
         this.resolveFinish();
-        remaining -= h;
+        this.accumulator = Math.max(0, this.accumulator - h);
       }
+      if (this.state !== 'racing') this.accumulator = 0;
     } else if (this.state === 'finished') {
       this.finishT += dt;
       if (this.finishT >= GRACE) {
